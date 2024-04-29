@@ -24,9 +24,7 @@ faulthandler.enable()
 from trainer.metrics import MAE
 from trainer.react_trainer import ReactTrainer
 from models.equireact import EquiReact
-from process.dataloader_cyclo import Cyclo23TS
-from process.dataloader_gdb import GDB722TS
-from process.dataloader_proparg import Proparg21TS
+from process.dataloader_new import PropargReactants
 from process.dataloader_homometric import HomometricHe
 from process.collate import CustomCollator
 from process.splitter import split_dataset
@@ -155,7 +153,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     elif dataset=='gdb':
         data = GDB722TS(process=process, atom_mapping=atom_mapping, rxnmapper=rxnmapper, noH=noH, reverse=reverse, xtb=xtb, xtb_subset=xtb_subset)
     elif dataset=='proparg':
-        data = Proparg21TS(process=process, atom_mapping=atom_mapping, rxnmapper=rxnmapper, noH=noH, xtb=xtb)
+        data = PropargReactants(process=process, atom_mapping=atom_mapping, noH=noH, xtb=xtb)
     elif dataset=='homometric':
         data = HomometricHe(atom_mapping=atom_mapping)
     else:

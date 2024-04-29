@@ -4,6 +4,7 @@ from torch_geometric.data import Data
 import rdkit
 from rdkit import Chem
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
+import ase.io
 
 
 BOHR_TO_ANG = 0.529177210903
@@ -34,16 +35,6 @@ allowable_features = {
 }
 
 
-def canon_mol(mol):
-    for a in mol.GetAtoms():
-        a.SetAtomMapNum(0)
-    smi = Chem.MolToSmiles(mol)
-    smi = Chem.CanonSmiles(smi)
-    mol = Chem.MolFromSmiles(smi)
-    mol = Chem.AddHs(mol)
-    Chem.SanitizeMol(mol)
-    return mol
-
 
 def safe_index(l, e):
     """
@@ -55,30 +46,11 @@ def safe_index(l, e):
         return len(l) - 1
 
 
-def reader(xyz, bohr=False):
-    with open(xyz, 'r') as f:
-        lines = f.readlines()
-    lines = [line.strip() for line in lines]
-
-    nat = int(lines[0])
-    start_idx = 2
-    end_idx = start_idx + nat
-
-    atomtypes = []
-    coords = []
-
-    for line_idx in range(start_idx, end_idx):
-        line = lines[line_idx]
-        atomtype, x, y, z = line.split()
-        atomtypes.append(str(atomtype))
-        coords.append([float(x), float(y), float(z)])
-    coords = np.array(coords)
+def read_xyz(xyz, bohr=False):
+    mol = ase.io.read(xyz)
     if bohr:
-        coords *= BOHR_TO_ANG
-
-    assert len(atomtypes) == nat
-    assert len(coords) == nat
-    return np.array(atomtypes), coords
+        mol.set_positions(mol.positions*ase.units.Bohr)
+    return np.array(mol.get_chemical_symbols()), mol.positions
 
 
 def atom_featurizer(mol):

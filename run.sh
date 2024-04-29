@@ -8,10 +8,11 @@ python train.py --device='cuda' \
                 --xtb_subset \
                 --wandb_name test-run \
                 --train_frac 0.8 \
-                --dataset homometric \
+                --dataset proparg \
                 --seed 123 \
                 --invariant \
                 --n_conv_layers 3 \
+                --process \
                 #--subset 100 \
                 #--learning_curve \
                 #--splitter sizeasc \
