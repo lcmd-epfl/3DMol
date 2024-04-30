@@ -20,7 +20,6 @@ class dsC7O2H10nsd(MolDataset):
 
 class QM9(MolDataset):
     def __init__(self, process=True, verbose=4, target_column='gap_Hartree',
-                 bad_indices=None,
                  noH=True, graph_method='smiles_loose', check=True):
 
         self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
@@ -28,7 +27,7 @@ class QM9(MolDataset):
         self.processed_dir='data/qm9/processed/'
         self.smiles_column = 'smiles'
         self.id_column = 'xyz'
-        self.bad_indices = bad_indices
+        self.bad_indices = 'data/qm9/dsgdb9nsd_bad.txt'
         geometry = 'dft'
         self.get_xyz_path = lambda idx: f'data/qm9/{idx}'
 

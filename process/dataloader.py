@@ -39,6 +39,12 @@ class MolDataset(Dataset):
         self.print(1, f'{dataset_prefix=}')
 
         self.df = pd.read_csv(self.csv_path)
+
+        if self.bad_indices:
+            bad_indices = np.loadtxt(self.bad_indices, dtype=str)
+            self.df = self.df[~self.df[self.id_column].isin(bad_indices)]
+            self.df.reset_index(inplace=True)
+
         self.nmols = len(self.df)
         self.indices = self.df[self.id_column].to_list()
         self.labels = torch.tensor(self.df[target_column].values)
@@ -56,6 +62,9 @@ class MolDataset(Dataset):
                 self.print(2, "Processed data not found, processing data...")
                 self.process()
 
+        assert self.nmols==len(self.indices)
+        assert self.nmols==len(self.labels)
+        assert self.nmols==len(self.paths.mg)
         self.standardize_labels()
 
 
