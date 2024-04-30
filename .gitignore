@@ -1,5 +1,7 @@
 *.pyc
 *.swp
 
+*.mol_graphs.pt
+
 wandb
 logs
