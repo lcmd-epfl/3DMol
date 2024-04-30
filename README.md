@@ -10,4 +10,6 @@ pip install e3nn
 pip install rdkit==2023.03.1
 pip install pyaml wandb ase
 conda install pyg
+conda install pandas
+pip install chemprop==1.6.1
 ```
