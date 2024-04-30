@@ -291,20 +291,26 @@ if __name__ == '__main__':
 
     logname = f'{args.wandb_name}-{datetime.now().strftime("%y%m%d-%H%M%S.%f")}-{getuser()}'
     logpath = os.path.join(run_dir, f'{logname}.log')
-    print(f"stdout to {logpath}")
+    print(f"STDOUT> {logpath}")
     sys.stdout = Logger(logpath=logpath, syspart=sys.stdout)
     sys.stderr = Logger(logpath=logpath, syspart=sys.stderr)
 
     project = 'nequimol'
-    print(f'wandb name {args.wandb_name}' if args.wandb_name else 'no wandb name specified')
+    print(f'WANDB> {args.wandb_name if args.wandb_name else "unspecified"}')
 
-    print("\ninput args", args, '\n')
+    print()
+    print('COMMAND>', ' '.join(sys.argv))
+    print()
+    for key, val in vars(args).items():
+        print(f'PARAMS> {key} : {val}')
+    print()
 
     if args.learning_curve:
         train_frac = args.train_frac * np.logspace(-4, 0, 5, endpoint=True, base=2)
     else:
         train_frac = [args.train_frac]
-    print(train_frac)
+    print(f'TRAINING> {train_frac}')
+    print()
 
     train(run_dir, logname, project, args.wandb_name, vars(arg_groups['hyperparameters']), seed0=args.seed,
           device=args.device, num_epochs=args.num_epochs, checkpoint=args.checkpoint,
