@@ -72,19 +72,12 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--distance_emb_dim'     , type=int           , default=16       ,  help='how many gaussian funcs to use')
     g_hyper.add_argument('--radius'               , type=float         , default=5.0      ,  help='max radius of graph')
     g_hyper.add_argument('--dropout_p'            , type=float         , default=0.05     ,  help='dropout probability')
-    g_hyper.add_argument('--attention'            , type=str           , default=None     ,  help='use attention')
     g_hyper.add_argument('--sum_mode'             , type=str           , default='node'   ,  help='sum node (node, edge, or both)')
     g_hyper.add_argument('--graph_mode'           , type=str           , default='energy' ,  help='prediction mode, energy, or vector')
     g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'  ,  help='cyclo / gdb / proparg')
-    g_hyper.add_argument('--combine_mode'         , type=str           , default='mean'   ,  help='combine mode diff, sum, or mean')
     g_hyper.add_argument('--splitter'             , type=str           , default='random' ,  help='what splits to use: random / scaffold / yasc / ydesc')
-    g_hyper.add_argument('--atom_mapping'         , action='store_true', default=False    ,  help='use atom mapping')
-    g_hyper.add_argument('--rxnmapper'            , action='store_true', default=False    ,  help='take atom mapping from rxnmapper')
     g_hyper.add_argument('--random_baseline'      , action='store_true', default=False    ,  help='random baseline (no graph conv)')
-    g_hyper.add_argument('--two_layers_atom_diff' , action='store_true', default=False    ,  help='if use two linear layers in non-linear atom diff')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False    ,  help='if remove H')
-    g_hyper.add_argument('--reverse'              , action='store_true', default=False    ,  help='if add reverse reactions')
-    g_hyper.add_argument('--split_complexes'      , action='store_true', default=False    ,  help='if split reaction complexes into individual molecules (for future datasets)')
     g_hyper.add_argument('--xtb'                  , action='store_true', default=False    ,  help='if use xtb geometries')
     g_hyper.add_argument('--xtb_subset'           , action='store_true', default=False    ,  help='if use dft geometries but on the xtb subset (for gdb and cyclo)')
     g_hyper.add_argument('--invariant'            , action='store_true', default=False    ,  help='if run "InReact"')
@@ -99,8 +92,6 @@ def parse_arguments(arglist=sys.argv[1:]):
         group_dict={a.dest: getattr(args, a.dest, None) for a in group._group_actions}
         arg_groups[group.title] = argparse.Namespace(**group_dict)
 
-    if args.atom_mapping and args.attention:
-        raise RuntimeError
     if args.CV > 1 and args.learning_curve:
         raise RuntimeError
 
@@ -130,14 +121,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           lr_verbose=True,
           verbose=False,
           random_baseline=False,
-          combine_mode='diff',
-          atom_mapping=False,
-          rxnmapper=False,
-          attention=None,
-          two_layers_atom_diff=False,
           noH=False,
-          reverse = False,
-          split_complexes=False,
           xtb = False,
           xtb_subset = False,
           sweep = False,
@@ -190,16 +174,12 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             np.random.seed(seed)
             random.seed(seed)
 
-            tr_indices, te_indices, val_indices, indices = split_dataset(nreactions=data.nreactions, splitter=splitter,
+            tr_indices, te_indices, val_indices, indices = split_dataset(nreactions=data.nmols, splitter=splitter,
                                                                          tr_frac=max(training_fractions),
                                                                          dataset=dataset, subset=subset)
             if len(training_fractions)>1:
                 tr_indices = tr_indices[:int(tr_frac*len(indices))]
 
-            if reverse:
-                tr_indices = np.hstack((tr_indices, tr_indices+data.nreactions))
-                te_indices = np.hstack((te_indices, te_indices+data.nreactions))
-                val_indices = np.hstack((val_indices, val_indices+data.nreactions))
 
             print(f'total / train / test / val: {len(indices)} {len(tr_indices)} {len(te_indices)} {len(val_indices)}')
             train_data = Subset(data, tr_indices)
@@ -218,13 +198,11 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
                               max_radius=radius, max_neighbors=max_neighbors, sum_mode=sum_mode, n_s=n_s, n_v=n_v, n_conv_layers=n_conv_layers,
                               distance_emb_dim=distance_emb_dim, graph_mode=graph_mode, dropout_p=dropout_p, random_baseline=random_baseline,
-                              combine_mode=combine_mode, atom_mapping=atom_mapping, attention=attention, two_layers_atom_diff=two_layers_atom_diff,
                               invariant=invariant)
             print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
             sampler = None
-            custom_collate = CustomCollator(device=device, nreact=data.max_number_of_reactants,
-                                            nprod=data.max_number_of_products, atom_mapping=atom_mapping)
+            custom_collate = CustomCollator(device=device)
             train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=custom_collate,
                                       pin_memory=pin_memory, num_workers=num_workers)
 
@@ -320,10 +298,8 @@ if __name__ == '__main__':
           verbose=args.verbose, radius=args.radius, max_neighbors=args.max_neighbors, sum_mode=args.sum_mode,
           n_s=args.n_s, n_v=args.n_v, n_conv_layers=args.n_conv_layers, distance_emb_dim=args.distance_emb_dim,
           graph_mode=args.graph_mode, dropout_p=args.dropout_p, random_baseline=args.random_baseline,
-          combine_mode=args.combine_mode, atom_mapping=args.atom_mapping, CV=args.CV, attention=args.attention,
-          noH=args.noH, two_layers_atom_diff=args.two_layers_atom_diff, rxnmapper=args.rxnmapper, reverse=args.reverse,
-          xtb=args.xtb, xtb_subset=args.xtb_subset,
+          CV=args.CV, noH=args.noH, xtb=args.xtb, xtb_subset=args.xtb_subset,
           eval_on_test_split=args.eval_on_test_split,
-          split_complexes=args.split_complexes, lr=args.lr, weight_decay=args.weight_decay, splitter=args.splitter,
+          lr=args.lr, weight_decay=args.weight_decay, splitter=args.splitter,
           training_fractions=train_frac,
           invariant=args.invariant)
