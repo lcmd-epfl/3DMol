@@ -26,7 +26,7 @@ from trainer.react_trainer import ReactTrainer
 from models.equireact import EquiReact
 from process.dataloader_proparg import PropargReactants
 from process.dataloader_test import TestSet
-from process.dataloader_qm9 import dsC7O2H10nsd
+from process.dataloader_qm9 import dsC7O2H10nsd, QM9
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
@@ -139,6 +139,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         data = TestSet()
     elif dataset=='dsC7O2H10nsd':
         data = dsC7O2H10nsd(process=process, noH=noH)
+    elif dataset=='qm9':
+        data = QM9(process=process, noH=noH)
     else:
         raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 

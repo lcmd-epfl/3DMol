@@ -2,18 +2,22 @@ wandb enabled
 wandb disabled
 python train.py --device='cuda' \
                 --experiment_name='run-gpu3' \
-                --num_epochs=5 \
-                --atom_mapping \
                 --noH \
-                --xtb_subset \
                 --wandb_name test-run \
                 --train_frac 0.8 \
-                --dataset proparg \
                 --seed 123 \
                 --invariant \
-                --n_conv_layers 3 \
-                --process \
-                #--subset 100 \
+                --n_conv_layers 2 \
+                --subset 100 \
+                --dataset qm9 \
+                #--dataset dsC7O2H10nsd \
+                #--num_epochs=128 \
+                #--num_epochs=5 \
+                #--dataset test \
+                #--dataset proparg \
+                #--dropout_p 0.0 \
+                #--graph_mode vector
+                #--process \
                 #--learning_curve \
                 #--splitter sizeasc \
                 #--splitter yasc \

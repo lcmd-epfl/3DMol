@@ -21,7 +21,7 @@ class MolDataset(Dataset):
             print(*args)
 
 
-    def __init__(self, process=True, geometry='dft', noH=True, graph_method='smiles', verbose=1):
+    def __init__(self, target_column, process=True, geometry='dft', noH=True, graph_method='smiles', verbose=1):
         self.noH = noH
         self.graph_method = graph_method
         self.verbose = verbose
@@ -39,7 +39,7 @@ class MolDataset(Dataset):
         self.df = pd.read_csv(self.csv_path)
         self.nmols = len(self.df)
         self.indices = self.df[self.id_column].to_list()
-        self.labels = torch.tensor(self.df[self.target_column].values)
+        self.labels = torch.tensor(self.df[target_column].values)
         if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
             self.smiles = self.df[self.smiles_column]
 
@@ -93,12 +93,12 @@ class MolDataset(Dataset):
     def make_smiles_graph(self, smi, asemol, i):
         rdmol = Chem.MolFromSmiles(smi, sanitize=False)
         assert rdmol is not None, f"mol obj {self.indices[i]} is None from smi {smi}"
-        self.sanitize_mol_no_valence_check(rdmol)
+        self.sanitize_mol_no_valence_check(rdmol, i)
         atoms, coords = np.array(asemol.get_chemical_symbols()), asemol.positions
 
         if self.noH:
             rdmol = Chem.RemoveAllHs(rdmol, sanitize=False)
-            self.sanitize_mol_no_valence_check(rdmol)
+            self.sanitize_mol_no_valence_check(rdmol, i)
 
         if self.graph_method in ('smiles', 'smiles_loose'):
             G2D = self.make_nx_graph_from_rdmol(rdmol)
@@ -166,11 +166,16 @@ class MolDataset(Dataset):
         return mol
 
 
-    def sanitize_mol_no_valence_check(self, mol):
+    def sanitize_mol_no_valence_check(self, mol, i):
         # rdkit doesn't like "hypervalent" atoms.
         # The standard sanitization would fail even on [SiF6]^{-2}
         # with SMILES 'F[Si-2](F)(F)(F)(F)F' (https://pubchem.ncbi.nlm.nih.gov/compound/Hexafluorosilicate)
         # Solution:
         # https://sourceforge.net/p/rdkit/mailman/message/32599798/
         mol.UpdatePropertyCache(strict=False)
-        Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
+        try:
+            Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
+        except Exception as e:
+            print()
+            print(self.indices[i], self.smiles[i])
+            raise e

@@ -2,7 +2,7 @@ from process.dataloader import MolDataset
 
 
 class PropargReactants(MolDataset):
-    def __init__(self, process=True, verbose=4,
+    def __init__(self, process=True, verbose=4, target_column='Eafw',
                  xtb=False, noH=True, graph_method='smiles_mapped'):
 
         self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
@@ -10,7 +10,6 @@ class PropargReactants(MolDataset):
         self.processed_dir='data/proparg/processed/'
         self.smiles_column = 'smiles_mapped'
         self.id_column = 'xyz_id'
-        self.target_column = 'Eafw'
         if xtb:
             files_dir='data/proparg/xyz-xtb/'
             geometry = 'xtb'
@@ -20,4 +19,5 @@ class PropargReactants(MolDataset):
         self.get_xyz_path = lambda idx: f'{files_dir}/{idx}.r.xyz'
 
         super().__init__(process=process, geometry=geometry, noH=noH,
+                         target_column=target_column,
                          graph_method=graph_method, verbose=verbose)
