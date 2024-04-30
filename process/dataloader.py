@@ -21,10 +21,12 @@ class MolDataset(Dataset):
             print(*args)
 
 
-    def __init__(self, target_column, process=True, geometry='dft', noH=True, graph_method='smiles', verbose=1):
+    def __init__(self, target_column, process=True, geometry='dft',
+                 noH=True, graph_method='smiles', verbose=1, check=False):
         self.noH = noH
         self.graph_method = graph_method
         self.verbose = verbose
+        self.check = True
         dataset_prefix = os.path.splitext(os.path.basename(self.csv_path))[0]
         dataset_prefix = f'{dataset_prefix}.{geometry}.{graph_method}'
         if noH:
@@ -77,15 +79,23 @@ class MolDataset(Dataset):
         self.mol_graphs = []
 
         for i, idx in (enumerate(tqdm(self.indices, desc="making graphs")) if self.verbose>=1 else self.indices):
-            xyz = self.get_xyz_path(idx)
-            asemol = self.read_xyz(xyz)
-            if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
-                smi = self.smiles[i]
-                graph = self.make_smiles_graph(smi, asemol, i)
-            else:
-                # other ways to featurize the atoms
-                raise NotImplementedError
-            self.mol_graphs.append(graph)
+            try:
+                xyz = self.get_xyz_path(idx)
+                asemol = self.read_xyz(xyz)
+                if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
+                    smi = self.smiles[i]
+                    graph = self.make_smiles_graph(smi, asemol, i)
+                else:
+                    # other ways to featurize the atoms
+                    raise NotImplementedError
+                self.mol_graphs.append(graph)
+            except Exception as e:
+                print()
+                print(self.indices[i], self.smiles[i], self.get_xyz_path(self.indices[i]))
+                if not self.check:
+                    raise e
+        if self.check:
+            exit(0)
 
         torch.save(self.mol_graphs, self.paths.mg)
 
@@ -93,12 +103,12 @@ class MolDataset(Dataset):
     def make_smiles_graph(self, smi, asemol, i):
         rdmol = Chem.MolFromSmiles(smi, sanitize=False)
         assert rdmol is not None, f"mol obj {self.indices[i]} is None from smi {smi}"
-        self.sanitize_mol_no_valence_check(rdmol, i)
+        self.sanitize_mol_no_valence_check(rdmol)
         atoms, coords = np.array(asemol.get_chemical_symbols()), asemol.positions
 
         if self.noH:
             rdmol = Chem.RemoveAllHs(rdmol, sanitize=False)
-            self.sanitize_mol_no_valence_check(rdmol, i)
+            self.sanitize_mol_no_valence_check(rdmol)
 
         if self.graph_method in ('smiles', 'smiles_loose'):
             G2D = self.make_nx_graph_from_rdmol(rdmol)
@@ -166,16 +176,11 @@ class MolDataset(Dataset):
         return mol
 
 
-    def sanitize_mol_no_valence_check(self, mol, i):
+    def sanitize_mol_no_valence_check(self, mol):
         # rdkit doesn't like "hypervalent" atoms.
         # The standard sanitization would fail even on [SiF6]^{-2}
         # with SMILES 'F[Si-2](F)(F)(F)(F)F' (https://pubchem.ncbi.nlm.nih.gov/compound/Hexafluorosilicate)
         # Solution:
         # https://sourceforge.net/p/rdkit/mailman/message/32599798/
         mol.UpdatePropertyCache(strict=False)
-        try:
-            Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
-        except Exception as e:
-            print()
-            print(self.indices[i], self.smiles[i])
-            raise e
+        Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
