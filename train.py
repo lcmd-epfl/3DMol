@@ -153,7 +153,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     elif dataset=='gdb':
         data = GDB722TS(process=process, atom_mapping=atom_mapping, rxnmapper=rxnmapper, noH=noH, reverse=reverse, xtb=xtb, xtb_subset=xtb_subset)
     elif dataset=='proparg':
-        data = PropargReactants(process=process, atom_mapping=atom_mapping, noH=noH, xtb=xtb)
+        data = PropargReactants(process=process, noH=noH, xtb=xtb)
     elif dataset=='homometric':
         data = HomometricHe(atom_mapping=atom_mapping)
     else:

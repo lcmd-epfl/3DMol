@@ -9,7 +9,8 @@ from tqdm import tqdm
 from rdkit import Chem
 import networkx
 import networkx.algorithms.isomorphism as iso
-from process.create_graph import get_graph, read_xyz, sanitize_mol_no_valence_check
+import ase.io
+from process.create_graph import get_graph
 
 
 class MolDataset(Dataset):
@@ -19,11 +20,12 @@ class MolDataset(Dataset):
             print(*args)
 
 
-    def __init__(self, process=True, geometry='dft', noH=True, atom_mapping=False, verbose=1):
+    def __init__(self, process=True, geometry='dft', noH=True, graph_method='smiles', verbose=1):
         self.noH = noH
+        self.graph_method = graph_method
         self.verbose = verbose
         dataset_prefix = os.path.splitext(os.path.basename(self.csv_path))[0]
-        dataset_prefix = f'{dataset_prefix}.{geometry}'
+        dataset_prefix = f'{dataset_prefix}.{geometry}.{graph_method}'
         if noH:
             dataset_prefix += '.noH'
         self.paths = SimpleNamespace(
@@ -37,7 +39,8 @@ class MolDataset(Dataset):
         self.nmols = len(self.df)
         self.indices = self.df[self.id_column].to_list()
         self.labels = torch.tensor(self.df[self.target_column].values)
-        self.smiles = self.df[self.smiles_column]
+        if self.graph_method in ('smiles', 'smiles_mapped'):
+            self.smiles = self.df[self.smiles_column]
 
         if process == True:
             self.print(2, "Processing by request...")
@@ -74,39 +77,45 @@ class MolDataset(Dataset):
 
         for i, idx in (enumerate(tqdm(self.indices, desc="making graphs")) if self.verbose>=1 else self.indices):
             xyz = self.get_xyz_path(idx)
-            atomtypes, coords = read_xyz(xyz)
-            smi = self.smiles[i]
-            graph = self.make_graph(smi, atomtypes, coords,  f'r{idx}', i, None)
+            atomtypes, coords = self.read_xyz(xyz)
+            if self.graph_method in ('smiles', 'smiles_mapped'):
+                smi = self.smiles[i]
+                graph = self.make_smiles_graph(smi, atomtypes, coords,  f'r{idx}', i)
+            else:
+                # other ways to featurize the atoms
+                raise NotImplementedError
             self.mol_graphs.append(graph)
 
         torch.save(self.mol_graphs, self.paths.mg)
 
 
-    def make_graph(self, smi, atoms, coords, ireact, idx, smi2=None):
+    def make_smiles_graph(self, smi, atoms, coords, i, idx):
         mol = Chem.MolFromSmiles(smi, sanitize=False)
-        assert mol is not None, f"mol obj {ireact} is None from smi {smi}"
-        sanitize_mol_no_valence_check(mol)
+        assert mol is not None, f"mol obj {i} is None from smi {smi}"
+        self.sanitize_mol_no_valence_check(mol)
 
         if self.noH:
             mol = Chem.RemoveAllHs(mol, sanitize=False)
-            sanitize_mol_no_valence_check(mol)
+            self.sanitize_mol_no_valence_check(mol)
             noH_idx = np.where(atoms!='H')
             atoms = atoms[noH_idx]
             coords = coords[noH_idx]
 
-        atom_map = np.array([at.GetAtomMapNum() for at in mol.GetAtoms()])
-        assert np.all(atom_map>0), f"mol {ireact} is not atom-mapped"
-        assert len(atom_map)==len(atoms), f"mol {ireact} has a wrong number of atoms"
-        atom_map = atom_map.argsort().argsort()  # elements rank
-
-        return get_graph(mol, atoms[atom_map], coords[atom_map], idx)
+        if self.graph_method=='smiles_mapped':
+            atom_map = np.array([at.GetAtomMapNum() for at in mol.GetAtoms()])
+            assert np.all(atom_map>0), f"mol {i} is not atom-mapped"
+            assert len(atom_map)==len(atoms), f"mol {i} has a wrong number of atoms"
+            atom_map = atom_map.argsort().argsort()  # elements rank
+            return get_graph(mol, atoms[atom_map], coords[atom_map], idx, features='smiles')
+        else:
+            # probably match smiles to xyz first
+            raise NotImplementedError
 
 
     def standardize_labels(self):
         mean = torch.mean(self.labels)
-        std = torch.std(self.labels)
-        self.std = std
-        self.labels = (self.labels - mean)/std
+        self.std = torch.std(self.labels)
+        self.labels = (self.labels - mean)/self.std
 
 
     def make_nx_graph_from_mol(self, mol):
@@ -118,9 +127,26 @@ class MolDataset(Dataset):
         return G
 
 
+    def read_xyz(self, xyz, bohr=False):
+        mol = ase.io.read(xyz)
+        if bohr:
+            mol.set_positions(mol.positions*ase.units.Bohr)
+        return np.array(mol.get_chemical_symbols()), mol.positions
+
+
+    def sanitize_mol_no_valence_check(self, mol):
+        # rdkit doesn't like "hypervalent" atoms.
+        # The standard sanitization would fail even on [SiF6]^{-2}
+        # with SMILES 'F[Si-2](F)(F)(F)(F)F' (https://pubchem.ncbi.nlm.nih.gov/compound/Hexafluorosilicate)
+        # Solution:
+        # https://sourceforge.net/p/rdkit/mailman/message/32599798/
+        mol.UpdatePropertyCache(strict=False)
+        Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
+
+
 class PropargReactants(MolDataset):
-    def __init__(self, process=True, xtb=False, noH=True, atom_mapping=False,
-                 verbose=4):
+    def __init__(self, process=True, verbose=4,
+                 xtb=False, noH=True, graph_method='smiles_mapped'):
 
         self.version = 0.1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/proparg/data_reactants.csv'
@@ -136,4 +162,5 @@ class PropargReactants(MolDataset):
             geometry = 'dft'
         self.get_xyz_path = lambda idx: f'{files_dir}/{idx}.r.xyz'
 
-        super().__init__(process=process, geometry=geometry, noH=noH, atom_mapping=atom_mapping, verbose=verbose)
+        super().__init__(process=process, geometry=geometry, noH=noH,
+                         graph_method=graph_method, verbose=verbose)
