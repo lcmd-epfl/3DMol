@@ -81,7 +81,7 @@ class MolDataset(Dataset):
             asemol = self.read_xyz(xyz)
             if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
                 smi = self.smiles[i]
-                graph = self.make_smiles_graph(smi, asemol,  f'r{idx}', i)
+                graph = self.make_smiles_graph(smi, asemol, i)
             else:
                 # other ways to featurize the atoms
                 raise NotImplementedError
@@ -90,9 +90,9 @@ class MolDataset(Dataset):
         torch.save(self.mol_graphs, self.paths.mg)
 
 
-    def make_smiles_graph(self, smi, asemol, i, idx):
+    def make_smiles_graph(self, smi, asemol, i):
         rdmol = Chem.MolFromSmiles(smi, sanitize=False)
-        assert rdmol is not None, f"mol obj {i} is None from smi {smi}"
+        assert rdmol is not None, f"mol obj {self.indices[i]} is None from smi {smi}"
         self.sanitize_mol_no_valence_check(rdmol)
         atoms, coords = np.array(asemol.get_chemical_symbols()), asemol.positions
 
@@ -106,21 +106,21 @@ class MolDataset(Dataset):
             if self.graph_method=='smiles_loose':
                 try:
                     # smiles have more or same bonds than xyz
-                    mapping = self.match_graphs(G2D, G3D, idx, loose=True)
+                    mapping = self.match_graphs(G2D, G3D, i, loose=True)
                 except:
                     # smiles have less or same bonds than xyz
-                    mapping = self.match_graphs(G3D, G2D, idx, loose=True)
+                    mapping = self.match_graphs(G3D, G2D, i, loose=True)
                     mapping = {val: key for key, val in mapping.items()}
             elif self.graph_method=='smiles':
-                mapping = self.match_graphs(G2D, G3D, idx)
+                mapping = self.match_graphs(G2D, G3D, i)
             for iat, at in enumerate(rdmol.GetAtoms()):
                 at.SetAtomMapNum(int(mapping[iat])+1)
 
         atom_map = np.array([at.GetAtomMapNum() for at in rdmol.GetAtoms()])
-        assert np.all(atom_map>0), f"mol {i} is not atom-mapped"
-        assert len(atom_map)==len(atoms), f"mol {i} has a wrong number of atoms"
+        assert np.all(atom_map>0), f"mol {self.indices[i]} is not atom-mapped"
+        assert len(atom_map)==len(atoms), f"mol {idx} has a wrong number of atoms"
         atom_map = atom_map.argsort().argsort()  # elements rank
-        return get_graph(rdmol, atoms[atom_map], coords[atom_map], idx, features='smiles')
+        return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles')
 
 
     def standardize_labels(self):
@@ -129,13 +129,13 @@ class MolDataset(Dataset):
         self.labels = (self.labels - mean)/self.std
 
 
-    def match_graphs(self, G1, G2, idx, loose=False):
+    def match_graphs(self, G1, G2, i, loose=False):
         GM = iso.GraphMatcher(G1, G2, node_match=iso.categorical_node_match('q', None))
         if loose:
-            assert GM.subgraph_is_monomorphic(), f'\n{idx}: G2 is not isomorphic to any subgraph of G1'
+            assert GM.subgraph_is_monomorphic(), f'G2 is not isomorphic to any subgraph of G1 in {i}: {self.smiles[i]}, {self.get_xyz_path(self.indices[i])}'
             return next(GM.subgraph_monomorphisms_iter())
         else:
-            assert GM.is_isomorphic(), f"smiles and xyz graphs are not isomorphic in {idx}"
+            assert GM.is_isomorphic(), f"smiles and xyz graphs are not isomorphic in {i}: {self.smiles[i]}, {self.get_xyz_path(self.indices[i])}"
             return next(GM.match())
 
 
