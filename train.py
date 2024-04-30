@@ -24,8 +24,8 @@ faulthandler.enable()
 from trainer.metrics import MAE
 from trainer.react_trainer import ReactTrainer
 from models.equireact import EquiReact
-from process.dataloader_new import PropargReactants
-from process.dataloader_homometric import HomometricHe
+from process.dataloader_proparg import PropargReactants
+from process.dataloader_test import TestSet
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
@@ -148,14 +148,10 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
 
-    if dataset=='cyclo':
-        data = Cyclo23TS(process=process, atom_mapping=atom_mapping, rxnmapper=rxnmapper, noH=noH, xtb=xtb, xtb_subset=xtb_subset)
-    elif dataset=='gdb':
-        data = GDB722TS(process=process, atom_mapping=atom_mapping, rxnmapper=rxnmapper, noH=noH, reverse=reverse, xtb=xtb, xtb_subset=xtb_subset)
-    elif dataset=='proparg':
+    if dataset=='proparg':
         data = PropargReactants(process=process, noH=noH, xtb=xtb)
-    elif dataset=='homometric':
-        data = HomometricHe(atom_mapping=atom_mapping)
+    elif dataset=='test':
+        data = TestSet()
     else:
         raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
