@@ -10,6 +10,7 @@ from rdkit import Chem
 import networkx
 import networkx.algorithms.isomorphism as iso
 import ase.io
+from ase.geometry.analysis import Analysis
 from process.create_graph import get_graph
 
 
@@ -39,7 +40,7 @@ class MolDataset(Dataset):
         self.nmols = len(self.df)
         self.indices = self.df[self.id_column].to_list()
         self.labels = torch.tensor(self.df[self.target_column].values)
-        if self.graph_method in ('smiles', 'smiles_mapped'):
+        if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
             self.smiles = self.df[self.smiles_column]
 
         if process == True:
@@ -77,10 +78,10 @@ class MolDataset(Dataset):
 
         for i, idx in (enumerate(tqdm(self.indices, desc="making graphs")) if self.verbose>=1 else self.indices):
             xyz = self.get_xyz_path(idx)
-            atomtypes, coords = self.read_xyz(xyz)
-            if self.graph_method in ('smiles', 'smiles_mapped'):
+            asemol = self.read_xyz(xyz)
+            if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
                 smi = self.smiles[i]
-                graph = self.make_smiles_graph(smi, atomtypes, coords,  f'r{idx}', i)
+                graph = self.make_smiles_graph(smi, asemol,  f'r{idx}', i)
             else:
                 # other ways to featurize the atoms
                 raise NotImplementedError
@@ -89,27 +90,37 @@ class MolDataset(Dataset):
         torch.save(self.mol_graphs, self.paths.mg)
 
 
-    def make_smiles_graph(self, smi, atoms, coords, i, idx):
-        mol = Chem.MolFromSmiles(smi, sanitize=False)
-        assert mol is not None, f"mol obj {i} is None from smi {smi}"
-        self.sanitize_mol_no_valence_check(mol)
+    def make_smiles_graph(self, smi, asemol, i, idx):
+        rdmol = Chem.MolFromSmiles(smi, sanitize=False)
+        assert rdmol is not None, f"mol obj {i} is None from smi {smi}"
+        self.sanitize_mol_no_valence_check(rdmol)
+        atoms, coords = np.array(asemol.get_chemical_symbols()), asemol.positions
 
         if self.noH:
-            mol = Chem.RemoveAllHs(mol, sanitize=False)
-            self.sanitize_mol_no_valence_check(mol)
-            noH_idx = np.where(atoms!='H')
-            atoms = atoms[noH_idx]
-            coords = coords[noH_idx]
+            rdmol = Chem.RemoveAllHs(rdmol, sanitize=False)
+            self.sanitize_mol_no_valence_check(rdmol)
 
-        if self.graph_method=='smiles_mapped':
-            atom_map = np.array([at.GetAtomMapNum() for at in mol.GetAtoms()])
-            assert np.all(atom_map>0), f"mol {i} is not atom-mapped"
-            assert len(atom_map)==len(atoms), f"mol {i} has a wrong number of atoms"
-            atom_map = atom_map.argsort().argsort()  # elements rank
-            return get_graph(mol, atoms[atom_map], coords[atom_map], idx, features='smiles')
-        else:
-            # probably match smiles to xyz first
-            raise NotImplementedError
+        if self.graph_method in ('smiles', 'smiles_loose'):
+            G2D = self.make_nx_graph_from_rdmol(rdmol)
+            G3D = self.make_nx_graph_from_asemol(asemol)
+            if self.graph_method=='smiles_loose':
+                try:
+                    # smiles have more or same bonds than xyz
+                    mapping = self.match_graphs(G2D, G3D, idx, loose=True)
+                except:
+                    # smiles have less or same bonds than xyz
+                    mapping = self.match_graphs(G3D, G2D, idx, loose=True)
+                    mapping = {val: key for key, val in mapping.items()}
+            elif self.graph_method=='smiles':
+                mapping = self.match_graphs(G2D, G3D, idx)
+            for iat, at in enumerate(rdmol.GetAtoms()):
+                at.SetAtomMapNum(int(mapping[iat])+1)
+
+        atom_map = np.array([at.GetAtomMapNum() for at in rdmol.GetAtoms()])
+        assert np.all(atom_map>0), f"mol {i} is not atom-mapped"
+        assert len(atom_map)==len(atoms), f"mol {i} has a wrong number of atoms"
+        atom_map = atom_map.argsort().argsort()  # elements rank
+        return get_graph(rdmol, atoms[atom_map], coords[atom_map], idx, features='smiles')
 
 
     def standardize_labels(self):
@@ -118,9 +129,28 @@ class MolDataset(Dataset):
         self.labels = (self.labels - mean)/self.std
 
 
-    def make_nx_graph_from_mol(self, mol):
+    def match_graphs(self, G1, G2, idx, loose=False):
+        GM = iso.GraphMatcher(G1, G2, node_match=iso.categorical_node_match('q', None))
+        if loose:
+            assert GM.subgraph_is_monomorphic(), f'\n{idx}: G2 is not isomorphic to any subgraph of G1'
+            return next(GM.subgraph_monomorphisms_iter())
+        else:
+            assert GM.is_isomorphic(), f"smiles and xyz graphs are not isomorphic in {idx}"
+            return next(GM.match())
+
+
+    def make_nx_graph_from_rdmol(self, mol):
         bonds = np.array(sorted(sorted((i.GetBeginAtomIdx(), i.GetEndAtomIdx())) for i in mol.GetBonds()))
         atoms = np.array([at.GetSymbol() for at in mol.GetAtoms()])
+        return self.make_nx_graph(atoms, bonds)
+
+
+    def make_nx_graph_from_asemol(self, mol):
+        bonds = np.array([(i,j) for i, js in enumerate(Analysis(mol).unique_bonds[0]) for j in js])
+        return self.make_nx_graph(mol.get_chemical_symbols(), bonds)
+
+
+    def make_nx_graph(self, atoms, bonds):
         G = networkx.Graph()
         G.add_nodes_from([(i, {'q': q}) for i, q in enumerate(atoms)])
         G.add_edges_from(bonds)
@@ -131,7 +161,9 @@ class MolDataset(Dataset):
         mol = ase.io.read(xyz)
         if bohr:
             mol.set_positions(mol.positions*ase.units.Bohr)
-        return np.array(mol.get_chemical_symbols()), mol.positions
+        if self.noH:
+            del mol[mol.numbers == 1]
+        return mol
 
 
     def sanitize_mol_no_valence_check(self, mol):
@@ -146,7 +178,7 @@ class MolDataset(Dataset):
 
 class PropargReactants(MolDataset):
     def __init__(self, process=True, verbose=4,
-                 xtb=False, noH=True, graph_method='smiles_mapped'):
+                 xtb=False, noH=True, graph_method='smiles'):
 
         self.version = 0.1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/proparg/data_reactants.csv'
