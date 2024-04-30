@@ -7,6 +7,7 @@ from datetime import datetime
 from getpass import getuser  # os.getlogin() won't work on a cluster
 import copy
 import random
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -85,6 +86,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--lr'                   , type=float         , default=0.001    ,  help='learning rate for adam')
     g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001   ,  help='weight decay for adam')
     g_hyper.add_argument('--train_frac'           , type=float         , default=0.9      ,  help='training fraction to use (val/te will be equally split over rest)')
+    g_hyper.add_argument('--target_column'        , type=str           , default=None     ,  help='csv column with the target property')
 
     args = p.parse_args(arglist)
 
@@ -95,6 +97,12 @@ def parse_arguments(arglist=sys.argv[1:]):
 
     if args.CV > 1 and args.learning_curve:
         raise RuntimeError
+
+    if args.target_column is None:
+        args.target_column = defaultdict(lambda: None,
+            {'proparg': 'Eafw',
+            'dsC7O2H10nsd': 'gap_Hartree',
+            'qm9': 'gap_Hartree'})[args.dataset]
 
     return args, arg_groups
 
@@ -129,18 +137,19 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           eval_on_test_split=False,
           print_repr=False,
           invariant=False,
+          target_column=None,
           ):
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
 
     if dataset=='proparg':
-        data = PropargReactants(process=process, noH=noH, xtb=xtb)
+        data = PropargReactants(process=process, noH=noH, xtb=xtb, target_column=target_column)
     elif dataset=='test':
         data = TestSet()
     elif dataset=='dsC7O2H10nsd':
-        data = dsC7O2H10nsd(process=process, noH=noH)
+        data = dsC7O2H10nsd(process=process, noH=noH, target_column=target_column)
     elif dataset=='qm9':
-        data = QM9(process=process, noH=noH)
+        data = QM9(process=process, noH=noH, target_column=target_column)
     else:
         raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
@@ -306,5 +315,5 @@ if __name__ == '__main__':
           CV=args.CV, noH=args.noH, xtb=args.xtb, xtb_subset=args.xtb_subset,
           eval_on_test_split=args.eval_on_test_split,
           lr=args.lr, weight_decay=args.weight_decay, splitter=args.splitter,
-          training_fractions=train_frac,
+          training_fractions=train_frac, target_column=args.target_column,
           invariant=args.invariant)
