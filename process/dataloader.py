@@ -21,7 +21,7 @@ class MolDataset(Dataset):
             print(*args)
 
 
-    def __init__(self, target_column, process=True, geometry='dft',
+    def __init__(self, target_column, process=True, geometry='dft', bad_indices=None,
                  noH=True, graph_method='smiles', verbose=1, check=False):
         self.noH = noH
         self.graph_method = graph_method
@@ -40,8 +40,8 @@ class MolDataset(Dataset):
 
         self.df = pd.read_csv(self.csv_path)
 
-        if self.bad_indices:
-            bad_indices = np.loadtxt(self.bad_indices, dtype=str)
+        if bad_indices:
+            bad_indices = np.loadtxt(bad_indices, dtype=str)
             self.df = self.df[~self.df[self.id_column].isin(bad_indices)]
             self.df.reset_index(inplace=True)
 
@@ -64,7 +64,7 @@ class MolDataset(Dataset):
 
         assert self.nmols==len(self.indices)
         assert self.nmols==len(self.labels)
-        assert self.nmols==len(self.paths.mg)
+        assert self.nmols==len(self.mol_graphs)
         self.standardize_labels()
 
 

@@ -27,10 +27,11 @@ class QM9(MolDataset):
         self.processed_dir='data/qm9/processed/'
         self.smiles_column = 'smiles'
         self.id_column = 'xyz'
-        self.bad_indices = 'data/qm9/dsgdb9nsd_bad.txt'
+        bad_indices = 'data/qm9/dsgdb9nsd_bad.txt'
         geometry = 'dft'
         self.get_xyz_path = lambda idx: f'data/qm9/{idx}'
 
         super().__init__(process=process, geometry=geometry, noH=noH,
                          target_column=target_column, check=check,
+                         bad_indices=bad_indices,
                          graph_method=graph_method, verbose=verbose)
