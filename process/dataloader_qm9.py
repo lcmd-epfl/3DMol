@@ -20,7 +20,7 @@ class dsC7O2H10nsd(MolDataset):
 
 class QM9(MolDataset):
     def __init__(self, process=True, verbose=4, target_column='gap_Hartree',
-                 noH=True, graph_method='smiles_loose', check=True):
+                 noH=True, graph_method='smiles_loose', check=False):
 
         self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/qm9/dsgdb9nsd.csv'

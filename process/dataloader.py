@@ -26,7 +26,7 @@ class MolDataset(Dataset):
         self.noH = noH
         self.graph_method = graph_method
         self.verbose = verbose
-        self.check = True
+        self.check = check
         dataset_prefix = os.path.splitext(os.path.basename(self.csv_path))[0]
         dataset_prefix = f'{dataset_prefix}.{geometry}.{graph_method}'
         if noH:
