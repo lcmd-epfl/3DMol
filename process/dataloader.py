@@ -88,21 +88,25 @@ class MolDataset(Dataset):
         self.mol_graphs = []
 
         for i, idx in (enumerate(tqdm(self.indices, desc="making graphs")) if self.verbose>=1 else self.indices):
-            try:
-                xyz = self.get_xyz_path(idx)
-                asemol = self.read_xyz(xyz)
-                if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
-                    smi = self.smiles[i]
-                    graph = self.make_smiles_graph(smi, asemol, i)
+            xyz = self.get_xyz_path(idx)
+            asemol = self.read_xyz(xyz)
+            if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose', 'smiles_atoms'):
+                if self.graph_method=='smiles_atoms':
+                    smi = '.'.join([f'[{a}:{i+1}]' for i, a in enumerate(asemol.get_chemical_symbols())])
                 else:
-                    # other ways to featurize the atoms
-                    raise NotImplementedError
-                self.mol_graphs.append(graph)
-            except Exception as e:
-                print()
-                print(self.indices[i], self.smiles[i], self.get_xyz_path(self.indices[i]))
-                if not self.check:
-                    raise e
+                    smi = self.smiles[i]
+                try:
+                    graph = self.make_smiles_graph(smi, asemol, i)
+                except Exception as e:
+                    print()
+                    print(self.indices[i], smi, self.get_xyz_path(self.indices[i]))
+                    if not self.check:
+                        raise e
+            else:
+                # other ways to featurize the atoms
+                raise NotImplementedError
+            self.mol_graphs.append(graph)
+
         if self.check:
             exit(0)
 
