@@ -90,6 +90,7 @@ class MolDataset(Dataset):
         for i, idx in (enumerate(tqdm(self.indices, desc="making graphs")) if self.verbose>=1 else self.indices):
             xyz = self.get_xyz_path(idx)
             asemol = self.read_xyz(xyz)
+
             if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose', 'smiles_atoms'):
                 if self.graph_method=='smiles_atoms':
                     smi = '.'.join([f'[{a}:{i+1}]' for i, a in enumerate(asemol.get_chemical_symbols())])
@@ -102,6 +103,10 @@ class MolDataset(Dataset):
                     print(self.indices[i], smi, self.get_xyz_path(self.indices[i]))
                     if not self.check:
                         raise e
+
+            elif self.graph_method == 'torchchem_v1':
+                graph = get_graph(None, asemol.numbers, asemol.positions, i, features=self.graph_method)
+
             else:
                 # other ways to featurize the atoms
                 raise NotImplementedError
@@ -144,6 +149,8 @@ class MolDataset(Dataset):
         assert len(atom_map)==len(atoms), f"mol {idx} has a wrong number of atoms"
         atom_map = atom_map.argsort().argsort()  # elements rank
         return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles')
+
+
 
 
     def standardize_labels(self):

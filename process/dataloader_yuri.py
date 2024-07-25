@@ -3,7 +3,7 @@ from process.dataloader import MolDataset
 
 class Yuri(MolDataset):
     def __init__(self, process=True, verbose=4, target_column='gap_Hartree',
-                 noH=True, graph_method='smiles_atoms', check=False):
+                 noH=True, graph_method='torchchem_v1', check=False):
 
         self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/yuri/refcode_properties_2300.csv'

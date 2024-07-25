@@ -16,12 +16,17 @@ def get_graph(mol, atoms, coords, y, features, device='cpu'):
     data.edge_attr -> --
     data.y -> reaction id
     """
-    atoms1 = np.array([at.GetSymbol() for at in mol.GetAtoms()])
-    assert np.all(atoms1 == atoms), "atoms from xyz and smiles don't match"
     assert coords.shape[0] == len(atoms), "different number of atoms"
     assert coords.shape[1] == 3, "wrong dimensionality of coordinates"
     if features=='smiles':
+        atoms1 = np.array([at.GetSymbol() for at in mol.GetAtoms()])
+        assert np.all(atoms1 == atoms), "atoms from xyz and smiles don't match"
         x = smiles_featurizer(mol)
+    elif features=='torchchem_v1':
+        from process.feature import atom_geom
+        x = atom_geom(atoms, torch.tensor(coords), bin=True)
+        x = x.type(torch.Tensor)
+
     else:
         raise NotImplementedError
     data = Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32))
