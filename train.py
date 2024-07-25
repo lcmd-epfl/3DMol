@@ -67,27 +67,28 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
 
     g_hyper = p.add_argument_group('hyperparameters')
-    g_hyper.add_argument('--subset'               , type=int           , default=None     ,  help='size of a subset to use instead of the full set (tr+te+va)')
-    g_hyper.add_argument('--max_neighbors'        , type=int           , default=20       ,  help='max number of neighbors')
-    g_hyper.add_argument('--n_s'                  , type=int           , default=48       ,  help='dimension of node features')
-    g_hyper.add_argument('--n_v'                  , type=int           , default=48       ,  help='dimension of extra (p/d) features')
-    g_hyper.add_argument('--n_conv_layers'        , type=int           , default=2        ,  help='number of conv layers')
-    g_hyper.add_argument('--distance_emb_dim'     , type=int           , default=16       ,  help='how many gaussian funcs to use')
-    g_hyper.add_argument('--radius'               , type=float         , default=5.0      ,  help='max radius of graph')
-    g_hyper.add_argument('--dropout_p'            , type=float         , default=0.05     ,  help='dropout probability')
-    g_hyper.add_argument('--sum_mode'             , type=str           , default='node'   ,  help='sum node (node, edge, or both)')
-    g_hyper.add_argument('--graph_mode'           , type=str           , default='energy' ,  help='prediction mode, energy, or vector')
-    g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'  ,  help='cyclo / gdb / proparg')
-    g_hyper.add_argument('--splitter'             , type=str           , default='random' ,  help='what splits to use: random / scaffold / yasc / ydesc')
-    g_hyper.add_argument('--random_baseline'      , action='store_true', default=False    ,  help='random baseline (no graph conv)')
-    g_hyper.add_argument('--noH'                  , action='store_true', default=False    ,  help='if remove H')
-    g_hyper.add_argument('--xtb'                  , action='store_true', default=False    ,  help='if use xtb geometries')
-    g_hyper.add_argument('--xtb_subset'           , action='store_true', default=False    ,  help='if use dft geometries but on the xtb subset (for gdb and cyclo)')
-    g_hyper.add_argument('--invariant'            , action='store_true', default=False    ,  help='if run "InReact"')
-    g_hyper.add_argument('--lr'                   , type=float         , default=0.001    ,  help='learning rate for adam')
-    g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001   ,  help='weight decay for adam')
-    g_hyper.add_argument('--train_frac'           , type=float         , default=0.9      ,  help='training fraction to use (val/te will be equally split over rest)')
-    g_hyper.add_argument('--target_column'        , type=str           , default=None     ,  help='csv column with the target property')
+    g_hyper.add_argument('--subset'               , type=int           , default=None           ,  help='size of a subset to use instead of the full set (tr+te+va)')
+    g_hyper.add_argument('--max_neighbors'        , type=int           , default=20             ,  help='max number of neighbors')
+    g_hyper.add_argument('--n_s'                  , type=int           , default=48             ,  help='dimension of node features')
+    g_hyper.add_argument('--n_v'                  , type=int           , default=48             ,  help='dimension of extra (p/d) features')
+    g_hyper.add_argument('--n_conv_layers'        , type=int           , default=2              ,  help='number of conv layers')
+    g_hyper.add_argument('--distance_emb_dim'     , type=int           , default=16             ,  help='how many gaussian funcs to use')
+    g_hyper.add_argument('--radius'               , type=float         , default=5.0            ,  help='max radius of graph')
+    g_hyper.add_argument('--dropout_p'            , type=float         , default=0.05           ,  help='dropout probability')
+    g_hyper.add_argument('--sum_mode'             , type=str           , default='node'         ,  help='sum node (node, edge, or both)')
+    g_hyper.add_argument('--graph_mode'           , type=str           , default='energy'       ,  help='prediction mode, energy, or vector')
+    g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'        ,  help='cyclo / gdb / proparg')
+    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / scaffold / yasc / ydesc')
+    g_hyper.add_argument('--random_baseline'      , action='store_true', default=False          ,  help='random baseline (no graph conv)')
+    g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
+    g_hyper.add_argument('--xtb'                  , action='store_true', default=False          ,  help='if use xtb geometries')
+    g_hyper.add_argument('--xtb_subset'           , action='store_true', default=False          ,  help='if use dft geometries but on the xtb subset (for gdb and cyclo)')
+    g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if run "InReact"')
+    g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate for adam')
+    g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001         ,  help='weight decay for adam')
+    g_hyper.add_argument('--train_frac'           , type=float         , default=0.9            ,  help='training fraction to use (val/te will be equally split over rest)')
+    g_hyper.add_argument('--target_column'        , type=str           , default=None           ,  help='csv column with the target property')
+    g_hyper.add_argument('--features'             , type=str           , default='smiles_atoms' ,  help='featurizer')
 
     args = p.parse_args(arglist)
 
@@ -140,20 +141,21 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           print_repr=False,
           invariant=False,
           target_column=None,
+          features=None,
           ):
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
 
     if dataset=='proparg':
-        data = PropargReactants(process=process, noH=noH, xtb=xtb, target_column=target_column)
+        data = PropargReactants(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
     elif dataset=='test':
         data = TestSet()
     elif dataset=='dsC7O2H10nsd':
-        data = dsC7O2H10nsd(process=process, noH=noH, target_column=target_column)
+        data = dsC7O2H10nsd(process=process, noH=noH, target_column=target_column, graph_method=features)
     elif dataset=='qm9':
-        data = QM9(process=process, noH=noH, target_column=target_column)
+        data = QM9(process=process, noH=noH, target_column=target_column, graph_method=features)
     elif dataset=='yuri':
-        data = Yuri(process=process, noH=noH, target_column=target_column)
+        data = Yuri(process=process, noH=noH, target_column=target_column, graph_method=features)
     else:
         raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
@@ -326,4 +328,5 @@ if __name__ == '__main__':
           eval_on_test_split=args.eval_on_test_split,
           lr=args.lr, weight_decay=args.weight_decay, splitter=args.splitter,
           training_fractions=train_frac, target_column=args.target_column,
+          features=args.features,
           invariant=args.invariant)
