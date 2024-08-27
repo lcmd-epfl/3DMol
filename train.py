@@ -192,9 +192,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             np.random.seed(seed)
             random.seed(seed)
 
-            tr_indices, te_indices, val_indices, indices = split_dataset(nreactions=data.nmols, splitter=splitter,
+            tr_indices, te_indices, val_indices, indices = split_dataset(data, splitter=splitter,
                                                                          tr_frac=max(training_fractions),
-                                                                         dataset=dataset, subset=subset)
+                                                                         subset=subset)
             if len(training_fractions)>1:
                 tr_indices = tr_indices[:int(tr_frac*len(indices))]
 
