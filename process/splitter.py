@@ -61,6 +61,21 @@ def get_size_splits(data, splitter, indices, tr_size, te_size):
     return tr_indices, te_indices, val_indices
 
 
+def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
+    fname = splitter[5:]
+    if subset:
+        raise RuntimeError('subset option incompatible with test indices file')
+    try:
+        te_indices = np.load(fname) if fname.endswith('.npy') else np.loadtxt(fname)
+    except:
+        raise RuntimeError
+    if len(te_indices) != te_size:
+        raise RuntimeError(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
+    indices_notest = np.array([i for i in indices if i not in te_indices])
+    tr_indices, val_indices = np.split(indices_notest, [tr_size])
+    return tr_indices, te_indices, val_indices
+
+
 def split_dataset(data, splitter, tr_frac, subset=None):
     '''
     1) seed `np.random` and `random` before calling this fn
@@ -88,13 +103,18 @@ def split_dataset(data, splitter, tr_frac, subset=None):
         print(f"Using target-based splits ({'ascending' if splitter=='yasc' else 'descending'} order)")
         tr_indices, te_indices, val_indices = get_y_splits(data, splitter, indices, tr_size, te_size)
 
+    elif splitter in ['sizeasc', 'sizedesc']:
+        print(f"Splitting based on molecular size ({'ascending' if splitter=='sizeasc' else 'descending'} order)")
+        tr_indices, te_indices, val_indices = get_size_splits(data, splitter, indices, tr_size, te_size)
+
     elif splitter == 'scaffold':
         print("Using scaffold splits")
         tr_indices, te_indices, val_indices = get_scaffold_splits(data, indices, sizes=(tr_frac, 1-(tr_frac+te_frac), te_frac))
 
-    elif splitter in ['sizeasc', 'sizedesc']:
-        print(f"Splitting based on molecular size ({'ascending' if splitter=='sizeasc' else 'descending'} order)")
-        tr_indices, te_indices, val_indices = get_size_splits(data, splitter, indices, tr_size, te_size)
+    elif splitter.startswith('test:'):
+        print("Using test indices from file")
+        tr_indices, te_indices, val_indices = get_test_file_splits(splitter, indices, tr_size, te_size, subset)
+
 
     else:
         raise RuntimeError

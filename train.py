@@ -78,7 +78,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--sum_mode'             , type=str           , default='node'         ,  help='sum node (node, edge, or both)')
     g_hyper.add_argument('--graph_mode'           , type=str           , default='energy'       ,  help='prediction mode, energy, or vector')
     g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'        ,  help='cyclo / gdb / proparg')
-    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / scaffold / yasc / ydesc')
+    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / scaffold / yasc / ydesc / test:path')
     g_hyper.add_argument('--random_baseline'      , action='store_true', default=False          ,  help='random baseline (no graph conv)')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
     g_hyper.add_argument('--xtb'                  , action='store_true', default=False          ,  help='if use xtb geometries')
