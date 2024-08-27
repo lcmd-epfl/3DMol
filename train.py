@@ -63,7 +63,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--seed'               , type=int           , default=123      ,  help='initial seed values')
     g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='Print dims throughout the training process')
     g_run.add_argument('--process'            , action='store_true', default=False    ,  help='(re-)process data by force (if data is already there, default is to not reprocess)?')
-    g_run.add_argument('--eval_on_test_split' , action='store_true', default=False    ,  help='print error per test molecule')
+    g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
 
     g_hyper = p.add_argument_group('hyperparameters')
@@ -111,37 +111,37 @@ def parse_arguments(arglist=sys.argv[1:]):
 
 
 def train(run_dir, run_name, project, wandb_name, hyper_dict,
-          #setup args
-          device='cuda', seed0=123, eval_on_test=True,
-          #dataset args
-          subset=None, training_fractions = [0.8], process=False, CV=0,
-          dataset='cyclo', splitter='random',
-          #sampling / dataloader args
-          batch_size=8, num_workers=0, pin_memory=False, # pin memory is not working
-          #graph args
-          radius=10, max_neighbors=20, sum_mode='node', n_s=16, n_v=16, n_conv_layers=2, distance_emb_dim=32,
-          graph_mode='energy', dropout_p=0.1,
-          #trainer args
-          val_per_batch=True, checkpoint=False, num_epochs=1000000, eval_per_epochs=0, patience=150,
-          minimum_epochs=0, models_to_save=[], clip_grad=100, log_iterations=100,
-          # adam opt params
-          lr=0.0001, weight_decay=0.0001,
-          # lr scheduler params
-          lr_scheduler=ReduceLROnPlateau, factor=0.6, min_lr=8.0e-6, mode='max', lr_scheduler_patience=60,
-          # factor 0.6 okay ?
-          # min_lr = lr / 100
-          lr_verbose=True,
+          # run
+          device='cuda',
+          num_epochs=65536,
+          checkpoint=False,
           verbose=False,
-          random_baseline=False,
+          print_predictions=False,
+          eval_on_test=True,
+          sweep = False,
+          print_repr=False,
+
+
+          # dataset
+          dataset='cyclo',
+          process=False,
           noH=False,
           xtb = False,
           xtb_subset = False,
-          sweep = False,
-          eval_on_test_split=False,
-          print_repr=False,
-          invariant=False,
           target_column=None,
           features=None,
+          # splitting
+          splitter='random',
+          subset=None,
+          training_fractions = [0.8],
+          CV=0,
+          seed0=123,
+          # other (hidden)
+          batch_size=8, num_workers=0, pin_memory=False,
+          val_per_batch=True, eval_per_epochs=0, patience=150,
+          minimum_epochs=0, models_to_save=[], clip_grad=100, log_iterations=100,
+          lr_scheduler=ReduceLROnPlateau, factor=0.6, min_lr=8.0e-6, mode='max', lr_scheduler_patience=60,
+          lr_verbose=True,
           ):
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
@@ -216,9 +216,17 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 print(f"{input_edge_feats_dim=}")
 
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
-                              max_radius=radius, max_neighbors=max_neighbors, sum_mode=sum_mode, n_s=n_s, n_v=n_v, n_conv_layers=n_conv_layers,
-                              distance_emb_dim=distance_emb_dim, graph_mode=graph_mode, dropout_p=dropout_p, random_baseline=random_baseline,
-                              invariant=invariant)
+                              max_radius=hyper_dict['radius'],
+                              max_neighbors=hyper_dict['max_neighbors'],
+                              sum_mode=hyper_dict['sum_mode'],
+                              n_s=hyper_dict['n_s'],
+                              n_v=hyper_dict['n_v'],
+                              n_conv_layers=hyper_dict['n_conv_layers'],
+                              distance_emb_dim=hyper_dict['distance_emb_dim'],
+                              graph_mode=hyper_dict['graph_mode'],
+                              dropout_p=hyper_dict['dropout_p'],
+                              random_baseline=hyper_dict['random_baseline'],
+                              invariant=hyper_dict['invariant'])
             print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
             sampler = None
@@ -237,7 +245,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    minimum_epochs=minimum_epochs, models_to_save=models_to_save,
                                    clip_grad=clip_grad, log_iterations=log_iterations,
                                    scheduler_step_per_batch = False, # CHANGED THIS
-                                   lr=lr, weight_decay=weight_decay,
+                                   lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
                                    lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
                                    lr_scheduler_patience=lr_scheduler_patience, lr_verbose=lr_verbose)
 
@@ -251,7 +259,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 # file dump for each split
                 data_split_string = 'test_split_' + str(CV)
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
-                if eval_on_test_split:
+                if print_predictions:
                     for x in zip(test_data.indices, np.squeeze(torch.vstack(targ).cpu().numpy()),
                                                     np.squeeze(torch.vstack(pred).cpu().numpy())):
                         print('>>>', *x)
@@ -318,15 +326,28 @@ if __name__ == '__main__':
     print(f'TRAINING> {train_frac}')
     print()
 
-    train(run_dir, logname, project, args.wandb_name, vars(arg_groups['hyperparameters']), seed0=args.seed,
-          device=args.device, num_epochs=args.num_epochs, checkpoint=args.checkpoint,
-          subset=args.subset, dataset=args.dataset, process=args.process,
-          verbose=args.verbose, radius=args.radius, max_neighbors=args.max_neighbors, sum_mode=args.sum_mode,
-          n_s=args.n_s, n_v=args.n_v, n_conv_layers=args.n_conv_layers, distance_emb_dim=args.distance_emb_dim,
-          graph_mode=args.graph_mode, dropout_p=args.dropout_p, random_baseline=args.random_baseline,
-          CV=args.CV, noH=args.noH, xtb=args.xtb, xtb_subset=args.xtb_subset,
-          eval_on_test_split=args.eval_on_test_split,
-          lr=args.lr, weight_decay=args.weight_decay, splitter=args.splitter,
-          training_fractions=train_frac, target_column=args.target_column,
+    train(run_dir, logname, project, args.wandb_name, vars(arg_groups['hyperparameters']),
+          # run
+          device=args.device,
+          num_epochs=args.num_epochs,
+          checkpoint=args.checkpoint,
+          verbose=args.verbose,
+          print_predictions=args.print_predictions,
+          eval_on_test=True,
+          sweep=False,
+          print_repr=False,
+          # dataset
+          dataset=args.dataset,
+          process=args.process,
+          noH=args.noH,
+          xtb=args.xtb,
+          xtb_subset=args.xtb_subset,
+          target_column=args.target_column,
           features=args.features,
-          invariant=args.invariant)
+          # splitting
+          splitter=args.splitter,
+          subset=args.subset,
+          training_fractions=train_frac,
+          CV=args.CV,
+          seed0=args.seed,
+          )
