@@ -120,8 +120,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           eval_on_test=True,
           sweep = False,
           print_repr=False,
-
-
           # dataset
           dataset='cyclo',
           process=False,
