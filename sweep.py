@@ -77,7 +77,7 @@ parameters_dict.update({ 'random_baseline': { 'value': False} })
 parameters_dict.update({ 'features': { 'value': features[dataset]} })
 parameters_dict.update({ 'target_column': { 'value': target_column} })
 parameters_dict.update({ 'seed': { 'value': 123} })
-parameters_dict.update({ 'splitter': { 'value': 'random'} })
+parameters_dict.update({ 'splitter': { 'value': 'test:data/yuri/splits/fold_0_test_indices.npy'} })
 
 sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)

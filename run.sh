@@ -8,10 +8,13 @@ python train.py --device='cuda' \
                 --seed 123 \
                 --invariant \
                 --n_conv_layers 2 \
-                --subset 100 \
-                --dataset qm9 \
-                #--dataset dsC7O2H10nsd \
-                #--num_epochs=128 \
+                --num_epochs=8 \
+                --dataset yuri \
+                --splitter test:data/yuri/splits/fold_0_test_indices.npy \
+                #--splitter scaffold \
+                #--subset 100 \
+                #--target_column U0_Hartree \
+                #--dataset qm9 \
                 #--num_epochs=5 \
                 #--dataset test \
                 #--dataset proparg \
@@ -20,7 +23,6 @@ python train.py --device='cuda' \
                 #--process \
                 #--learning_curve \
                 #--splitter sizeasc \
-                #--splitter yasc \
                 #--splitter scaffold \
                 #--dataset proparg \
                 #--seed 130 \
