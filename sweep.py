@@ -30,12 +30,12 @@ script_args = parser.parse_args()
 
 features = {'yuri': 'torchchem_v1'}
 epochs = {'yuri': 128}
-target_columns_good = {'yuri': ('homo', 'lumo', 'gap', 'dipole_moment_debye', 'splitting', 'hirshfeld', 'n_fod')}
+target_columns_good = {'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld', 'N_FOD')}
 project = 'nequimol'
 
 dataset = script_args.dataset
 target_column = script_args.target
-if target_column.lower() not in target_columns_good[dataset]:
+if target_column not in target_columns_good[dataset]:
     raise RuntimeError
 run_dir = f'sweep_{dataset}_{target_column}'
 if not os.path.exists(run_dir):
