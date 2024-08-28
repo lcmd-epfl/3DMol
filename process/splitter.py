@@ -66,7 +66,7 @@ def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
     if subset:
         raise RuntimeError('subset option incompatible with test indices file')
     try:
-        te_indices = np.load(fname) if fname.endswith('.npy') else np.loadtxt(fname)
+        te_indices = np.load(fname) if fname.endswith('.npy') else np.loadtxt(fname, dtype=int)
     except:
         raise RuntimeError
     if len(te_indices) != te_size:
