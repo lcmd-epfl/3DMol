@@ -6,7 +6,7 @@ from rdkit import Chem
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
 
 
-def get_graph(mol, atoms, coords, y, features, device='cpu'):
+def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
     """
     Builds graph object
 
@@ -29,7 +29,11 @@ def get_graph(mol, atoms, coords, y, features, device='cpu'):
 
     else:
         raise NotImplementedError
-    data = Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32))
+    if local_mask is None:
+        data = Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32))
+    else:
+        data = Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32),
+                    local_mask=torch.tensor(local_mask, dtype=torch.bool))
     return data.to(device)
 
 

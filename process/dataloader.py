@@ -105,7 +105,8 @@ class MolDataset(Dataset):
                         raise e
 
             elif self.graph_method == 'torchchem_v1':
-                graph = get_graph(None, asemol.numbers, asemol.positions, i, features=self.graph_method)
+                local_mask = self.get_local_mask(asemol=asemol)
+                graph = get_graph(None, asemol.numbers, asemol.positions, i, features=self.graph_method, local_mask=local_mask)
 
             else:
                 # other ways to featurize the atoms
@@ -148,7 +149,8 @@ class MolDataset(Dataset):
         assert np.all(atom_map>0), f"mol {self.indices[i]} is not atom-mapped"
         assert len(atom_map)==len(atoms), f"mol {idx} has a wrong number of atoms"
         atom_map = atom_map.argsort().argsort()  # elements rank
-        return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles')
+        local_mask = self.get_local_mask(asemol=asemol, rdmol=rdmol)
+        return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles', local_mask=local_mask)
 
 
 
@@ -204,3 +206,8 @@ class MolDataset(Dataset):
         # https://sourceforge.net/p/rdkit/mailman/message/32599798/
         mol.UpdatePropertyCache(strict=False)
         Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
+
+
+
+    def get_local_mask(self, asemol=None, rdmol=None):
+        return None
