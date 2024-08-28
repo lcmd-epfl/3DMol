@@ -26,7 +26,8 @@ def train_wrapper():
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--dataset', default='yuri', help='dataset')
 parser.add_argument('-t', '--target', default='gap', help='target column')
-parser.add_argument('--id', default=None, help='sweep id if continue')
+parser.add_argument('--id', default=None, help='sweep id if continue a sweep')
+parser.add_argument('--equivariant', action='store_true', help='use equivariant model (default: invariant)')
 script_args = parser.parse_args()
 
 features = {'yuri': 'torchchem_v1'}
@@ -58,14 +59,19 @@ parameters_dict = {
     'max_neighbors': { 'values': [10, 25, 50] },
     'n_conv_layers': { 'values': [2, 3] },
     'n_s': { 'values': [16, 32, 48, 64] },
-    'n_v': { 'values': [16, 32, 48, 64] },
     'radius': { 'values' : [2.5, 5.0, 10.0] },
     'sum_mode': { 'values' : ['node', 'both'] },
     'lr':  { 'values' : [0.00005, 0.0001, 0.0005, 0.001] },
     'weight_decay' : { 'values' : [1e-5, 1e-4, 1e-3, 0] },
     }
 
-parameters_dict.update({ 'invariant': { 'value': True} })
+if script_args.equivariant:
+    parameters_dict.update({'n_v': { 'values': [16, 32, 48, 64] }})
+    parameters_dict.update({ 'invariant': { 'value': False} })
+else:
+    parameters_dict.update({'n_v': { 'value': None }})
+    parameters_dict.update({ 'invariant': { 'value': True} })
+
 parameters_dict.update({ 'subset': { 'value': None} })
 parameters_dict.update({ 'dataset': { 'value': dataset} })
 parameters_dict.update({ 'num_epochs': { 'value': epochs[dataset]} })
