@@ -267,6 +267,8 @@ class EquiReact(nn.Module):
             xedge = scatter_add(edge_attr, index=src, dim=0)
             xedge = F.pad(xedge, (0, 0, 0, x.shape[0]-xedge.shape[0]))
             x = torch.hstack((x, xedge))
+        if self.graph_mode=='vector_masked':
+            x *= graph.local_mask.to(self.device)[:,None]
         x = scatter_add(x, index=graph.batch.to(self.device), dim=0)
         if self.verbose:
             print('reaction x dims', x.shape)
@@ -278,10 +280,10 @@ class EquiReact(nn.Module):
 
 
     def forward(self, data, return_repr=False):
-        if self.graph_mode == 'vector':
+        if self.graph_mode in ['vector', 'vector_masked']:
             energy = self.forward_vector_mode(data)
             representations = None  # TODO
-        else:
+        elif self.graph_mode == 'energy':
             energy = self.forward_energy_mode(data)
             representations = None  # TODO
 
