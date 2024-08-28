@@ -154,9 +154,9 @@ class MolDataset(Dataset):
 
 
     def standardize_labels(self):
-        mean = torch.mean(self.labels)
+        self.mean = torch.mean(self.labels)
         self.std = torch.std(self.labels)
-        self.labels = (self.labels - mean)/self.std
+        self.labels = (self.labels - self.mean)/self.std
 
 
     def match_graphs(self, G1, G2, i, loose=False):

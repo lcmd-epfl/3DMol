@@ -64,6 +64,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='Print dims throughout the training process')
     g_run.add_argument('--process'            , action='store_true', default=False    ,  help='(re-)process data by force (if data is already there, default is to not reprocess)?')
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
+    g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
 
     g_hyper = p.add_argument_group('hyperparameters')
@@ -108,6 +109,16 @@ def parse_arguments(arglist=sys.argv[1:]):
             'yuri':'gap'})[args.dataset]
 
     return args, arg_groups
+
+
+def print_test_predictions(test_indices, targ_stdized, pred_stdized, data_std, data_mean):
+    print('>>> # idx target_stdized prediction_stdized target prediction error')
+    targ_stdized = np.squeeze(torch.vstack(targ_stdized).cpu().numpy())
+    pred_stdized = np.squeeze(torch.vstack(pred_stdized).cpu().numpy())
+    targ = targ_stdized*data_std+data_mean
+    pred = pred_stdized*data_std+data_mean
+    for x in zip(test_indices, targ_stdized, pred_stdized, targ, pred, pred-targ):
+        print('>>>', *x, sep='\t')
 
 
 def train(run_dir, run_name, project, wandb_name, hyper_dict,
@@ -258,9 +269,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 data_split_string = 'test_split_' + str(CV)
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
                 if print_predictions:
-                    for x in zip(test_data.indices, np.squeeze(torch.vstack(targ).cpu().numpy()),
-                                                    np.squeeze(torch.vstack(pred).cpu().numpy())):
-                        print('>>>', *x)
+                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy())
 
                 mae_split = test_metrics['mae'] * std
                 rmse_split = np.sqrt(test_metrics['MSELoss'])*std
@@ -333,7 +342,7 @@ if __name__ == '__main__':
           print_predictions=args.print_predictions,
           eval_on_test=True,
           sweep=False,
-          print_repr=False,
+          print_repr=args.print_repr,
           # dataset
           dataset=args.dataset,
           process=args.process,

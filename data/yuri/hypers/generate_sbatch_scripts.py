@@ -38,6 +38,7 @@ python train.py \\"""
 --num_epochs 512 \\
 --splitter test:data/yuri/splits/fold_${{FOLD}}_test_indices.npy \\
 --logdir /scratch/izar/briling/cv \\
+--print_predictions \\
 --wandb_name cv-{full_name} \\"""
 
     with open(f'{short_name}.sbatch', 'w') as f:
