@@ -1,8 +1,9 @@
+import os
+from datetime import datetime
 import argparse
 import pprint
 import wandb
 from train import train
-import os
 
 
 def train_wrapper():
@@ -40,7 +41,7 @@ dataset = script_args.dataset
 target_column = script_args.target
 if target_column not in target_columns_good[dataset]:
     raise RuntimeError
-run_dir = f'sweep_{dataset}_{target_column}'
+run_dir = f'sweep_{dataset}_{target_column}_{datetime.now().strftime("%y%m%d-%H%M%S.%f")}'
 if not os.path.exists(run_dir):
     try:
         os.makedirs(run_dir)
