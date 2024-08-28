@@ -26,6 +26,7 @@ def train_wrapper():
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--dataset', default='yuri', help='dataset')
 parser.add_argument('-t', '--target', default='gap', help='target column')
+parser.add_argument('--id', default=None, help='sweep id if continue')
 script_args = parser.parse_args()
 
 features = {'yuri': 'torchchem_v1'}
@@ -83,6 +84,6 @@ sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)
 
 wandb_name = 'test'
-sweep_id = wandb.sweep(sweep_config, project=project)
+sweep_id = wandb.sweep(sweep_config, project=project) if script_args.id is None else script_args.id
 print(sweep_id)
 wandb.agent(sweep_id, train_wrapper, count=64, project=project)
