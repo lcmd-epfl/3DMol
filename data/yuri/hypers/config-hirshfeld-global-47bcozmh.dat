@@ -1,0 +1,19 @@
+# run_id=3u516mee, sweep_id=47bcozmh, name=floral-sweep-47, val_score_best=0.029630756944944513, splitter=test:data/yuri/splits/fold_0_test_indices.npy
+dataset	yuri
+distance_emb_dim	16
+dropout_p	0.05
+features	torchchem_v1
+graph_mode	energy
+invariant	True
+lr	0.001
+max_neighbors	25
+n_conv_layers	3
+n_s	64
+n_v	nan
+noH	True
+radius	2.5
+seed	123
+sum_mode	both
+target_column	hirshfeld
+train_frac	0.8
+weight_decay	1e-05
