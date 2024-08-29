@@ -7,10 +7,11 @@ for config in glob('config-*-*-????????.dat'):
 
     base_config = np.loadtxt(config, skiprows=1, dtype=str)
     base_config = {key: val.strip('"') for key, val in base_config}
-    config = '\n'.join([f'--{key} {val if val!="true" else ""} \\' for key, val in base_config.items()])
+    base_config = {key: val if val!='nan' else '0' for key, val in base_config.items()}
+    config = '\n'.join([f'--{key} {val if val.lower()!="true" else ""} \\' for key, val in base_config.items()])
 
-    short_name = f"{base_config['dataset']}-{base_config['target_column']}-{'inv' if base_config['invariant']=='true' else 'equiv'}-noH"
-    full_name = f"{short_name}-ns{base_config['n_s']}-{'nv'+base_config['n_v']+'-' if base_config['n_v']!='nan' else ''}d{base_config['distance_emb_dim']}-l{base_config['n_conv_layers']}-{base_config['graph_mode']}-{base_config['sum_mode']}"
+    short_name = f"{base_config['dataset']}-{base_config['target_column']}-{'inv' if base_config['invariant'].lower()=='true' else 'equiv'}-noH"
+    full_name = f"{short_name}-ns{base_config['n_s']}-{'nv'+base_config['n_v']+'-' if base_config['n_v']!='0' else ''}d{base_config['distance_emb_dim']}-l{base_config['n_conv_layers']}-{base_config['graph_mode']}-{base_config['sum_mode']}"
 
     header=f"""#!/bin/bash -l
 #SBATCH --partition=gpu
