@@ -28,6 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--dataset', default='yuri', help='dataset')
 parser.add_argument('-t', '--target', default='gap', help='target column')
 parser.add_argument('--id', default=None, help='sweep id if continue a sweep')
+parser.add_argument('-n', '--num', default=64, help='number of runs')
 parser.add_argument('--equivariant', action='store_true', help='use equivariant model (default: invariant)')
 parser.add_argument('--local', action='store_true', help='use local (masked) model')
 script_args = parser.parse_args()
@@ -98,4 +99,4 @@ pprint.pprint(sweep_config)
 wandb_name = 'test'
 sweep_id = wandb.sweep(sweep_config, project=project) if script_args.id is None else script_args.id
 print(sweep_id)
-wandb.agent(sweep_id, train_wrapper, count=64, project=project)
+wandb.agent(sweep_id, train_wrapper, count=script_args.num, project=project)
