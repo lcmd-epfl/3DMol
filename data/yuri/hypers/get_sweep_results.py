@@ -5,6 +5,7 @@ import pandas as pd
 import wandb
 
 raw_data_path = 'project_raw.csv'
+dataset = 'yuri'
 
 # download the data
 if not os.path.isfile(raw_data_path):
@@ -22,12 +23,13 @@ if not os.path.isfile(raw_data_path):
     config_df = pd.DataFrame(config_list)
     assert len(set.intersection(set(name_df.columns), set(summary_df.columns), set(config_df.columns)))==0
     df = name_df.join(summary_df).join(config_df)
+    df = df[df['dataset'] == dataset]
     df.to_csv(raw_data_path, index=False)
 else:
     df = pd.read_csv(raw_data_path)
 
 # split into sweeps
-drop_keys = ['num_epochs', 'CV iter', 'epoch', 'train loss', 'val_loss', 'val_score', 'test_rmse', 'test_score', 'subset', 'xtb_subset', 'xtb', 'random_baseline', 'two_layers_atom_diff']
+drop_keys = ['num_epochs', 'CV iter', 'epoch', 'train loss', 'val_loss', 'val_score', 'test_rmse', 'test_score', 'subset', 'xtb_subset', 'xtb', 'random_baseline']
 meta_keys = ['run_id', 'sweep_id', 'name', 'val_score_best', 'splitter']
 target_column = 'val_score_best'
 max_num = 64
@@ -41,11 +43,15 @@ for sweep_id, d in df_sweep.items():
 
     target = d['target_column'][0]
     scope = 'local' if 'vector_masked' in list(d['graph_mode']) else 'global'
-    d.to_csv(f"sweep-{target}-{scope}-{sweep_id}.csv", index=False)
+    name = f'{target}-{scope}-{sweep_id}'
+    assert not d[target_column].isnull().any(), f'{name} contains empty error values - check if crashed'
+    assert len(d) >= max_num, f'{name} contains not enough runs'
+
+    d.to_csv(f"sweep-{name}.csv", index=False)
 
     d = d[:max_num]
     best = d.loc[d[target_column].idxmin()]
 
-    with open(f"config-{target}-{scope}-{sweep_id}.dat", 'w') as f:
+    with open(f"config-{name}.dat", 'w') as f:
         print('#', ', '.join(f'{key}={best[key]}' for key in meta_keys), file=f)
         print('\n'.join(f'{key}\t{best[key]}' for key in sorted(best.keys()) if key not in meta_keys), file=f)

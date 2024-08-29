@@ -1,4 +1,4 @@
-# run_id=1a6bi5q7, sweep_id=f8eeknq4, name=glad-sweep-50, val_score_best=0.40089575955771606, splitter=test:data/yuri/splits/fold_0_test_indices.npy
+# run_id=1a6bi5q7, sweep_id=f8eeknq4, name=glad-sweep-50, val_score_best=0.400895759557716, splitter=test:data/yuri/splits/fold_0_test_indices.npy
 dataset	yuri
 distance_emb_dim	64
 dropout_p	0.1

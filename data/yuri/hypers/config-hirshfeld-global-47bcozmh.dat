@@ -1,4 +1,4 @@
-# run_id=3u516mee, sweep_id=47bcozmh, name=floral-sweep-47, val_score_best=0.029630756944944513, splitter=test:data/yuri/splits/fold_0_test_indices.npy
+# run_id=3u516mee, sweep_id=47bcozmh, name=floral-sweep-47, val_score_best=0.0296307569449445, splitter=test:data/yuri/splits/fold_0_test_indices.npy
 dataset	yuri
 distance_emb_dim	16
 dropout_p	0.05

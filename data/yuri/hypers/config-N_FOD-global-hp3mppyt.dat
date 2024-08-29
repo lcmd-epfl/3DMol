@@ -1,4 +1,4 @@
-# run_id=d8yxvdxl, sweep_id=hp3mppyt, name=absurd-sweep-44, val_score_best=0.13502225969596887, splitter=test:data/yuri/splits/fold_0_test_indices.npy
+# run_id=d8yxvdxl, sweep_id=hp3mppyt, name=absurd-sweep-44, val_score_best=0.1350222596959688, splitter=test:data/yuri/splits/fold_0_test_indices.npy
 dataset	yuri
 distance_emb_dim	48
 dropout_p	0.0

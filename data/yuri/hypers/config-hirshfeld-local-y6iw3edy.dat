@@ -1,4 +1,4 @@
-# run_id=y6dr9jtn, sweep_id=y6iw3edy, name=comic-sweep-59, val_score_best=0.028546567091508764, splitter=test:data/yuri/splits/fold_0_test_indices.npy
+# run_id=y6dr9jtn, sweep_id=y6iw3edy, name=comic-sweep-59, val_score_best=0.0285465670915087, splitter=test:data/yuri/splits/fold_0_test_indices.npy
 dataset	yuri
 distance_emb_dim	16
 dropout_p	0.0
