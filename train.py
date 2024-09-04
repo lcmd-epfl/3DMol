@@ -164,7 +164,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     elif dataset=='qm9':
         data = QM9(process=process, noH=noH, target_column=target_column, graph_method=features)
     elif dataset=='yuri':
-        data = Yuri(process=process, noH=noH, target_column=target_column, graph_method=features)
+        data = Yuri(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
     else:
         raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
