@@ -21,7 +21,7 @@ for name in set(df.name):
     results.append({
         'name': name,
         'target':    d.target_column[0],
-        'geometry':  'xtb' if d.xtb[0] is True else 'default',
+        'geometry':  'xtb' if d.xtb[0] == True else 'default',
         'scope':     'local' if d.graph_mode[0]=='vector_masked' else 'global',
         'mae_mean':  d.test_score.mean(),
         'mae_std':   d.test_score.std(),
