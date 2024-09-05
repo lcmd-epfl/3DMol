@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 
 import os.path
+from itertools import chain
 import pandas as pd
 import wandb
 
 raw_data_path = 'project_raw.csv'
 dataset = 'yuri'
+lost_ids = ['f0ytc5s5']
 
 # download the data
 if not os.path.isfile(raw_data_path):
     api = wandb.Api()
     runs = api.runs("equireact/nequimol")
+    runs_lost = (api.run(f"equireact/nequimol/{idx}") for idx in lost_ids)
 
     summary_list, config_list, name_list = [], [], []
-    for run in runs:
+    for run in chain(runs, runs_lost):
         name_list.append({'run_id': run.id, 'sweep_id': (run.sweep.id if run.sweep is not None else None), 'name': run.name})
         summary_list.append({k: v for k,v in run.summary._json_dict.items() if not k.startswith('_')})
         config_list.append({k: v for k,v in run.config.items() if not k.startswith('_')})

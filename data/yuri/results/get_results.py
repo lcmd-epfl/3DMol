@@ -16,11 +16,12 @@ df = df[pd.isna(df['sweep_id'])]
 results = []
 for name in set(df.name):
     d = df[df['name'] == name].reset_index(drop=True)
-    assert len(d) == 10
+    assert len(d) == 10, f'{name} {len(d)}'
     test_score = d.test_score
     results.append({
         'name': name,
         'target':    d.target_column[0],
+        'geometry':  'xtb' if d.xtb[0] is True else 'default',
         'scope':     'local' if d.graph_mode[0]=='vector_masked' else 'global',
         'mae_mean':  d.test_score.mean(),
         'mae_std':   d.test_score.std(),
