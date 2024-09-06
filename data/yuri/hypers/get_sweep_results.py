@@ -7,7 +7,7 @@ import wandb
 
 raw_data_path = 'project_raw.csv'
 dataset = 'yuri'
-lost_ids = ['f0ytc5s5']
+lost_ids = []
 
 # download the data
 if not os.path.isfile(raw_data_path):
@@ -27,9 +27,11 @@ if not os.path.isfile(raw_data_path):
     assert len(set.intersection(set(name_df.columns), set(summary_df.columns), set(config_df.columns)))==0
     df = name_df.join(summary_df).join(config_df)
     df = df[df['dataset'] == dataset]
+    df.drop_duplicates(inplace=True, ignore_index=True)
     df.to_csv(raw_data_path, index=False)
 else:
     df = pd.read_csv(raw_data_path)
+exit(0)
 
 # split into sweeps
 drop_keys = ['num_epochs', 'CV iter', 'epoch', 'train loss', 'val_loss', 'val_score', 'test_rmse', 'test_score', 'subset', 'xtb_subset', 'xtb', 'random_baseline']

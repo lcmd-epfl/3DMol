@@ -23,6 +23,7 @@ for name in set(df.name):
         'target':    d.target_column[0],
         'geometry':  'xtb' if d.xtb[0] == True else 'default',
         'scope':     'local' if d.graph_mode[0]=='vector_masked' else 'global',
+        'invariant': d.invariant[0],
         'mae_mean':  d.test_score.mean(),
         'mae_std':   d.test_score.std(),
         'rmse_mean': d.test_rmse.mean(),
