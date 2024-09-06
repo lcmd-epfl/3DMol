@@ -15,7 +15,7 @@ class Yuri(MolDataset):
         bad_indices = None
         if not xtb:
             self.get_xyz_path = lambda idx: f'data/yuri/0-XYZS/{idx}.xyz'
-            geometry = 'dft'
+            geometry = 'default'
         else:
             self.get_xyz_path = lambda idx: f'data/yuri/1-XYZS_xtb/{idx}_opt.xyz'
             geometry = 'xtb'
