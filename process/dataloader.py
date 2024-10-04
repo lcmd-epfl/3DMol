@@ -21,8 +21,9 @@ class MolDataset(Dataset):
             print(*args)
 
 
-    def __init__(self, target_column, process=True, geometry='dft', bad_indices=None,
+    def __init__(self, target_column, geometry, process=True, bad_indices=None,
                  noH=True, graph_method='smiles', verbose=1, check=False):
+        global_version = 1  # INCREASE WHEN BREAKING CHANGES
         self.noH = noH
         self.graph_method = graph_method
         self.verbose = verbose
@@ -32,7 +33,7 @@ class MolDataset(Dataset):
         if noH:
             dataset_prefix += '.noH'
         self.paths = SimpleNamespace(
-                mg = join(self.processed_dir, f'{dataset_prefix}.v{self.version}.mol_graphs.pt'),
+                mg = join(self.processed_dir, f'{dataset_prefix}.v{global_version}:{self.version}.mol_graphs.pt'),
                 )
 
         self.print(2, "Loading data into memory...")
