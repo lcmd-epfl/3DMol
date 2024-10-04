@@ -2,22 +2,24 @@ from process.dataloader import MolDataset
 
 
 class PropargReactants(MolDataset):
-    def __init__(self, process=True, verbose=4, target_column='Eafw',
-                 xtb=False, noH=True, graph_method='smiles_mapped'):
+    def __init__(self, process=True, verbose=4,
+                 target_column=None, geometry=None, graph_method=None,
+                 noH=True, check=False):
 
         self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/proparg/data_reactants.csv'
         self.processed_dir='data/proparg/processed/'
         self.smiles_column = 'smiles_mapped'
         self.id_column = 'xyz_id'
-        if xtb:
+        self.default_parameters = dict(geometry='dft', target_column='Eafw', graph_method='smiles_mapped')
+        self.parameters = self.get_parameters(locals())
+
+        if self.parameters.geometry=='xtb':
             files_dir='data/proparg/xyz-xtb/'
-            geometry = 'xtb'
-        else:
+        elif self.parameters.geometry=='dft':
             files_dir='data/proparg/xyz/'
-            geometry = 'dft'
+        else:
+            raise RuntimeError(f'unknown geometry {geometry}')
         self.get_xyz_path = lambda idx: f'{files_dir}/{idx}.r.xyz'
 
-        super().__init__(process=process, geometry=geometry, noH=noH,
-                         target_column=target_column,
-                         graph_method=graph_method, verbose=verbose)
+        super().__init__(process=process, noH=noH, check=check, verbose=verbose)

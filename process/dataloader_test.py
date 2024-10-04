@@ -1,4 +1,5 @@
 import io
+from types import SimpleNamespace
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -7,7 +8,7 @@ from process.create_graph import get_graph
 
 
 class TestSet(Dataset):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.mol_graphs = []
         self.process_homometric()
         self.process_chiral()
@@ -15,6 +16,7 @@ class TestSet(Dataset):
         self.labels = torch.arange(self.nmols)
         self.indices = [*range(self.nmols)]
         self.std = torch.tensor(1.0)
+        self.parameters = SimpleNamespace()
 
 
     def __len__(self):

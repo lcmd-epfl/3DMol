@@ -21,15 +21,15 @@ class MolDataset(Dataset):
             print(*args)
 
 
-    def __init__(self, target_column, geometry, process=True, bad_indices=None,
-                 noH=True, graph_method='smiles', verbose=1, check=False):
+    def __init__(self, process=True, bad_indices=None,
+                 noH=True, verbose=1, check=False):
         global_version = 1  # INCREASE WHEN BREAKING CHANGES
         self.noH = noH
-        self.graph_method = graph_method
+        self.graph_method = self.parameters.graph_method
         self.verbose = verbose
         self.check = check
         dataset_prefix = os.path.splitext(os.path.basename(self.csv_path))[0]
-        dataset_prefix = f'{dataset_prefix}.{geometry}.{graph_method}'
+        dataset_prefix = f'{dataset_prefix}.{self.parameters.geometry}.{self.parameters.graph_method}'
         if noH:
             dataset_prefix += '.noH'
         self.paths = SimpleNamespace(
@@ -48,7 +48,7 @@ class MolDataset(Dataset):
 
         self.nmols = len(self.df)
         self.indices = self.df[self.id_column].to_list()
-        self.labels = torch.tensor(self.df[target_column].values)
+        self.labels = torch.tensor(self.df[self.parameters.target_column].values)
         if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
             self.smiles = self.df[self.smiles_column]
 
@@ -209,6 +209,10 @@ class MolDataset(Dataset):
         Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
 
 
-
     def get_local_mask(self, asemol=None, rdmol=None):
         return None
+
+
+    def get_parameters(self, vardict):
+        return SimpleNamespace(**{key: self.default_parameters[key] if vardict[key] is None else vardict[key]
+                                                                    for key in self.default_parameters.keys()})

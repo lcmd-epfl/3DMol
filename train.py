@@ -78,14 +78,13 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / scaffold / yasc / ydesc / test:path')
     g_hyper.add_argument('--random_baseline'      , action='store_true', default=False          ,  help='random baseline (no graph conv)')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
-    g_hyper.add_argument('--xtb'                  , action='store_true', default=False          ,  help='if use xtb geometries')
-    g_hyper.add_argument('--xtb_subset'           , action='store_true', default=False          ,  help='if use dft geometries but on the xtb subset (for gdb and cyclo)')
     g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if run "InReact"')
     g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate for adam')
     g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001         ,  help='weight decay for adam')
     g_hyper.add_argument('--train_frac'           , type=float         , default=0.9            ,  help='training fraction to use (val/te will be equally split over rest)')
     g_hyper.add_argument('--target_column'        , type=str           , default=None           ,  help='csv column with the target property')
-    g_hyper.add_argument('--features'             , type=str           , default='smiles_atoms' ,  help='featurizer')
+    g_hyper.add_argument('--features'             , type=str           , default=None           ,  help='featurizer')
+    g_hyper.add_argument('--geometry'             , type=str           , default=None           ,  help='geometry (dft/xtb/etc)')
 
     args = p.parse_args(arglist)
 
@@ -96,14 +95,6 @@ def parse_arguments(arglist=sys.argv[1:]):
 
     if args.CV > 1 and args.learning_curve:
         raise RuntimeError
-
-    if args.target_column is None:
-        args.target_column = defaultdict(lambda: None,
-            {'proparg': 'Eafw',
-            'dsC7O2H10nsd': 'gap_Hartree',
-            'qm9': 'gap_Hartree',
-            'yuri':'gap',
-            'rotation':'specific_rotation'})[args.dataset]
 
     return args, arg_groups
 
@@ -129,11 +120,10 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           sweep = False,
           print_repr=False,
           # dataset
-          dataset='cyclo',
+          dataset=None,
           process=False,
           noH=False,
-          xtb = False,
-          xtb_subset = False,
+          geometry=None,
           target_column=None,
           features=None,
           # splitting
@@ -153,23 +143,17 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     print(f"Running on device {device}")
 
     if dataset=='proparg':
-        from process.dataloader_proparg import PropargReactants
-        data = PropargReactants(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
+        from process.dataloader_proparg import PropargReactants as MolDataloader
     elif dataset=='test':
-        from process.dataloader_test import TestSet
-        data = TestSet()
+        from process.dataloader_test import TestSet as MolDataloader
     elif dataset=='dsC7O2H10nsd':
-        from process.dataloader_qm9 import dsC7O2H10nsd
-        data = dsC7O2H10nsd(process=process, noH=noH, target_column=target_column, graph_method=features)
+        from process.dataloader_qm9 import dsC7O2H10nsd as MolDataloader
     elif dataset=='qm9':
-        from process.dataloader_qm9 import QM9
-        data = QM9(process=process, noH=noH, target_column=target_column, graph_method=features)
+        from process.dataloader_qm9 import QM9 as MolDataloader
     elif dataset=='yuri':
-        from process.dataloader_yuri import Yuri
-        data = Yuri(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
+        from process.dataloader_yuri import Yuri as MolDataloader
     elif dataset=='rotation':
-        from process.dataloader_rotation import Rotation
-        data = Rotation(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
+        from process.dataloader_rotation import Rotation as MolDataloader
     else:
         try:
             dataloader_path, dataloader_class = dataset.split(':')
@@ -179,11 +163,17 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             foo = importlib.util.module_from_spec(spec)
             sys.modules['GenMolDataset'] = foo
             spec.loader.exec_module(foo)
-            Dataloader = vars(foo)[dataloader_class]
+            MolDataloader = vars(foo)[dataloader_class]
         except:
             raise NotImplementedError(f'Cannot load the {dataset} dataset.')
-        data = Dataloader(process=process, noH=noH, xtb=xtb,
-                          target_column=target_column, graph_method=features)
+    data = MolDataloader(process=process, noH=noH,
+                      target_column=target_column, graph_method=features)
+
+    print()
+    for key, val in vars(data.parameters).items():
+        print(f'PARAMS> {key} : {val}')
+        hyper_dict[key] = val
+    print()
 
     labels = data.labels
     std = data.std
@@ -364,8 +354,7 @@ if __name__ == '__main__':
           dataset=args.dataset,
           process=args.process,
           noH=args.noH,
-          xtb=args.xtb,
-          xtb_subset=args.xtb_subset,
+          geometry=args.geometry,
           target_column=args.target_column,
           features=args.features,
           # splitting
