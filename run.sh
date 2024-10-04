@@ -9,7 +9,7 @@ python train.py --device='cuda' \
                 --invariant \
                 --n_conv_layers 2 \
                 --num_epochs=8 \
-                --dataset process/dataloader_rotation.py:Rotation \
+                --dataset data/kulik/dataloader_kulik.py:tmSCO \
                 #--target_column specific_rotation \
                 #--xtb \
                 #--splitter test:data/yuri/splits/fold_0_test_indices.npy \
