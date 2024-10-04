@@ -15,7 +15,7 @@ def train_wrapper():
                   verbose=False, print_predictions=False, eval_on_test=False,
                   sweep=True, print_repr=False,
                   dataset=args.dataset, process=False, noH=args.noH,
-                  xtb=args.xtb, xtb_subset=args.xtb_subset,
+                  geometry=args.geometry,
                   target_column=args.target_column, features=args.features,
                   splitter=args.splitter, subset=args.subset, training_fractions=[args.train_frac], CV=1)
         except Exception as e:
@@ -34,6 +34,7 @@ parser.add_argument('--local', action='store_true', help='use local (masked) mod
 script_args = parser.parse_args()
 
 features = {'yuri': 'torchchem_v1'}
+geometry = {'yuri': 'default'}
 epochs = {'yuri': 128}
 target_columns_good = {'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld', 'N_FOD')}
 project = 'nequimol'
@@ -85,7 +86,7 @@ parameters_dict.update({ 'dataset': { 'value': dataset} })
 parameters_dict.update({ 'num_epochs': { 'value': epochs[dataset]} })
 parameters_dict.update({ 'train_frac': { 'value': 0.8} })
 parameters_dict.update({ 'noH': { 'value': True} })
-parameters_dict.update({ 'xtb': { 'value': False} })
+parameters_dict.update({ 'geometry': { 'value': geometry[dataset]} })
 parameters_dict.update({ 'random_baseline': { 'value': False} })
 parameters_dict.update({ 'features': { 'value': features[dataset]} })
 parameters_dict.update({ 'target_column': { 'value': target_column} })
