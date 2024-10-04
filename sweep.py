@@ -33,10 +33,36 @@ parser.add_argument('--equivariant', action='store_true', help='use equivariant 
 parser.add_argument('--local', action='store_true', help='use local (masked) model')
 script_args = parser.parse_args()
 
-features = {'yuri': 'torchchem_v1'}
-geometry = {'yuri': 'default'}
-epochs = {'yuri': 128}
-target_columns_good = {'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld', 'N_FOD')}
+features = {
+            'yuri': 'torchchem_v1',
+            'tmSCO': 'torchchem_v1',
+            'tmPHOTO': 'torchchem_v1',
+            }
+geometry = {
+        'yuri': 'default',
+        'tmSCO': 'xtb',
+        'tmPHOTO': 'xtb',
+        }
+epochs = {
+        'yuri': 128,
+        'tmSCO': '128',
+        'tmPHOTO': '128',
+        }
+target_columns_good = {
+        'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld', 'N_FOD'),
+        'tmSCO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
+        'tmPHOTO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
+        }
+splitter = {
+        'yuri': 'test:data/yuri/splits/fold_0_test_indices.npy',
+        'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_fold_0_test_indices.npy',
+        'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_fold_0_test_indices.npy',
+        }
+dataset_full = {
+        'yuri': 'yuri',
+        'tmSCO': 'data/kulik/dataloader_kulik.py:tmSCO',
+        'tmPHOTO': 'data/kulik/dataloader_kulik.py:tmPHOTO',
+        }
 project = 'nequimol'
 
 dataset = script_args.dataset
@@ -82,7 +108,7 @@ else:
     parameters_dict.update({ 'invariant': { 'value': True} })
 
 parameters_dict.update({ 'subset': { 'value': None} })
-parameters_dict.update({ 'dataset': { 'value': dataset} })
+parameters_dict.update({ 'dataset': { 'value': dataset_full[dataset]} })
 parameters_dict.update({ 'num_epochs': { 'value': epochs[dataset]} })
 parameters_dict.update({ 'train_frac': { 'value': 0.8} })
 parameters_dict.update({ 'noH': { 'value': True} })
@@ -91,7 +117,7 @@ parameters_dict.update({ 'random_baseline': { 'value': False} })
 parameters_dict.update({ 'features': { 'value': features[dataset]} })
 parameters_dict.update({ 'target_column': { 'value': target_column} })
 parameters_dict.update({ 'seed': { 'value': 123} })
-parameters_dict.update({ 'splitter': { 'value': 'test:data/yuri/splits/fold_0_test_indices.npy'} })
+parameters_dict.update({ 'splitter': { 'value': splitter[dataset]} })
 
 sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)
