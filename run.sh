@@ -9,8 +9,9 @@ python train.py --device='cuda' \
                 --invariant \
                 --n_conv_layers 2 \
                 --num_epochs=8 \
-                --dataset yuri \
-                --splitter test:data/yuri/splits/fold_0_test_indices.npy \
+                --dataset rotation \
+                --xtb \
+                #--splitter test:data/yuri/splits/fold_0_test_indices.npy \
                 #--splitter scaffold \
                 #--subset 100 \
                 #--target_column U0_Hartree \
