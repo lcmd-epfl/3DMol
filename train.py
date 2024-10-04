@@ -25,11 +25,6 @@ faulthandler.enable()
 from trainer.metrics import MAE
 from trainer.react_trainer import ReactTrainer
 from models.equireact import EquiReact
-from process.dataloader_proparg import PropargReactants
-from process.dataloader_test import TestSet
-from process.dataloader_qm9 import dsC7O2H10nsd, QM9
-from process.dataloader_yuri import Yuri
-from process.dataloader_rotation import Rotation
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
@@ -158,19 +153,37 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     print(f"Running on device {device}")
 
     if dataset=='proparg':
+        from process.dataloader_proparg import PropargReactants
         data = PropargReactants(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
     elif dataset=='test':
+        from process.dataloader_test import TestSet
         data = TestSet()
     elif dataset=='dsC7O2H10nsd':
+        from process.dataloader_qm9 import dsC7O2H10nsd
         data = dsC7O2H10nsd(process=process, noH=noH, target_column=target_column, graph_method=features)
     elif dataset=='qm9':
+        from process.dataloader_qm9 import QM9
         data = QM9(process=process, noH=noH, target_column=target_column, graph_method=features)
     elif dataset=='yuri':
+        from process.dataloader_yuri import Yuri
         data = Yuri(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
     elif dataset=='rotation':
+        from process.dataloader_rotation import Rotation
         data = Rotation(process=process, noH=noH, xtb=xtb, target_column=target_column, graph_method=features)
     else:
-        raise NotImplementedError(f'Cannot load the {dataset} dataset.')
+        try:
+            dataloader_path, dataloader_class = dataset.split(':')
+            import importlib.util
+            import sys
+            spec = importlib.util.spec_from_file_location('GenMolDataset', dataloader_path)
+            foo = importlib.util.module_from_spec(spec)
+            sys.modules['GenMolDataset'] = foo
+            spec.loader.exec_module(foo)
+            Dataloader = vars(foo)[dataloader_class]
+        except:
+            raise NotImplementedError(f'Cannot load the {dataset} dataset.')
+        data = Dataloader(process=process, noH=noH, xtb=xtb,
+                          target_column=target_column, graph_method=features)
 
     labels = data.labels
     std = data.std
