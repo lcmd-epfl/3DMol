@@ -45,8 +45,8 @@ geometry = {
         }
 epochs = {
         'yuri': 128,
-        'tmSCO': '128',
-        'tmPHOTO': '128',
+        'tmSCO': 128,
+        'tmPHOTO': 128,
         }
 target_columns_good = {
         'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld', 'N_FOD'),
@@ -55,14 +55,19 @@ target_columns_good = {
         }
 splitter = {
         'yuri': 'test:data/yuri/splits/fold_0_test_indices.npy',
-        'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_fold_0_test_indices.npy',
-        'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_fold_0_test_indices.npy',
+        'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy',
+        'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_0_test_indices.npy',
         }
 dataset_full = {
         'yuri': 'yuri',
         'tmSCO': 'data/kulik/dataloader_kulik.py:tmSCO',
         'tmPHOTO': 'data/kulik/dataloader_kulik.py:tmPHOTO',
         }
+train_frac = {
+    'yuri': 0.8,
+    'tmSCO': 0.798,
+    'tmPHOTO': 0.8,
+    }
 project = 'nequimol'
 
 dataset = script_args.dataset
@@ -110,7 +115,7 @@ else:
 parameters_dict.update({ 'subset': { 'value': None} })
 parameters_dict.update({ 'dataset': { 'value': dataset_full[dataset]} })
 parameters_dict.update({ 'num_epochs': { 'value': epochs[dataset]} })
-parameters_dict.update({ 'train_frac': { 'value': 0.8} })
+parameters_dict.update({ 'train_frac': { 'value': train_frac[dataset]} })
 parameters_dict.update({ 'noH': { 'value': True} })
 parameters_dict.update({ 'geometry': { 'value': geometry[dataset]} })
 parameters_dict.update({ 'random_baseline': { 'value': False} })
