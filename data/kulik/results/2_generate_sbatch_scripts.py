@@ -15,6 +15,11 @@ for config in glob('configs/config-*-*-*-????????-????????.dat'):
     short_name = f"{short_dataset}-{base_config['target_column']}-{'inv' if base_config['invariant'].lower()=='true' else 'equiv'}-noH"
     full_name = f"{short_name}-ns{base_config['n_s']}-{'nv'+base_config['n_v']+'-' if base_config['n_v']!='0' else ''}d{base_config['distance_emb_dim']}-l{base_config['n_conv_layers']}-{base_config['graph_mode']}-{base_config['sum_mode']}"
 
+    if short_dataset=='tmSCO':
+        train_frac_bash = 'if [ $FOLD != 0 ]; then TRAIN_FRAC=$(printf "%.1f" $TRAIN_FRAC); fi'
+    else:
+        train_frac_bash = 'if (( $FOLD > 7 )); then TRAIN_FRAC=${TRAIN_FRAC}004; fi'
+
     header=f"""#!/bin/bash -l
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
@@ -22,7 +27,7 @@ for config in glob('configs/config-*-*-*-????????-????????.dat'):
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH --job-name={short_dataset}-{base_config['target_column']}-{base_config['graph_mode']}
 #SBATCH --array=0-9
 #SBATCH --exclude=i39
@@ -30,7 +35,7 @@ for config in glob('configs/config-*-*-*-????????-????????.dat'):
 FOLD=$SLURM_ARRAY_TASK_ID
 
 TRAIN_FRAC={base_config['train_frac']}
-if [ $FOLD != 0 ]; then TRAIN_FRAC=$(printf "%.1f" $TRAIN_FRAC); fi
+{train_frac_bash}
 
 module purge
 conda activate equireact

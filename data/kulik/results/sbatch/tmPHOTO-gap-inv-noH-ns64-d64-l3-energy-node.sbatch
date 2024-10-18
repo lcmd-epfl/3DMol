@@ -13,7 +13,7 @@
 FOLD=$SLURM_ARRAY_TASK_ID
 
 TRAIN_FRAC=0.8
-if [ $FOLD != 0 ]; then TRAIN_FRAC=$(printf "%.1f" $TRAIN_FRAC); fi
+if (( $FOLD > 7 )); then TRAIN_FRAC=${TRAIN_FRAC}004; fi
 
 module purge
 conda activate equireact

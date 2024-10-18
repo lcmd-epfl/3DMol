@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH --job-name=tmPHOTO-Polarizability-energy
 #SBATCH --array=0-9
 #SBATCH --exclude=i39
@@ -13,7 +13,7 @@
 FOLD=$SLURM_ARRAY_TASK_ID
 
 TRAIN_FRAC=0.8
-if [ $FOLD != 0 ]; then TRAIN_FRAC=$(printf "%.1f" $TRAIN_FRAC); fi
+if (( $FOLD > 7 )); then TRAIN_FRAC=${TRAIN_FRAC}004; fi
 
 module purge
 conda activate equireact

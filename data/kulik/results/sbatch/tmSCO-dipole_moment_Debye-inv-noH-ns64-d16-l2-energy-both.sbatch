@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH --job-name=tmSCO-dipole_moment_Debye-energy
 #SBATCH --array=0-9
 #SBATCH --exclude=i39
