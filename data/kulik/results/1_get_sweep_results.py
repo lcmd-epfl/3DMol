@@ -30,24 +30,17 @@ if not os.path.isfile(raw_data_path):
             runs = api.runs(project)
             sweep_ids = list(set([run.sweep.id for run in runs
                                                if run.config['dataset'].endswith(dataset) and run.sweep is not None]))
+            print(dataset, sweep_ids)
         else:
             sweep_ids = sweep_ids_dict[dataset]
 
-        print(dataset)
         for sweep_id in sweep_ids:
-            print(sweep_id)
             sweep = api.sweep(f'{project}/{sweep_id}')
             runs = [run for run in sweep.runs]
             assert len(runs) >= max_runs
 
             runs = sorted(runs, key=lambda run: int(run.name.split('-')[-1]))[:max_runs]
-
-            print(runs[0].name)
-            print(runs[-1].name)
-
             best_run = sorted(runs, key = lambda run: float(run.summary[score_column]))[0]
-            print(best_run.name)
-
             d1 = {'run_id': best_run.id, 'sweep_id': sweep.id, 'name': best_run.name}
             d2 = {k: v for k, v in best_run.summary._json_dict.items() if not k.startswith('_')}
             d3 = {k: v for k, v in best_run.config.items() if not k.startswith('_')}
@@ -55,8 +48,6 @@ if not os.path.isfile(raw_data_path):
             d1.update(d2)
             d1.update(d3)
             summary_list.append(d1)
-            #break #####
-        #break  #####
 
     df = pd.DataFrame(summary_list)
     df.drop(labels=drop_keys, axis=1, inplace=True)
