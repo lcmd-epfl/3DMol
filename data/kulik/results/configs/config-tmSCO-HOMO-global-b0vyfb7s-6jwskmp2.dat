@@ -1,0 +1,21 @@
+# run_id=6jwskmp2, sweep_id=b0vyfb7s, name=smart-sweep-56, val_score_best=0.021966320283683057, splitter=test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy
+dataset	data/kulik/dataloader_kulik.py:tmSCO
+distance_emb_dim	64
+dropout_p	0.1
+features	torchchem_v1
+geometry	xtb
+graph_method	torchchem_v1
+graph_mode	energy
+invariant	True
+lr	0.001
+max_neighbors	25
+n_conv_layers	2
+n_s	64
+n_v	None
+noH	True
+radius	2.5
+seed	123
+sum_mode	node
+target_column	HOMO
+train_frac	0.798
+weight_decay	1e-05

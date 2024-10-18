@@ -1,0 +1,21 @@
+# run_id=chvjydgv, sweep_id=gvjh3l0j, name=resilient-sweep-54, val_score_best=0.010740665932038224, splitter=test:data/kulik/tmPHOTO-splits/tmPHOTO_0_test_indices.npy
+dataset	data/kulik/dataloader_kulik.py:tmPHOTO
+distance_emb_dim	64
+dropout_p	0.05
+features	torchchem_v1
+geometry	xtb
+graph_method	torchchem_v1
+graph_mode	vector_masked
+invariant	True
+lr	0.0005
+max_neighbors	25
+n_conv_layers	3
+n_s	64
+n_v	None
+noH	True
+radius	2.5
+seed	123
+sum_mode	node
+target_column	HOMO
+train_frac	0.8
+weight_decay	1e-05
