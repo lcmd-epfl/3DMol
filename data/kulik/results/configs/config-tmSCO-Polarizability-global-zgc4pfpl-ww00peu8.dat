@@ -1,0 +1,21 @@
+# run_id=ww00peu8, sweep_id=zgc4pfpl, name=giddy-sweep-52, val_score_best=4.00336832742729, splitter=test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy
+dataset	data/kulik/dataloader_kulik.py:tmSCO
+distance_emb_dim	32
+dropout_p	0.0
+features	torchchem_v1
+geometry	xtb
+graph_method	torchchem_v1
+graph_mode	energy
+invariant	True
+lr	0.001
+max_neighbors	50
+n_conv_layers	3
+n_s	48
+n_v	None
+noH	True
+radius	2.5
+seed	123
+sum_mode	both
+target_column	Polarizability
+train_frac	0.798
+weight_decay	1e-05
