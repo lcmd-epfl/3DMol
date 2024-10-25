@@ -1,6 +1,6 @@
 %chk=/scratch/xe/10003794.xyz.xtbopt.chk
 %Mem=8GB
-#P B3LYP/aug-cc-pVDZ polar=optrot CPHF=RdFreq
+#P B3LYP/cc-pVDZ polar=optrot CPHF=RdFreq
 
 Title Card Required
 
