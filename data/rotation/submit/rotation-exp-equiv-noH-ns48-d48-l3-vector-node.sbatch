@@ -6,8 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
 #SBATCH --time=1:00:00
-#SBATCH --job-name=equiv-l2
-#SBATCH --array=0-9
+#SBATCH --job-name=equiv-l3
+#SBATCH --array=0
 #SBATCH --exclude=i39
 
 SEED=$(($SLURM_ARRAY_TASK_ID+666))
@@ -25,9 +25,9 @@ python train.py \
 --splitter random \
 --logdir /scratch/izar/briling/cv \
 --print_predictions \
---wandb_name cv10-rotation-equiv-l2-noH-ns48-d48-vector-node \
---dataset rotation \
---xtb \
+--wandb_name cv10-rotation-exp-equiv-l3-noH-ns48-d48-vector-node \
+--dataset data/rotation/dataloader_rotation.py:Rotation \
+--geometry xtb \
 --distance_emb_dim 48 \
 --dropout_p 0.05 \
 --features torchchem_v1 \
@@ -43,5 +43,5 @@ python train.py \
 --target_column specific_rotation \
 --train_frac 0.8 \
 --weight_decay 1e-05 \
---n_conv_layers 2 \
+--n_conv_layers 3 \
 

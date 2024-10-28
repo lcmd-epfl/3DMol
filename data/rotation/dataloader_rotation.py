@@ -7,7 +7,7 @@ class Rotation(MolDataset):
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
-        self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
+        self.version = 2  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/rotation/data.csv'
         self.processed_dir='data/rotation/processed/'
         self.smiles_column = None
