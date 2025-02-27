@@ -8,4 +8,5 @@ weights = [rdkit.Chem.Descriptors.MolWt(rdkit.Chem.MolFromSmiles(i)) for i in df
 weights_signed = np.sign(df.specific_rotation_computed.to_numpy()) * weights
 df['weights'] = [rdkit.Chem.Descriptors.MolWt(rdkit.Chem.MolFromSmiles(i)) for i in df.canon_SMILES]
 df['weights_signed'] = df.weights.to_numpy() * np.sign(df.specific_rotation_computed.to_numpy())
+df['specific_rotation_computed_abs'] = abs(df.specific_rotation_computed)
 df.to_csv('data.csv', index=False)
