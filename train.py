@@ -152,8 +152,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         from process.dataloader_qm9 import QM9 as MolDataloader
     elif dataset=='yuri':
         from process.dataloader_yuri import Yuri as MolDataloader
-    elif dataset=='rotation':
-        from process.dataloader_rotation import Rotation as MolDataloader
     else:
         try:
             dataloader_path, dataloader_class = dataset.split(':')
