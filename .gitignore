@@ -2,6 +2,7 @@
 *.swp
 
 *.mol_graphs.pt
+data/rotation/gaussian/*.log
 
 wandb
 logs

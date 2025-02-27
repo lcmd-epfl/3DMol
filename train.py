@@ -152,8 +152,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         from process.dataloader_qm9 import QM9 as MolDataloader
     elif dataset=='yuri':
         from process.dataloader_yuri import Yuri as MolDataloader
-    elif dataset=='rotation':
-        from process.dataloader_rotation import Rotation as MolDataloader
     else:
         try:
             dataloader_path, dataloader_class = dataset.split(':')
@@ -300,8 +298,12 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             print()
 
         if eval_on_test:
-            print(f"Mean MAE across splits {np.mean(maes)} +- {np.std(maes)}")
-            print(f"Mean RMSE across splits {np.mean(rmses)} +- {np.std(rmses)}")
+            if torch.__version__.split('.')[0]=='2':
+                maes_  = torch.std_mean(torch.hstack(maes),  correction=0)
+                rmses_ = torch.std_mean(torch.hstack(rmses), correction=0)
+            else:
+                maes_  = torch.std_mean(torch.hstack(maes), unbiased=False)
+                rmses_ = torch.std_mean(torch.hstack(rmses), unbiased=False)
     return maes, rmses
 
 
