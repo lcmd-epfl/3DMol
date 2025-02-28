@@ -8,6 +8,7 @@ from getpass import getuser  # os.getlogin() won't work on a cluster
 import copy
 import random
 from collections import defaultdict
+from timeit import default_timer as timer
 
 import numpy as np
 import torch
@@ -273,6 +274,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
                                    lr_scheduler_patience=lr_scheduler_patience, lr_verbose=lr_verbose)
 
+            time_start = timer()
             val_metrics, _, _ = trainer.train(train_loader, val_loader)
 
             if eval_on_test:
@@ -305,6 +307,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             seed += 1
             if not sweep:
                 wandb.finish()
+            print()
+            time_end = timer()
+            print(f'time: {time_end-time_start} s')
             print()
 
         if eval_on_test:
