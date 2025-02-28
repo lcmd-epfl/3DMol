@@ -62,6 +62,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
+    g_run.add_argument('--dataloader_args'    , type=str           , default=None     ,  help='additional dataloader arguments (key1:val1;key2:val2)')
 
     g_hyper = p.add_argument_group('hyperparameters')
     g_hyper.add_argument('--subset'               , type=int           , default=None           ,  help='size of a subset to use instead of the full set (tr+te+va)')
@@ -121,6 +122,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           print_repr=False,
           # dataset
           dataset=None,
+          dataloader_args=None,
           process=False,
           noH=False,
           geometry=None,
@@ -141,6 +143,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           ):
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
+
+
+    dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
     if dataset=='proparg':
         from process.dataloader_proparg import PropargReactants as MolDataloader
@@ -164,13 +169,18 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             MolDataloader = vars(foo)[dataloader_class]
         except:
             raise NotImplementedError(f'Cannot load the {dataset} dataset.')
-    data = MolDataloader(process=process, noH=noH,
-                      target_column=target_column, graph_method=features)
+    data = MolDataloader(process=process, extra_args=dataloader_args_dict,
+                         noH=noH,
+                         target_column=target_column, graph_method=features)
 
     print()
     for key, val in vars(data.parameters).items():
         print(f'PARAMS> {key} : {val}')
         hyper_dict[key] = val
+    print()
+    for key, val in dataloader_args_dict.items():
+        hyper_dict[key] = val
+        print(f'PARAMS_DATALOADER> {key} : {val}')
     print()
 
     labels = data.labels
@@ -354,6 +364,7 @@ if __name__ == '__main__':
           print_repr=args.print_repr,
           # dataset
           dataset=args.dataset,
+          dataloader_args=args.dataloader_args,
           process=args.process,
           noH=args.noH,
           geometry=args.geometry,

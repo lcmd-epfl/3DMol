@@ -4,6 +4,7 @@ from process.dataloader import MolDataset
 
 class Yuri(MolDataset):
     def __init__(self, process=True, verbose=4,
+                 extra_args=None,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 

@@ -22,8 +22,9 @@ class MolDataset(Dataset):
 
 
     def __init__(self, process=True, bad_indices=None,
+                 extra_args=None,
                  noH=True, verbose=1, check=False):
-        global_version = 1  # INCREASE WHEN BREAKING CHANGES
+        global_version = 2  # INCREASE WHEN BREAKING CHANGES
         self.noH = noH
         self.graph_method = self.parameters.graph_method
         self.verbose = verbose
@@ -214,5 +215,5 @@ class MolDataset(Dataset):
 
 
     def get_parameters(self, vardict):
-        return SimpleNamespace(**{key: self.default_parameters[key] if vardict[key] is None else vardict[key]
+        return SimpleNamespace(**{key: self.default_parameters[key] if (key not in vardict or vardict[key] is None) else vardict[key]
                                                                     for key in self.default_parameters.keys()})
