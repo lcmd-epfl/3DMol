@@ -179,10 +179,11 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         print(f'PARAMS> {key} : {val}')
         hyper_dict[key] = val
     print()
-    for key, val in dataloader_args_dict.items():
-        hyper_dict[key] = val
-        print(f'PARAMS_DATALOADER> {key} : {val}')
-    print()
+    if dataloader_args_dict:
+        for key, val in dataloader_args_dict.items():
+            hyper_dict[key] = val
+            print(f'PARAMS_DATALOADER> {key} : {val}')
+        print()
 
     labels = data.labels
     std = data.std
