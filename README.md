@@ -13,5 +13,5 @@ conda install pyg
 conda install pandas==2.0.2
 pip install chemprop==1.6.1
 pip install git+https://github.com/lcmd-epfl/cell2mol
-pip install morpheus-ml
+pip install morfeus-ml
 ```
