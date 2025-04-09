@@ -8,6 +8,7 @@ from getpass import getuser  # os.getlogin() won't work on a cluster
 import copy
 import random
 from collections import defaultdict
+from timeit import default_timer as timer
 
 import numpy as np
 import torch
@@ -169,19 +170,24 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             MolDataloader = vars(foo)[dataloader_class]
         except:
             raise NotImplementedError(f'Cannot load the {dataset} dataset.')
+
+    time_start = timer()
     data = MolDataloader(process=process, extra_args=dataloader_args_dict,
                          noH=noH,
                          target_column=target_column, graph_method=features)
+    time_end = timer()
+    print(f'\ndl_time: {time_end-time_start} s\n')
 
     print()
     for key, val in vars(data.parameters).items():
         print(f'PARAMS> {key} : {val}')
         hyper_dict[key] = val
     print()
-    for key, val in dataloader_args_dict.items():
-        hyper_dict[key] = val
-        print(f'PARAMS_DATALOADER> {key} : {val}')
-    print()
+    if dataloader_args_dict:
+        for key, val in dataloader_args_dict.items():
+            hyper_dict[key] = val
+            print(f'PARAMS_DATALOADER> {key} : {val}')
+        print()
 
     labels = data.labels
     std = data.std
@@ -273,8 +279,12 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
                                    lr_scheduler_patience=lr_scheduler_patience, lr_verbose=lr_verbose)
 
+            time_start = timer()
             val_metrics, _, _ = trainer.train(train_loader, val_loader)
+            time_end = timer()
+            print(f'\ntr_time: {time_end-time_start} s\n')
 
+            time_start = timer()
             if eval_on_test:
                 test_loader = DataLoader(test_data, batch_size=batch_size, collate_fn=custom_collate,
                                          pin_memory=pin_memory, num_workers=num_workers)
@@ -302,10 +312,12 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                         for x in zip(x_indices, representations):
                             print(f'>>>{x_title}', x[0], *x[1])
 
+            time_end = timer()
+            print(f'\nte_time: {time_end-time_start} s\n')
+
             seed += 1
             if not sweep:
                 wandb.finish()
-            print()
 
         if eval_on_test:
             if torch.__version__.split('.')[0]=='2':
