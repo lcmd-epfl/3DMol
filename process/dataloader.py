@@ -31,6 +31,8 @@ class MolDataset(Dataset):
         self.check = check
         dataset_prefix = os.path.splitext(os.path.basename(self.csv_path))[0]
         dataset_prefix = f'{dataset_prefix}.{self.parameters.geometry}.{self.parameters.graph_method}'
+        if bad_indices:
+            dataset_prefix = f'{dataset_prefix}.without_{os.path.splitext(os.path.basename(bad_indices))[0]}'
         if noH:
             dataset_prefix += '.noH'
         self.paths = SimpleNamespace(
