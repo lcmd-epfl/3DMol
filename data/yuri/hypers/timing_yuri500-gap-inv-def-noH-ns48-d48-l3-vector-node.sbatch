@@ -5,14 +5,15 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
-#SBATCH --time=1:00:00
+#SBATCH --time=05:00
 #SBATCH --job-name=yuri-gap
 #SBATCH --array=0-4
 #SBATCH --qos=debug
 ##SBATCH --partition=h100
 #SBATCH --partition=l40s
 
-SEED=$((666+$SLURM_ARRAY_TASK_ID))
+FOLD=$SLURM_ARRAY_TASK_ID
+#FOLD=$((4-$SLURM_ARRAY_TASK_ID))
 
 module purge
 conda activate equireact-kuma
@@ -28,6 +29,7 @@ python train.py \
 --experiment_name 3DMol-yuri-timing \
 --CV 1 \
 --num_epochs 128 \
+--dataloader_args "csv_path:data/yuri/refcode_gap_500_${FOLD}.csv" \
 --logdir /scratch/briling/cv \
 --print_predictions \
 --wandb_name time-yuri-gap-inv-noH-ns48-d48-l3-vector-node \
@@ -44,7 +46,7 @@ python train.py \
 --n_v 0 \
 --noH  \
 --radius 2.5 \
---seed $SEED \
+--seed 123 \
 --sum_mode node \
 --target_column gap \
 --train_frac 0.8 \
