@@ -172,12 +172,12 @@ class EquiReact(nn.Module):
         )
 
         self.score_predictor_nodes_half_with_relu = nn.Sequential(
-            #nn.Linear(self.n_s, 2 * self.n_s, bias=False),
-            #nn.ReLU(),
-            #nn.Dropout(dropout_p),
-            #nn.Linear(2 * self.n_s, self.n_s, bias=False),
-            #nn.ReLU(),
-            #nn.Dropout(dropout_p),
+            nn.Linear(self.n_s, 2 * self.n_s, bias=False),
+            nn.ReLU(),
+            nn.Dropout(dropout_p),
+            nn.Linear(2 * self.n_s, self.n_s, bias=False),
+            nn.ReLU(),
+            nn.Dropout(dropout_p),
             nn.Linear(self.n_s, 1, bias=False)
         )
 
