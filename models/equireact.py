@@ -161,13 +161,14 @@ class EquiReact(nn.Module):
         )
 
         self.score_predictor_nodes = nn.Sequential(
-            nn.Linear(self.n_s_full, 2 * self.n_s),
-            nn.ReLU(),
+            nn.Linear(self.n_s_full, 2 * self.n_s, bias=False),
+            #nn.ReLU(),
             nn.Dropout(dropout_p),
-            nn.Linear(2 * self.n_s, self.n_s),
-            nn.ReLU(),
+            nn.Linear(2 * self.n_s, self.n_s, bias=False),
+            #nn.ReLU(),
             nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1)
+            nn.Linear(self.n_s, 1, bias=False)
+            #nn.Linear(self.n_s_full, 1, bias=False)
         )
 
         self.score_predictor_nodes_with_edges = nn.Sequential(
@@ -216,6 +217,9 @@ class EquiReact(nn.Module):
             x = x + x_update
 
         x = torch.cat([x[:, :self.n_s], x[:, -self.n_s:]], dim=1) if self.n_conv_layers >= 3 else x[:, :self.n_s]
+        x[:, :self.n_s] = 0.0 #####################
+        x[:, self.n_s:] *=1e4 #####################
+        #print(x) ##################
         return x, edge_index, edge_attr
 
 
@@ -246,7 +250,10 @@ class EquiReact(nn.Module):
         elif self.sum_mode == 'node':
             score_inputs_nodes = x
             scores_nodes = self.score_predictor_nodes(score_inputs_nodes)
+            #print(scores_nodes)
+            #print(data.batch)
             score = scatter_add(scores_nodes, index=data.batch, dim=0)
+            #print(score)
         elif self.sum_mode == 'edge':
             score_inputs_edges = torch.cat([edge_attr, x[src], x[dst]], dim=-1)
             edge_batch = data.batch[src]
@@ -274,6 +281,7 @@ class EquiReact(nn.Module):
             print('reaction x dims', x.shape)
         if self.sum_mode == 'node':
             score = self.score_predictor_nodes(x)
+            #print(score)
         elif self.sum_mode == 'both':
             score = self.score_predictor_nodes_with_edges(x)
         return score
