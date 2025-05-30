@@ -17,8 +17,9 @@ class Rotation(MolDataset):
                                        _dl_extra_bad_idx=None)
 
         self.parameters = self.get_parameters(locals() | (extra_args if extra_args else {}))
-        self.csv_path = f'data/rotation/{self.parameters._dl_extra_csv_name}'  # data.csv or data_both.csv
-        bad_indices   = f'data/rotation/{self.parameters._dl_extra_bad_idx}'   # negative_triple_idx.dat
+        self.csv_path = f'data/rotation/{self.parameters._dl_extra_csv_name}'   # data.csv or data_both.csv
+        bad_indices   = f'data/rotation/{self.parameters._dl_extra_bad_idx}' \
+                        if self.parameters._dl_extra_bad_idx else None          # negative_triple_idx.dat
 
         if self.parameters.geometry=='xtb':
             self.get_xyz_path = lambda idx: f'data/rotation/xyz-xtb/{idx}.xyz.xtbopt.xyz'
