@@ -88,7 +88,7 @@ def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
     elif len(fnames)==2 and set(fnames.keys())==set(('test', 'val')):
         te_indices = indices_dict['test']
         val_indices = indices_dict['val']
-        if np.intersect1d(te_indices, val_indices):
+        if len(np.intersect1d(te_indices, val_indices)):
             raise RuntimeError('validation and test sets overlap')
         if len(te_indices) != te_size:
             raise RuntimeError(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
