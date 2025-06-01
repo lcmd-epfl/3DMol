@@ -4,5 +4,7 @@
 *.mol_graphs.pt
 data/rotation/gaussian/*.log
 
+data/qm9-rotation/qm9-or.npy
+
 wandb
 logs
