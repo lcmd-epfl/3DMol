@@ -161,24 +161,23 @@ class EquiReact(nn.Module):
         )
 
         self.score_predictor_nodes = nn.Sequential(
-            nn.Linear(self.n_s_full, 2 * self.n_s, bias=False),
-            #nn.ReLU(),
+            nn.Linear(self.n_s_full, 2 * self.n_s),
+            nn.ReLU(),
             nn.Dropout(dropout_p),
-            nn.Linear(2 * self.n_s, self.n_s, bias=False),
-            #nn.ReLU(),
+            nn.Linear(2 * self.n_s, self.n_s),
+            nn.ReLU(),
             nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1, bias=False)
-            #nn.Linear(self.n_s_full, 1, bias=False)
+            nn.Linear(self.n_s, 1)
         )
 
         self.score_predictor_nodes_half_with_relu = nn.Sequential(
-            nn.Linear(self.n_s, 2 * self.n_s, bias=False),
+            nn.Linear(self.n_s, 2 * self.n_s),
             nn.ReLU(),
             nn.Dropout(dropout_p),
-            nn.Linear(2 * self.n_s, self.n_s, bias=False),
+            nn.Linear(2 * self.n_s, self.n_s),
             nn.ReLU(),
             nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1, bias=False)
+            nn.Linear(self.n_s, 1)
         )
 
         self.score_predictor_nodes_half = nn.Sequential(
@@ -235,9 +234,6 @@ class EquiReact(nn.Module):
             x = x + x_update
 
         x = torch.cat([x[:, :self.n_s], x[:, -self.n_s:]], dim=1) if self.n_conv_layers >= 3 else x[:, :self.n_s]
-        #x[:, :self.n_s] = 0.0 #####################
-        #x[:, self.n_s:] *=1e4 #####################
-        #print(x) ##################
         return x, edge_index, edge_attr
 
 
@@ -298,11 +294,17 @@ class EquiReact(nn.Module):
         if self.verbose:
             print('reaction x dims', x.shape)
         if self.sum_mode == 'node':
-            score = self.score_predictor_nodes(x)
 
-            score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
-            score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
-            score = score1 * score2
+            arch = 'normal'
+
+            if arch=='normal':
+                score = self.score_predictor_nodes(x)
+            elif arch=='both':
+                score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
+                score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+                score = score1 * score2
+            elif arch=='pseudo':
+                score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
 
             #print(score)
         elif self.sum_mode == 'both':
