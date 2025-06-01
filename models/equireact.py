@@ -198,6 +198,8 @@ class EquiReact(nn.Module):
             nn.Linear(self.n_s, 1)
         )
 
+        self.classif = nn.Sigmoid()
+
 
     def build_graph(self, data):
 
@@ -296,6 +298,7 @@ class EquiReact(nn.Module):
         if self.sum_mode == 'node':
 
             arch = 'normal'
+            classification = True
 
             if arch=='normal':
                 score = self.score_predictor_nodes(x)
@@ -305,6 +308,9 @@ class EquiReact(nn.Module):
                 score = score1 * score2
             elif arch=='pseudo':
                 score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+
+            if classification is True:
+                score = self.classif(score) * 2 - 1
 
             #print(score)
         elif self.sum_mode == 'both':
