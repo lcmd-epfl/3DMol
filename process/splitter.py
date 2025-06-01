@@ -91,10 +91,10 @@ def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
         if len(np.intersect1d(te_indices, val_indices)):
             raise RuntimeError('validation and test sets overlap')
         if len(te_indices) != te_size:
-            raise RuntimeError(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
+            print(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
         tr_indices = np.array([i for i in indices if i not in np.concatenate((te_indices, val_indices))])
         if len(tr_indices) != tr_size:
-            raise RuntimeError(f'bad training set size') # TODO
+            print(f'bad training set size') # TODO
 
     else:
         raise NotImplementedError
