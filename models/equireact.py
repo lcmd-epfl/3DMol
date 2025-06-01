@@ -76,7 +76,9 @@ class EquiReact(nn.Module):
                  max_radius: float = 10.0, max_neighbors: int = 20,
                  distance_emb_dim: int = 32, dropout_p: float = 0.1,
                  sum_mode='node', verbose=False, device='cpu', graph_mode='energy',
-                 random_baseline=False, invariant=False, **kwargs):
+                 random_baseline=False, invariant=False,
+                 classification = False, arch='normal',
+                 **kwargs):
 
         super().__init__(**kwargs)
 
@@ -97,6 +99,8 @@ class EquiReact(nn.Module):
         self.graph_mode = graph_mode
         self.device = device
         self.random_baseline = random_baseline
+        self.arch = arch
+        self.classification = classification
         if self.random_baseline:
             self.graph_mode = 'node'
             print("random baseline is on, i.e. features will be replaced with random numbers")
@@ -297,19 +301,16 @@ class EquiReact(nn.Module):
             print('reaction x dims', x.shape)
         if self.sum_mode == 'node':
 
-            arch = 'normal'
-            classification = True
-
-            if arch=='normal':
+            if self.arch=='normal':
                 score = self.score_predictor_nodes(x)
-            elif arch=='both':
+            elif self.arch=='both':
                 score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
                 score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
                 score = score1 * score2
-            elif arch=='pseudo':
+            elif self.arch=='pseudo':
                 score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
 
-            if classification is True:
+            if self.classification is True:
                 score = self.classif(score) * 2 - 1
 
             #print(score)
