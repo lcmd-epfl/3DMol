@@ -221,7 +221,7 @@ class Trainer():
                     else:
                         wandb.log({"train loss": loss.item(), "epoch": self.epoch, "val_loss": self.val_loss_for_wandb, "val_score": self.val_score_for_wandb, "val_score_best": self.best_val_score})
                     print(f'[Epoch {self.epoch}; Iter {i+1:5d}/{len(data_loader):5d}] train: loss: {loss.item():.7f}')
-                if optim == None and self.val_per_batch:  # during validation or testing when we want to average metrics over all the data in that dataloader
+                if self.val_per_batch:  # during validation or testing when we want to average metrics over all the data in that dataloader
                     metrics = self.evaluate_metrics(predictions, targets, val=True)
                     metrics[type(self.loss_func).__name__] = loss.item()
                     for key, value in metrics.items():
@@ -242,6 +242,8 @@ class Trainer():
                 return total_metrics, list_detach(epoch_predictions), list_detach(epoch_targets)
             else:
                 return total_metrics, None, None
+        else:
+            print('training_mae:', total_metrics['mae'] / len(data_loader) )
 
     def after_batch(self, predictions, targets, batch_indices):
         pass
