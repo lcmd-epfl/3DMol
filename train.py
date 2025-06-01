@@ -87,7 +87,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--target_column'        , type=str           , default=None           ,  help='csv column with the target property')
     g_hyper.add_argument('--features'             , type=str           , default=None           ,  help='featurizer')
     g_hyper.add_argument('--geometry'             , type=str           , default=None           ,  help='geometry (dft/xtb/etc)')
-    g_hyper.add_argument('--arch'                 , type=str           , default=None           ,  help='normal/both/pseudo')
+    g_hyper.add_argument('--arch'                 , type=str           , default='normal'       ,  help='normal/both/pseudo')
     g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
 
     args = p.parse_args(arglist)
