@@ -42,10 +42,11 @@ class MolDataset(Dataset):
         self.print(2, "Loading data into memory...")
         self.print(1, f'{dataset_prefix=}')
 
-        self.df = pd.read_csv(self.csv_path)
+        self.df = pd.read_csv(self.csv_path, dtype={self.id_column: str})
 
         if bad_indices:
             bad_indices = np.loadtxt(bad_indices, dtype=str)
+            assert sum(self.df[self.id_column].isin(bad_indices))==len(bad_indices)
             self.df = self.df[~self.df[self.id_column].isin(bad_indices)]
             self.df.reset_index(inplace=True)
 
