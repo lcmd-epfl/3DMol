@@ -21,7 +21,7 @@ class QM9Rotation(MolDataset):
         bad_indices   = f'data/qm9-rotation/{self.parameters._dl_extra_bad_idx}' \
                         if self.parameters._dl_extra_bad_idx else None          # negative_triple_idx.dat
 
-        self.get_xyz_path = lambda idx: f'data/qm9-rotation/xyz/{idx:06d}.xyz'
+        self.get_xyz_path = lambda idx: f'data/qm9-rotation/xyz/{idx}.xyz' if type(idx)==str else f'data/qm9-rotation/xyz/{idx:06d}.xyz'
 
         super().__init__(process=process, noH=noH,
                          check=check,

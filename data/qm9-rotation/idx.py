@@ -1,7 +1,7 @@
 import numpy as np
 np.random.seed(666)
 
-N = 121416
+N = (237939 - 1)//2
 n = N//10
 
 x = np.random.choice(N, size=n*2, replace=False)
