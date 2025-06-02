@@ -229,6 +229,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             tr_indices, te_indices, val_indices, indices = split_dataset(data, splitter=splitter,
                                                                          tr_frac=max(training_fractions),
                                                                          subset=subset)
+            print('IF USE MEAN': torch.mean(abs(labels[te_indices]-torch.mean(labels[tr_indices])))*std)
+
             if len(training_fractions)>1:
                 tr_indices = tr_indices[:int(tr_frac*len(indices))]
 
