@@ -23,7 +23,7 @@ import wandb
 import faulthandler
 faulthandler.enable()
 
-from trainer.metrics import MAE
+from trainer.metrics import MAE, Accuracy
 from trainer.react_trainer import ReactTrainer
 from models.equireact import EquiReact
 from process.collate import CustomCollator
@@ -148,9 +148,6 @@ def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean
         F1 = TN / (TN + (FP+FN)/2)
         print(f'-1: {recall=:.4f} {FNR=:.4f} {precision=:.4f} {F1=:.4f}')
 
-        #from code import interact
-        #interact(local=locals())
-
 
     else:
         print('>>> # idx target_stdized prediction_stdized target prediction error')
@@ -194,6 +191,17 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
 
+    classification = hyper_dict['classification']
+
+    if classification:
+        metrics = {'accuracy': Accuracy()}
+        main_metric = 'accuracy'
+        loss_func = SoftMarginLoss()
+    else:
+        metrics = {'mae': MAE()}
+        main_metric = 'mae'
+        loss_func = MSELoss()
+
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
@@ -221,7 +229,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
     time_start = timer()
-    data = MolDataloader(process=process, classification=hyper_dict['classification'],
+    data = MolDataloader(process=process, classification=classification,
                          extra_args=dataloader_args_dict,
                          noH=noH,
                          target_column=target_column, graph_method=features)
@@ -322,7 +330,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
                                     num_workers=num_workers)
 
-            trainer = ReactTrainer(model=model, std=std, device=device, metrics={'mae':MAE()},
+
+            trainer = ReactTrainer(model=model, std=std, device=device,
+                                   metrics=metrics, loss_func=loss_func, main_metric=main_metric,
                                    run_dir=run_dir, run_name=run_name_chk,
                                    sampler=sampler, val_per_batch=val_per_batch,
                                    checkpoint=checkpoint, num_epochs=num_epochs,
@@ -352,13 +362,22 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 if print_predictions:
                     print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy(), classification=hyper_dict['classification'])
 
-                mae_split = test_metrics['mae'] * std
-                rmse_split = np.sqrt(test_metrics['MSELoss'])*std
-                maes.append(mae_split)
-                rmses.append(rmse_split)
-                if wandb.run is not None:
-                    wandb.run.summary["test_score"] = mae_split
-                    wandb.run.summary["test_rmse"] = rmse_split
+                if classification:
+                    acc_split = test_metrics[main_metric] * std
+                    loss_split = test_metrics['SoftMarginLoss']*std
+                    maes.append(acc_split)
+                    rmses.append(loss_split)
+                    if wandb.run is not None:
+                        wandb.run.summary["test_score"] = acc_split
+                        wandb.run.summary["test_loss"] = loss_split
+                else:
+                    mae_split = test_metrics[main_metric] * std
+                    rmse_split = np.sqrt(test_metrics['MSELoss'])*std
+                    maes.append(mae_split)
+                    rmses.append(rmse_split)
+                    if wandb.run is not None:
+                        wandb.run.summary["test_score"] = mae_split
+                        wandb.run.summary["test_rmse"] = rmse_split
 
                 if print_repr:
                     for x_indices, x_loader, x_title in zip((train_data.indices, val_data.indices, test_data.indices),

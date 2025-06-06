@@ -243,7 +243,7 @@ class Trainer():
             else:
                 return total_metrics, None, None
         else:
-            print('training_mae:', total_metrics['mae'] / len(data_loader) )
+            print(f'[Epoch {self.epoch}] training_{self.main_metric}:', total_metrics[self.main_metric] / len(data_loader) )
 
     def after_batch(self, predictions, targets, batch_indices):
         pass

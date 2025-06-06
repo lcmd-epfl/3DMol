@@ -4,8 +4,7 @@ from trainer.trainer import Trainer
 
 class ReactTrainer(Trainer):
     def __init__(self, **kwargs):
-        super(ReactTrainer, self).__init__(main_metric='mae',
-                                          optim=Adam,
+        super(ReactTrainer, self).__init__(optim=Adam,
                                           main_metric_goal='min',
                                           **kwargs)
         print(f"In trainer, metrics is {kwargs['metrics']} and std is {kwargs['std']}")
