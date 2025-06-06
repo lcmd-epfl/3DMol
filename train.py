@@ -103,14 +103,61 @@ def parse_arguments(arglist=sys.argv[1:]):
     return args, arg_groups
 
 
-def print_test_predictions(test_indices, targ_stdized, pred_stdized, data_std, data_mean):
-    print('>>> # idx target_stdized prediction_stdized target prediction error')
-    targ_stdized = np.squeeze(torch.vstack(targ_stdized).cpu().numpy())
-    pred_stdized = np.squeeze(torch.vstack(pred_stdized).cpu().numpy())
-    targ = targ_stdized*data_std+data_mean
-    pred = pred_stdized*data_std+data_mean
-    for x in zip(test_indices, targ_stdized, pred_stdized, targ, pred, pred-targ):
-        print('>>>', *x, sep='\t')
+def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean, classification=False):
+    targ_raw = np.squeeze(torch.vstack(targ_raw).cpu().numpy())
+    pred_raw = np.squeeze(torch.vstack(pred_raw).cpu().numpy())
+    if classification:
+        print('>>> # idx target prediction_raw prediction error')
+        targ = targ_raw.astype(int)
+        pred = np.zeros_like(pred_raw, dtype=int)
+        pred[np.where(pred_raw<0)]=-1
+        pred[np.where(pred_raw>=0)]=1
+        err = pred-targ
+
+        for x in zip(test_indices, targ, pred_raw, pred, err):
+            print('>>>', *x, sep='\t')
+
+        d_target = dict(zip(*np.unique(targ, return_counts=True)))
+        d_pred = dict(zip(*np.unique(pred, return_counts=True)))
+        d_err = dict(zip(*np.unique(err, return_counts=True)))
+        N0 = d_target[-1]
+        P0 = d_target[1]
+        FN = d_err[-2] if -2 in d_err else 0
+        FP = d_err[2] if 2 in d_err else 0
+        N = d_pred[-1]
+        P = d_pred[1]
+
+        TN = N0-FP
+        TP = P0-FN
+        assert FP + TP == P
+        assert FN + TN == N
+
+        print(f'{TP=} {FN=} {FP=} {TP=}')
+        accuracy = (TP+TN)/(TP+TN+FP+FN)
+        print(f'{accuracy=:.4f}')
+
+        recall = TP/(TP+FN)
+        FPR = FP/N0
+        precision = TP/P
+        F1 = TP / (TP + (FP+FN)/2)
+        print(f'+1: {recall=:.4f} {FPR=:.4f} {precision=:.4f} {F1=:.4f}')
+
+        recall = TN/(TN+FP)
+        FNR = FN/P0
+        precision = TN/N
+        F1 = TN / (TN + (FP+FN)/2)
+        print(f'-1: {recall=:.4f} {FNR=:.4f} {precision=:.4f} {F1=:.4f}')
+
+        #from code import interact
+        #interact(local=locals())
+
+
+    else:
+        print('>>> # idx target_stdized prediction_stdized target prediction error')
+        targ = targ_raw*data_std+data_mean
+        pred = pred_raw*data_std+data_mean
+        for x in zip(test_indices, targ_raw, pred_raw, targ, pred, pred-targ):
+            print('>>>', *x, sep='\t')
 
 
 def train(run_dir, run_name, project, wandb_name, hyper_dict,
@@ -301,8 +348,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 # file dump for each split
                 data_split_string = 'test_split_' + str(CV)
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
+
                 if print_predictions:
-                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy())
+                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy(), classification=hyper_dict['classification'])
 
                 mae_split = test_metrics['mae'] * std
                 rmse_split = np.sqrt(test_metrics['MSELoss'])*std
