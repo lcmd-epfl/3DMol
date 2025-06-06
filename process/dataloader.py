@@ -23,6 +23,7 @@ class MolDataset(Dataset):
 
     def __init__(self, process=True, bad_indices=None,
                  extra_args=None,
+                 classification=False,
                  noH=True, verbose=1, check=False):
         global_version = 2  # INCREASE WHEN BREAKING CHANGES
         self.noH = noH
@@ -70,7 +71,11 @@ class MolDataset(Dataset):
         assert self.nmols==len(self.indices)
         assert self.nmols==len(self.labels)
         assert self.nmols==len(self.mol_graphs)
-        self.standardize_labels()
+
+        if classification:
+            self.check_classes()
+        else:
+            self.standardize_labels()
 
 
     def __len__(self):
@@ -158,6 +163,12 @@ class MolDataset(Dataset):
         return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles', local_mask=local_mask)
 
 
+    def check_classes(self):
+        unique_vals = torch.unique(self.labels, sorted=True)
+        if len(unique_vals)!=2 or unique_vals[0]!=-1.0 or unique_vals[1]!=1.0:
+            raise NotImplementedError('Can work only with -1/1 classes')
+        self.mean = torch.tensor(0.0)
+        self.std = torch.tensor(1.0)
 
 
     def standardize_labels(self):

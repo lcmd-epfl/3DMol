@@ -174,7 +174,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
     time_start = timer()
-    data = MolDataloader(process=process, extra_args=dataloader_args_dict,
+    data = MolDataloader(process=process, classification=hyper_dict['classification'],
+                         extra_args=dataloader_args_dict,
                          noH=noH,
                          target_column=target_column, graph_method=features)
     time_end = timer()

@@ -5,6 +5,7 @@ from process.dataloader import MolDataset
 class tmPHOTO(MolDataset):
     def __init__(self, process=True, verbose=4,
                  extra_args=None,
+                 classification=False,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
@@ -23,6 +24,7 @@ class tmPHOTO(MolDataset):
             self.get_xyz_path = lambda idx: f'data/kulik/tmPHOTO-xyz/{idx}.xyz'
 
         super().__init__(process=process, noH=noH,
+                         classification=classification,
                          check=check, bad_indices=bad_indices,
                          verbose=verbose)
 
@@ -38,6 +40,7 @@ class tmPHOTO(MolDataset):
 class tmSCO(MolDataset):
     def __init__(self, process=True, verbose=4,
                  extra_args=None,
+                 classification=False,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
@@ -54,6 +57,7 @@ class tmSCO(MolDataset):
             self.get_xyz_path = lambda idx: f'data/kulik/tmSCO-xyz/{idx}.xyz'
 
         super().__init__(process=process, noH=noH,
+                         classification=classification,
                          check=check, bad_indices=bad_indices,
                          verbose=verbose)
 

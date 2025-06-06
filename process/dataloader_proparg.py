@@ -4,6 +4,7 @@ from process.dataloader import MolDataset
 class PropargReactants(MolDataset):
     def __init__(self, process=True, verbose=4,
                  extra_args=None,
+                 classification=False,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
@@ -23,4 +24,6 @@ class PropargReactants(MolDataset):
             raise RuntimeError(f'unknown geometry {geometry}')
         self.get_xyz_path = lambda idx: f'{files_dir}/{idx}.r.xyz'
 
-        super().__init__(process=process, noH=noH, check=check, verbose=verbose)
+        super().__init__(process=process, noH=noH, check=check,
+                         classification=classification,
+                         verbose=verbose)

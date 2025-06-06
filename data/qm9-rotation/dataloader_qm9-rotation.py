@@ -5,6 +5,7 @@ from process.dataloader import MolDataset
 class QM9Rotation(MolDataset):
     def __init__(self, process=True, verbose=4,
                  extra_args=None,
+                 classification=False,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
@@ -24,6 +25,7 @@ class QM9Rotation(MolDataset):
         self.get_xyz_path = lambda idx: f'data/qm9-rotation/xyz/{idx}.xyz' if type(idx)==str else f'data/qm9-rotation/xyz/{idx:06d}.xyz'
 
         super().__init__(process=process, noH=noH,
+                         classification=classification,
                          check=check,
                          bad_indices=bad_indices,
                          verbose=verbose)
