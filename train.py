@@ -286,7 +286,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                                                          tr_frac=max(training_fractions),
                                                                          subset=subset)
 
-            print('if use mean train for test:', abs(labels.numpy()[te_indices]-(labels.numpy()[tr_indices].mean())).mean()*std)
+            print('MAE if use mean train for test:', abs(labels.numpy()[te_indices]-(labels.numpy()[tr_indices].mean())).mean()*std)
 
             if len(training_fractions)>1:
                 tr_indices = tr_indices[:int(tr_frac*len(indices))]
@@ -360,7 +360,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
 
                 if print_predictions:
-                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy(), classification=hyper_dict['classification'])
+                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy(), classification=classification)
 
                 if classification:
                     acc_split = test_metrics[main_metric] * std
