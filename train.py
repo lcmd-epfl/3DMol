@@ -108,7 +108,7 @@ def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean
     pred_raw = np.squeeze(torch.vstack(pred_raw).cpu().numpy())
     if classification:
         print('>>> # idx target prediction_raw prediction error')
-        targ = targ_raw.astype(int)
+        targ = np.copy(targ_raw).astype(int)
         pred = np.zeros_like(pred_raw, dtype=int)
         pred[np.where(pred_raw<0)]=-1
         pred[np.where(pred_raw>=0)]=1
