@@ -85,7 +85,7 @@ class Trainer():
 
         self.val_loss_for_wandb = None
         self.val_score_for_wandb = None
-        self.val_score_best_for_wandb = 1e16
+        self.val_score_best_for_wandb = -1e16 if self.main_metric_goal == 'max' else 1e16
 
         if lr_scheduler:  # Needs "from torch.optim.lr_scheduler import *" to work
             self.lr_scheduler = lr_scheduler(self.optim, mode=mode, factor=factor, patience=lr_scheduler_patience,

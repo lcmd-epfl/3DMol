@@ -196,10 +196,12 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     if classification:
         metrics = {'accuracy': Accuracy()}
         main_metric = 'accuracy'
+        main_metric_goal = 'max'
         loss_func = SoftMarginLoss()
     else:
         metrics = {'mae': MAE()}
         main_metric = 'mae'
+        main_metric_goal = 'min'
         loss_func = MSELoss()
 
 
@@ -332,7 +334,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
 
 
             trainer = ReactTrainer(model=model, std=std, device=device,
-                                   metrics=metrics, loss_func=loss_func, main_metric=main_metric,
+                                   metrics=metrics, loss_func=loss_func,
+                                   main_metric=main_metric, main_metric_goal=main_metric_goal,
                                    run_dir=run_dir, run_name=run_name_chk,
                                    sampler=sampler, val_per_batch=val_per_batch,
                                    checkpoint=checkpoint, num_epochs=num_epochs,
