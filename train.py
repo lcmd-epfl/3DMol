@@ -197,12 +197,16 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         metrics = {'accuracy': Accuracy()}
         main_metric = 'accuracy'
         main_metric_goal = 'max'
-        loss_func = SoftMarginLoss()
+        #loss_func = SoftMarginLoss()
+        #loss_func_name = 'SoftMarginLoss'
+        loss_func = MSELoss()
+        loss_func_name = 'MSELoss'
     else:
         metrics = {'mae': MAE()}
         main_metric = 'mae'
         main_metric_goal = 'min'
         loss_func = MSELoss()
+        loss_func_name = 'MSELoss'
 
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
@@ -367,7 +371,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
 
                 if classification:
                     acc_split = test_metrics[main_metric] * std
-                    loss_split = test_metrics['SoftMarginLoss']*std
+                    loss_split = test_metrics[loss_func_name]*std
                     maes.append(acc_split)
                     rmses.append(loss_split)
                     if wandb.run is not None:
@@ -375,7 +379,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                         wandb.run.summary["test_loss"] = loss_split
                 else:
                     mae_split = test_metrics[main_metric] * std
-                    rmse_split = np.sqrt(test_metrics['MSELoss'])*std
+                    rmse_split = np.sqrt(test_metrics[loss_func_name])*std
                     maes.append(mae_split)
                     rmses.append(rmse_split)
                     if wandb.run is not None:
