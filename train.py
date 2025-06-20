@@ -117,13 +117,13 @@ def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean
         for x in zip(test_indices, targ, pred_raw, pred, err):
             print('>>>', *x, sep='\t')
 
-        d_target = dict(zip(*np.unique(targ, return_counts=True)))
-        d_pred = dict(zip(*np.unique(pred, return_counts=True)))
-        d_err = dict(zip(*np.unique(err, return_counts=True)))
+        d_target = defaultdict(int, zip(*np.unique(targ, return_counts=True)))
+        d_pred   = defaultdict(int, zip(*np.unique(pred, return_counts=True)))
+        d_err    = defaultdict(int, zip(*np.unique(err, return_counts=True)))
         N0 = d_target[-1]
         P0 = d_target[1]
-        FN = d_err[-2] if -2 in d_err else 0
-        FP = d_err[2] if 2 in d_err else 0
+        FN = d_err[-2]
+        FP = d_err[2]
         N = d_pred[-1]
         P = d_pred[1]
 
