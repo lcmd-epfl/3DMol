@@ -16,6 +16,7 @@ df3.to_csv('data_both.csv', index=False)
 
 for i in tqdm(range(len(df))):
     idx = df.loc[i, "idx"]
-    mol = ase.io.read(f'xyz/{idx}.xyz')
-    mol.set_positions(-mol.positions)
-    ase.io.write(f'xyz/x{idx}.xyz', mol)
+    if not os.path.exists(f'xyz/x{idx}.xyz'):
+        mol = ase.io.read(f'xyz/{idx}.xyz')
+        mol.set_positions(-mol.positions)
+        ase.io.write(f'xyz/x{idx}.xyz', mol)
