@@ -33,4 +33,4 @@ for i in tqdm(data):
             print(q, *r, file=f)
 
 df = pd.DataFrame(data_dict)
-df.to_csv('data.csv', index=False)
+df.to_csv('data_raw.csv', index=False)

@@ -9,7 +9,7 @@ class QM9Rotation(MolDataset):
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
-        self.version = 2  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
+        self.version = 3  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.processed_dir='data/qm9-rotation/processed/'
         self.smiles_column = None
         self.id_column = 'idx'
