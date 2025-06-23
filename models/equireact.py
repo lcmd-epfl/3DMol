@@ -252,7 +252,6 @@ class EquiReact(nn.Module):
         data.batch = data.batch.to(self.device)
 
         if self.random_baseline:
-            # reset features to crap of the same dims
             x = torch.rand(x.shape)
 
         if self.sum_mode == 'both':
@@ -270,10 +269,7 @@ class EquiReact(nn.Module):
         elif self.sum_mode == 'node':
             score_inputs_nodes = x
             scores_nodes = self.score_predictor_nodes(score_inputs_nodes)
-            #print(scores_nodes)
-            #print(data.batch)
             score = scatter_add(scores_nodes, index=data.batch, dim=0)
-            #print(score)
         elif self.sum_mode == 'edge':
             score_inputs_edges = torch.cat([edge_attr, x[src], x[dst]], dim=-1)
             edge_batch = data.batch[src]
@@ -303,6 +299,9 @@ class EquiReact(nn.Module):
 
             if self.arch=='normal':
                 score = self.score_predictor_nodes(x)
+            if self.arch=='normal_scaled':
+                x[:,self.n_s:]*=1e7
+                score = self.score_predictor_nodes(x)
             elif self.arch=='both':
                 score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
                 score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
@@ -313,7 +312,6 @@ class EquiReact(nn.Module):
             if self.classification is True:
                 score = self.classif(score) * 2 - 1
 
-            #print(score)
         elif self.sum_mode == 'both':
             score = self.score_predictor_nodes_with_edges(x)
         return score
