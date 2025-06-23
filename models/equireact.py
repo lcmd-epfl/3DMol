@@ -314,6 +314,10 @@ class EquiReact(nn.Module):
                 score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
                 score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
                 score = score1 * score2
+            elif self.arch=='both_nonscaled':
+                score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
+                score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
+                score = score1 * score2
             elif self.arch=='pseudo':
                 score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
 
