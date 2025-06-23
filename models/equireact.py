@@ -35,7 +35,7 @@ class GaussianSmearing(nn.Module):
 class TensorProductConvLayer(nn.Module):
 
     def __init__(self, in_irreps, sh_irreps, out_irreps, edge_fdim, residual=True, dropout=0.0,
-                 h_dim=None):
+                 h_dim=None, relu_in_fc=True):
         super(TensorProductConvLayer, self).__init__()
         self.in_irreps = in_irreps
         self.out_irreps = out_irreps
@@ -46,12 +46,19 @@ class TensorProductConvLayer(nn.Module):
 
         self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
 
-        self.fc_net = nn.Sequential(
-            nn.Linear(edge_fdim, h_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(h_dim, tp.weight_numel)
-        )
+        if relu_in_fc:
+            self.fc_net = nn.Sequential(
+                nn.Linear(edge_fdim, h_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(h_dim, tp.weight_numel)
+            )
+        else:
+            self.fc_net = nn.Sequential(
+                nn.Linear(edge_fdim, h_dim),
+                nn.Dropout(dropout),
+                nn.Linear(h_dim, tp.weight_numel)
+            )
 
     def forward(self, x, edge_index, edge_attr, edge_sh, out_nodes=None, aggr='mean'):
         edge_src, edge_dst = edge_index
@@ -147,7 +154,8 @@ class EquiReact(nn.Module):
                 "edge_fdim": 3 * n_s,
                 "h_dim": 3 * n_s,
                 "residual": False,
-                "dropout": dropout_p
+                "dropout": dropout_p,
+                "relu_in_fc": (self.arch!='no_relu_in_fc'),
             }
 
             layer = TensorProductConvLayer(**parameters)
@@ -297,7 +305,7 @@ class EquiReact(nn.Module):
             print('reaction x dims', x.shape)
         if self.sum_mode == 'node':
 
-            if self.arch=='normal':
+            if self.arch in ['normal', 'no_relu_in_fc']:
                 score = self.score_predictor_nodes(x)
             if self.arch=='normal_scaled':
                 x[:,self.n_s:]*=1e7
