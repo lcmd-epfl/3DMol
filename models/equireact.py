@@ -119,6 +119,7 @@ class EquiReact(nn.Module):
                 f"{n_s}x0e",
                 f"{n_s}x0e"
             ]
+            irrep_last = f"{n_s}x0e"
         else:
             irrep_seq = [
                 f"{n_s}x0e",
@@ -126,6 +127,7 @@ class EquiReact(nn.Module):
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e",
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e + {n_s}x0o"
             ]
+            irrep_last = f"{n_s}x0e + {n_s}x0o"
 
         self.node_embedding = nn.Sequential(
             nn.Linear(node_fdim, n_s),
@@ -145,7 +147,10 @@ class EquiReact(nn.Module):
         conv_layers = []
         for i in range(n_conv_layers):
             in_irreps = irrep_seq[min(i, len(irrep_seq) - 1)]
-            out_irreps = irrep_seq[min(i + 1, len(irrep_seq) - 1)]
+            if i<n_conv_layers-1:
+                out_irreps = irrep_seq[min(i+1, len(irrep_seq)-1)]
+            else:
+                out_irreps = irrep_last
 
             parameters = {
                 "in_irreps": in_irreps,
@@ -241,13 +246,31 @@ class EquiReact(nn.Module):
             print('dim of radius_graph (edges) after embedding', edge_attr_emb.shape)
 
         src, dst = edge_index
-        for i in range(self.n_conv_layers):
-            edge_attr_ = torch.cat([edge_attr_emb, x[dst, :self.n_s], x[src, :self.n_s]], dim=-1)
-            x_update = self.conv_layers[i](x, edge_index, edge_attr_, edge_sh)
-            x = F.pad(x, (0, x_update.shape[-1] - x.shape[-1]))
-            x = x + x_update
 
-        x = torch.cat([x[:, :self.n_s], x[:, -self.n_s:]], dim=1) if self.n_conv_layers >= 3 else x[:, :self.n_s]
+        def update_dict(x_dict, x_update, irreps):
+            n0 = 0
+            for key in str(irreps).split('+'):
+                n, sym = key.split('x')
+                l = int(sym[:-1])
+                n = int(n) * (2*l+1)
+                update = x_update[:,n0:n0+n]
+                if key in x_dict:
+                    x_dict[key] += update
+                else:
+                    x_dict[key] = update
+                n0 += n
+
+        scalar_key = f'{self.n_s}x0e'
+        pseudoscalar_key = f'{self.n_s}x0o'
+        x_dict = {scalar_key: x}
+        for i in range(self.n_conv_layers):
+            edge_attr_ = torch.cat([edge_attr_emb, x_dict[scalar_key][dst], x_dict[scalar_key][src]], dim=-1)
+            if i>0:
+                x = torch.hstack([x_dict[j] for j in str(self.conv_layers[i-1].tp.irreps_out).split('+')])
+            x_update = self.conv_layers[i](x, edge_index, edge_attr_, edge_sh)
+            update_dict(x_dict, x_update, self.conv_layers[i].tp.irreps_out)
+
+        x = torch.cat((x_dict[scalar_key], x_dict[pseudoscalar_key]), dim=1) if pseudoscalar_key in x_dict else x_dict[scalar_key]
         return x, edge_index, edge_attr
 
 
