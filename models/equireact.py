@@ -241,13 +241,35 @@ class EquiReact(nn.Module):
             print('dim of radius_graph (edges) after embedding', edge_attr_emb.shape)
 
         src, dst = edge_index
+
+        def split_into_dict(x, irreps):
+            x_dict = {}
+            n0 = 0
+            for j in str(irreps).split('+'):
+                n, sym = j.split('x')
+                l = int(sym[:-1])
+                n = int(n) * (2*l+1)
+                x_dict[j] = x[:,n0:n0+n]
+                n0 += n
+            return x_dict
+
+        def update_dict(x_dict, x_update_dict):
+            for key, val in x_update_dict.items():
+                if key in x_dict:
+                    x_dict[key] += val
+                else:
+                    x_dict[key] = val
+
+        x_dict = {f'{self.n_s}x0e': x}
         for i in range(self.n_conv_layers):
+            if i>0:
+                x = torch.hstack([x_dict[j] for j in str(self.conv_layers[i-1].tp.irreps_out).split('+')])
             edge_attr_ = torch.cat([edge_attr_emb, x[dst, :self.n_s], x[src, :self.n_s]], dim=-1)
             x_update = self.conv_layers[i](x, edge_index, edge_attr_, edge_sh)
-            x = F.pad(x, (0, x_update.shape[-1] - x.shape[-1]))
-            x = x + x_update
+            x_update_dict = split_into_dict(x_update, self.conv_layers[i].tp.irreps_out)
+            update_dict(x_dict, x_update_dict)
 
-        x = torch.cat([x[:, :self.n_s], x[:, -self.n_s:]], dim=1) if self.n_conv_layers >= 3 else x[:, :self.n_s]
+        x = torch.cat((x_dict[f'{self.n_s}x0e'], x_dict[f'{self.n_s}x0o']), dim=1) if f'{self.n_s}x0o' in x_dict else x_dict[f'{self.n_s}x0e']
         return x, edge_index, edge_attr
 
 
