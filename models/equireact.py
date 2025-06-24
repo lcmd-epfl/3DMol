@@ -119,6 +119,7 @@ class EquiReact(nn.Module):
                 f"{n_s}x0e",
                 f"{n_s}x0e"
             ]
+            irrep_last = f"{n_s}x0e"
         else:
             irrep_seq = [
                 f"{n_s}x0e",
@@ -126,6 +127,7 @@ class EquiReact(nn.Module):
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e",
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e + {n_s}x0o"
             ]
+            irrep_last = f"{n_s}x0e + {n_s}x0o"
 
         self.node_embedding = nn.Sequential(
             nn.Linear(node_fdim, n_s),
@@ -145,7 +147,10 @@ class EquiReact(nn.Module):
         conv_layers = []
         for i in range(n_conv_layers):
             in_irreps = irrep_seq[min(i, len(irrep_seq) - 1)]
-            out_irreps = irrep_seq[min(i + 1, len(irrep_seq) - 1)]
+            if i<n_conv_layers-1:
+                out_irreps = irrep_seq[min(i+1, len(irrep_seq)-1)]
+            else:
+                out_irreps = irrep_last
 
             parameters = {
                 "in_irreps": in_irreps,
