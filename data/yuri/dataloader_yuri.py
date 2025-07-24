@@ -24,7 +24,6 @@ class TMGSspinPlus(MolDataset):
             self.get_xyz_path = lambda idx: f'data/yuri/0-XYZS/{idx}.xyz'
         elif self.parameters.geometry=='xtb':
             raise NotImplementedError
-            self.get_xyz_path = lambda idx: f'data/yuri/1-XYZS_xtb/{idx}_opt.xyz'
 
         super().__init__(process=process, noH=noH,
                          classification=classification,
