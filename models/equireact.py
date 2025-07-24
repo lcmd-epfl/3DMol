@@ -98,7 +98,7 @@ class EquiReact(nn.Module):
         self.n_s, self.n_v = n_s, n_v
         self.n_conv_layers = n_conv_layers
         self.sum_mode = sum_mode
-        self.n_s_full = 2 * self.n_s if self.n_conv_layers >= 3 else self.n_s
+        self.n_s_full = 2 * self.n_s if (not invariant and self.n_conv_layers >= 3) else self.n_s
         self.distance_emb_dim = distance_emb_dim
         self.max_radius = max_radius
         self.max_neighbors = max_neighbors
@@ -330,7 +330,7 @@ class EquiReact(nn.Module):
 
             if self.arch in ['normal', 'no_relu_in_fc']:
                 score = self.score_predictor_nodes(x)
-            if self.arch=='normal_scaled':
+            elif self.arch=='normal_scaled':
                 x[:,self.n_s:]*=1e7
                 score = self.score_predictor_nodes(x)
             elif self.arch=='both':
