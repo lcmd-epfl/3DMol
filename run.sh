@@ -4,12 +4,19 @@ python train.py --device='cuda' \
                 --experiment_name='run-gpu3' \
                 --noH \
                 --wandb_name test-run \
-                --train_frac 0.8 \
                 --seed 123 \
                 --invariant \
                 --n_conv_layers 2 \
                 --num_epochs=8 \
-                --dataset data/kulik/dataloader_kulik.py:tmSCO \
+                --dataset data/kulik/dataloader_kulik.py:tmPHOTO \
+                --subset 16 \
+                --target_column gap \
+                --dataloader_args 'csv_path:data/kulik/tmPHOTO_gap_500_0.csv' \
+                --print_predictions \
+                #--train_frac 0.8004 \
+                #--splitter test:data/kulik/tmPHOTO-splits/tmPHOTO_8_test_indices.npy \
+                #--train_frac 0.8 \
+                #--train_frac 0.798 \
                 #--target_column specific_rotation \
                 #--xtb \
                 #--splitter test:data/yuri/splits/fold_0_test_indices.npy \
