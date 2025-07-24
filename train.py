@@ -219,8 +219,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         from process.dataloader_qm9 import dsC7O2H10nsd as MolDataloader
     elif dataset=='qm9':
         from process.dataloader_qm9 import QM9 as MolDataloader
-    elif dataset=='yuri':
-        from process.dataloader_yuri import Yuri as MolDataloader
     else:
         try:
             dataloader_path, dataloader_class = dataset.split(':')
