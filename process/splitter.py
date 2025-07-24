@@ -4,6 +4,7 @@ import pandas as pd
 from chemprop.data.utils import get_data_from_smiles
 from process.scaffold import scaffold_split
 
+indices_names = ('train', 'test', 'val')
 
 def remove_atom_map_number_manual(smi):
     return re.sub(':[0-9]+', '', smi)
@@ -62,17 +63,48 @@ def get_size_splits(data, splitter, indices, tr_size, te_size):
 
 
 def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
-    fname = splitter[5:]
     if subset:
-        raise RuntimeError('subset option incompatible with test indices file')
-    try:
-        te_indices = np.load(fname) if fname.endswith('.npy') else np.loadtxt(fname, dtype=int)
-    except:
-        raise RuntimeError
-    if len(te_indices) != te_size:
-        raise RuntimeError(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
-    indices_notest = np.array([i for i in indices if i not in te_indices])
-    tr_indices, val_indices = np.split(indices_notest, [tr_size])
+        raise RuntimeError('subset option incompatible with test/train/val indices file')
+
+    fnames = {key: val for key, val in [entry.split(':') for entry in splitter.split(';')]}
+    if len(fnames)!=len(set(fnames.keys())):
+        raise RuntimeError(f'repeated indices name(s) {tuple(fnames.keys())}')
+    if not set(fnames.keys()).issubset(set(indices_names)):
+        raise RuntimeError(f'bad indices name(s) {tuple(fnames.keys())} - should be in {indices_names}')
+
+    print(fnames)
+
+    indices_dict = {key: np.load(fnames[key]) if fnames[key].endswith('.npy') else np.loadtxt(fnames[key], dtype=int) for key in fnames}
+
+    # only test
+    if len(fnames)==1 and tuple(fnames.keys())[0]=='test':
+        te_indices = indices_dict['test']
+        if len(te_indices) != te_size:
+            raise RuntimeError(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
+        if len(np.intersect1d(te_indices, indices))<len(te_indices):
+            raise RuntimeError(f'bad test indices')
+        indices_notest = np.array([i for i in indices if i not in te_indices])
+        tr_indices, val_indices = np.split(indices_notest, [tr_size])
+
+    # only test and val
+    elif len(fnames)==2 and set(fnames.keys())==set(('test', 'val')):
+        te_indices = indices_dict['test']
+        val_indices = indices_dict['val']
+        if len(np.intersect1d(te_indices, val_indices)):
+            raise RuntimeError('validation and test sets overlap')
+        if len(np.intersect1d(te_indices, indices))<len(te_indices):
+            raise RuntimeError(f'bad test indices')
+        if len(np.intersect1d(val_indices, indices))<len(val_indices):
+            raise RuntimeError(f'bad val indices')
+        if len(te_indices) != te_size:
+            print(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
+        tr_indices = np.array([i for i in indices if i not in np.concatenate((te_indices, val_indices))])
+        if len(tr_indices) != tr_size:
+            print(f'bad training set size') # TODO
+
+    else:
+        raise NotImplementedError
+
     return tr_indices, te_indices, val_indices
 
 
@@ -111,10 +143,9 @@ def split_dataset(data, splitter, tr_frac, subset=None):
         print("Using scaffold splits")
         tr_indices, te_indices, val_indices = get_scaffold_splits(data, indices, sizes=(tr_frac, 1-(tr_frac+te_frac), te_frac))
 
-    elif splitter.startswith('test:'):
-        print("Using test indices from file")
+    elif sum(splitter.startswith(f'{i}:') for i in indices_names):
+        print("Using indices from file")
         tr_indices, te_indices, val_indices = get_test_file_splits(splitter, indices, tr_size, te_size, subset)
-
 
     else:
         raise RuntimeError

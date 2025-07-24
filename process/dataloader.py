@@ -23,6 +23,7 @@ class MolDataset(Dataset):
 
     def __init__(self, process=True, bad_indices=None,
                  extra_args=None,
+                 classification=False,
                  noH=True, verbose=1, check=False):
         global_version = 2  # INCREASE WHEN BREAKING CHANGES
         self.noH = noH
@@ -31,6 +32,8 @@ class MolDataset(Dataset):
         self.check = check
         dataset_prefix = os.path.splitext(os.path.basename(self.csv_path))[0]
         dataset_prefix = f'{dataset_prefix}.{self.parameters.geometry}.{self.parameters.graph_method}'
+        if bad_indices:
+            dataset_prefix = f'{dataset_prefix}.without_{os.path.splitext(os.path.basename(bad_indices))[0]}'
         if noH:
             dataset_prefix += '.noH'
         self.paths = SimpleNamespace(
@@ -40,10 +43,11 @@ class MolDataset(Dataset):
         self.print(2, "Loading data into memory...")
         self.print(1, f'{dataset_prefix=}')
 
-        self.df = pd.read_csv(self.csv_path)
+        self.df = pd.read_csv(self.csv_path, dtype={self.id_column: str})
 
         if bad_indices:
             bad_indices = np.loadtxt(bad_indices, dtype=str)
+            assert sum(self.df[self.id_column].isin(bad_indices))==len(bad_indices)
             self.df = self.df[~self.df[self.id_column].isin(bad_indices)]
             self.df.reset_index(inplace=True)
 
@@ -67,7 +71,11 @@ class MolDataset(Dataset):
         assert self.nmols==len(self.indices)
         assert self.nmols==len(self.labels)
         assert self.nmols==len(self.mol_graphs)
-        self.standardize_labels()
+
+        if classification:
+            self.check_classes()
+        else:
+            self.standardize_labels()
 
 
     def __len__(self):
@@ -155,6 +163,12 @@ class MolDataset(Dataset):
         return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles', local_mask=local_mask)
 
 
+    def check_classes(self):
+        unique_vals = torch.unique(self.labels, sorted=True)
+        if len(unique_vals)!=2 or unique_vals[0]!=-1.0 or unique_vals[1]!=1.0:
+            raise NotImplementedError(f'Can work only with -1/1 classes ({unique_vals} given)')
+        self.mean = torch.tensor(0.0)
+        self.std = torch.tensor(1.0)
 
 
     def standardize_labels(self):

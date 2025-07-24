@@ -4,6 +4,7 @@ from process.dataloader import MolDataset
 class dsC7O2H10nsd(MolDataset):
     def __init__(self, process=True, verbose=4,
                  extra_args=None,
+                 classification=False,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
@@ -19,12 +20,14 @@ class dsC7O2H10nsd(MolDataset):
             self.get_xyz_path = lambda idx: f'data/qm9/{idx}'
 
         super().__init__(process=process, noH=noH,
+                         classification=classification,
                          check=check, verbose=verbose)
 
 
 class QM9(MolDataset):
     def __init__(self, process=True, verbose=4,
                  extra_args=None,
+                 classification=False,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
@@ -41,5 +44,6 @@ class QM9(MolDataset):
             self.get_xyz_path = lambda idx: f'data/qm9/{idx}'
 
         super().__init__(process=process, noH=noH,
+                         classification=classification,
                          check=check, bad_indices=bad_indices,
                          verbose=verbose)

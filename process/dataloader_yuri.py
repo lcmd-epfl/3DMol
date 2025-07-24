@@ -5,6 +5,7 @@ from process.dataloader import MolDataset
 class Yuri(MolDataset):
     def __init__(self, process=True, verbose=4,
                  extra_args=None,
+                 classification=False,
                  target_column=None, geometry=None, graph_method=None,
                  noH=True, check=False):
 
@@ -25,6 +26,7 @@ class Yuri(MolDataset):
             self.get_xyz_path = lambda idx: f'data/yuri/1-XYZS_xtb/{idx}_opt.xyz'
 
         super().__init__(process=process, noH=noH,
+                         classification=classification,
                          check=check, bad_indices=bad_indices,
                          verbose=verbose)
 

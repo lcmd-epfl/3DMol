@@ -35,7 +35,7 @@ class GaussianSmearing(nn.Module):
 class TensorProductConvLayer(nn.Module):
 
     def __init__(self, in_irreps, sh_irreps, out_irreps, edge_fdim, residual=True, dropout=0.0,
-                 h_dim=None):
+                 h_dim=None, relu_in_fc=True):
         super(TensorProductConvLayer, self).__init__()
         self.in_irreps = in_irreps
         self.out_irreps = out_irreps
@@ -46,12 +46,19 @@ class TensorProductConvLayer(nn.Module):
 
         self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
 
-        self.fc_net = nn.Sequential(
-            nn.Linear(edge_fdim, h_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(h_dim, tp.weight_numel)
-        )
+        if relu_in_fc:
+            self.fc_net = nn.Sequential(
+                nn.Linear(edge_fdim, h_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(h_dim, tp.weight_numel)
+            )
+        else:
+            self.fc_net = nn.Sequential(
+                nn.Linear(edge_fdim, h_dim),
+                nn.Dropout(dropout),
+                nn.Linear(h_dim, tp.weight_numel)
+            )
 
     def forward(self, x, edge_index, edge_attr, edge_sh, out_nodes=None, aggr='mean'):
         edge_src, edge_dst = edge_index
@@ -76,7 +83,9 @@ class EquiReact(nn.Module):
                  max_radius: float = 10.0, max_neighbors: int = 20,
                  distance_emb_dim: int = 32, dropout_p: float = 0.1,
                  sum_mode='node', verbose=False, device='cpu', graph_mode='energy',
-                 random_baseline=False, invariant=False, **kwargs):
+                 random_baseline=False, invariant=False,
+                 classification = False, arch='normal',
+                 **kwargs):
 
         super().__init__(**kwargs)
 
@@ -97,6 +106,8 @@ class EquiReact(nn.Module):
         self.graph_mode = graph_mode
         self.device = device
         self.random_baseline = random_baseline
+        self.arch = arch
+        self.classification = classification
         if self.random_baseline:
             self.graph_mode = 'node'
             print("random baseline is on, i.e. features will be replaced with random numbers")
@@ -108,6 +119,7 @@ class EquiReact(nn.Module):
                 f"{n_s}x0e",
                 f"{n_s}x0e"
             ]
+            irrep_last = f"{n_s}x0e"
         else:
             irrep_seq = [
                 f"{n_s}x0e",
@@ -115,6 +127,7 @@ class EquiReact(nn.Module):
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e",
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e + {n_s}x0o"
             ]
+            irrep_last = f"{n_s}x0e + {n_s}x0o"
 
         self.node_embedding = nn.Sequential(
             nn.Linear(node_fdim, n_s),
@@ -134,7 +147,10 @@ class EquiReact(nn.Module):
         conv_layers = []
         for i in range(n_conv_layers):
             in_irreps = irrep_seq[min(i, len(irrep_seq) - 1)]
-            out_irreps = irrep_seq[min(i + 1, len(irrep_seq) - 1)]
+            if i<n_conv_layers-1:
+                out_irreps = irrep_seq[min(i+1, len(irrep_seq)-1)]
+            else:
+                out_irreps = irrep_last
 
             parameters = {
                 "in_irreps": in_irreps,
@@ -143,7 +159,8 @@ class EquiReact(nn.Module):
                 "edge_fdim": 3 * n_s,
                 "h_dim": 3 * n_s,
                 "residual": False,
-                "dropout": dropout_p
+                "dropout": dropout_p,
+                "relu_in_fc": (self.arch!='no_relu_in_fc'),
             }
 
             layer = TensorProductConvLayer(**parameters)
@@ -170,6 +187,24 @@ class EquiReact(nn.Module):
             nn.Linear(self.n_s, 1)
         )
 
+        self.score_predictor_nodes_half_with_relu = nn.Sequential(
+            nn.Linear(self.n_s, 2 * self.n_s),
+            nn.ReLU(),
+            nn.Dropout(dropout_p),
+            nn.Linear(2 * self.n_s, self.n_s),
+            nn.ReLU(),
+            nn.Dropout(dropout_p),
+            nn.Linear(self.n_s, 1)
+        )
+
+        self.score_predictor_nodes_half = nn.Sequential(
+            nn.Linear(self.n_s, 2 * self.n_s, bias=False),
+            nn.Dropout(dropout_p),
+            nn.Linear(2 * self.n_s, self.n_s, bias=False),
+            nn.Dropout(dropout_p),
+            nn.Linear(self.n_s, 1, bias=False)
+        )
+
         self.score_predictor_nodes_with_edges = nn.Sequential(
             nn.Linear(self.n_s_full + distance_emb_dim, 2 * self.n_s),
             nn.ReLU(),
@@ -179,6 +214,8 @@ class EquiReact(nn.Module):
             nn.Dropout(dropout_p),
             nn.Linear(self.n_s, 1)
         )
+
+        self.classif = nn.Sigmoid()
 
 
     def build_graph(self, data):
@@ -209,13 +246,31 @@ class EquiReact(nn.Module):
             print('dim of radius_graph (edges) after embedding', edge_attr_emb.shape)
 
         src, dst = edge_index
-        for i in range(self.n_conv_layers):
-            edge_attr_ = torch.cat([edge_attr_emb, x[dst, :self.n_s], x[src, :self.n_s]], dim=-1)
-            x_update = self.conv_layers[i](x, edge_index, edge_attr_, edge_sh)
-            x = F.pad(x, (0, x_update.shape[-1] - x.shape[-1]))
-            x = x + x_update
 
-        x = torch.cat([x[:, :self.n_s], x[:, -self.n_s:]], dim=1) if self.n_conv_layers >= 3 else x[:, :self.n_s]
+        def update_dict(x_dict, x_update, irreps):
+            n0 = 0
+            for key in str(irreps).split('+'):
+                n, sym = key.split('x')
+                l = int(sym[:-1])
+                n = int(n) * (2*l+1)
+                update = x_update[:,n0:n0+n]
+                if key in x_dict:
+                    x_dict[key] += update
+                else:
+                    x_dict[key] = update
+                n0 += n
+
+        scalar_key = f'{self.n_s}x0e'
+        pseudoscalar_key = f'{self.n_s}x0o'
+        x_dict = {scalar_key: x}
+        for i in range(self.n_conv_layers):
+            edge_attr_ = torch.cat([edge_attr_emb, x_dict[scalar_key][dst], x_dict[scalar_key][src]], dim=-1)
+            if i>0:
+                x = torch.hstack([x_dict[j] for j in str(self.conv_layers[i-1].tp.irreps_out).split('+')])
+            x_update = self.conv_layers[i](x, edge_index, edge_attr_, edge_sh)
+            update_dict(x_dict, x_update, self.conv_layers[i].tp.irreps_out)
+
+        x = torch.cat((x_dict[scalar_key], x_dict[pseudoscalar_key]), dim=1) if pseudoscalar_key in x_dict else x_dict[scalar_key]
         return x, edge_index, edge_attr
 
 
@@ -228,7 +283,6 @@ class EquiReact(nn.Module):
         data.batch = data.batch.to(self.device)
 
         if self.random_baseline:
-            # reset features to crap of the same dims
             x = torch.rand(x.shape)
 
         if self.sum_mode == 'both':
@@ -273,7 +327,26 @@ class EquiReact(nn.Module):
         if self.verbose:
             print('reaction x dims', x.shape)
         if self.sum_mode == 'node':
-            score = self.score_predictor_nodes(x)
+
+            if self.arch in ['normal', 'no_relu_in_fc']:
+                score = self.score_predictor_nodes(x)
+            if self.arch=='normal_scaled':
+                x[:,self.n_s:]*=1e7
+                score = self.score_predictor_nodes(x)
+            elif self.arch=='both':
+                score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
+                score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+                score = score1 * score2
+            elif self.arch=='both_nonscaled':
+                score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
+                score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
+                score = score1 * score2
+            elif self.arch=='pseudo':
+                score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+
+            if self.classification is True:
+                score = self.classif(score) * 2 - 1
+
         elif self.sum_mode == 'both':
             score = self.score_predictor_nodes_with_edges(x)
         return score

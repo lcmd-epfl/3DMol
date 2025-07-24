@@ -23,7 +23,7 @@ import wandb
 import faulthandler
 faulthandler.enable()
 
-from trainer.metrics import MAE
+from trainer.metrics import MAE, Accuracy
 from trainer.react_trainer import ReactTrainer
 from models.equireact import EquiReact
 from process.collate import CustomCollator
@@ -87,6 +87,8 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--target_column'        , type=str           , default=None           ,  help='csv column with the target property')
     g_hyper.add_argument('--features'             , type=str           , default=None           ,  help='featurizer')
     g_hyper.add_argument('--geometry'             , type=str           , default=None           ,  help='geometry (dft/xtb/etc)')
+    g_hyper.add_argument('--arch'                 , type=str           , default='normal'       ,  help='normal/both/pseudo')
+    g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
 
     args = p.parse_args(arglist)
 
@@ -101,14 +103,58 @@ def parse_arguments(arglist=sys.argv[1:]):
     return args, arg_groups
 
 
-def print_test_predictions(test_indices, targ_stdized, pred_stdized, data_std, data_mean):
-    print('>>> # idx target_stdized prediction_stdized target prediction error')
-    targ_stdized = np.squeeze(torch.vstack(targ_stdized).cpu().numpy())
-    pred_stdized = np.squeeze(torch.vstack(pred_stdized).cpu().numpy())
-    targ = targ_stdized*data_std+data_mean
-    pred = pred_stdized*data_std+data_mean
-    for x in zip(test_indices, targ_stdized, pred_stdized, targ, pred, pred-targ):
-        print('>>>', *x, sep='\t')
+def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean, classification=False):
+    targ_raw = np.squeeze(torch.vstack(targ_raw).cpu().numpy())
+    pred_raw = np.squeeze(torch.vstack(pred_raw).cpu().numpy())
+    if classification:
+        print('>>> # idx target prediction_raw prediction error')
+        targ = np.copy(targ_raw).astype(int)
+        pred = np.zeros_like(pred_raw, dtype=int)
+        pred[np.where(pred_raw<0)]=-1
+        pred[np.where(pred_raw>=0)]=1
+        err = pred-targ
+
+        for x in zip(test_indices, targ, pred_raw, pred, err):
+            print('>>>', *x, sep='\t')
+
+        d_target = defaultdict(int, zip(*np.unique(targ, return_counts=True)))
+        d_pred   = defaultdict(int, zip(*np.unique(pred, return_counts=True)))
+        d_err    = defaultdict(int, zip(*np.unique(err, return_counts=True)))
+        N0 = d_target[-1]
+        P0 = d_target[1]
+        FN = d_err[-2]
+        FP = d_err[2]
+        N = d_pred[-1]
+        P = d_pred[1]
+
+        TN = N0-FP
+        TP = P0-FN
+        assert FP + TP == P
+        assert FN + TN == N
+
+        print(f'{TP=} {FN=} {FP=} {TP=}')
+        accuracy = (TP+TN)/(TP+TN+FP+FN)
+        print(f'{accuracy=:.4f}')
+
+        recall = TP/(TP+FN)
+        FPR = FP/N0
+        precision = TP/P
+        F1 = TP / (TP + (FP+FN)/2)
+        print(f'+1: {recall=:.4f} {FPR=:.4f} {precision=:.4f} {F1=:.4f}')
+
+        recall = TN/(TN+FP)
+        FNR = FN/P0
+        precision = TN/N
+        F1 = TN / (TN + (FP+FN)/2)
+        print(f'-1: {recall=:.4f} {FNR=:.4f} {precision=:.4f} {F1=:.4f}')
+
+
+    else:
+        print('>>> # idx target_stdized prediction_stdized target prediction error')
+        targ = targ_raw*data_std+data_mean
+        pred = pred_raw*data_std+data_mean
+        for x in zip(test_indices, targ_raw, pred_raw, targ, pred, pred-targ):
+            print('>>>', *x, sep='\t')
 
 
 def train(run_dir, run_name, project, wandb_name, hyper_dict,
@@ -145,6 +191,23 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
 
+    classification = hyper_dict['classification']
+
+    if classification:
+        metrics = {'accuracy': Accuracy()}
+        main_metric = 'accuracy'
+        main_metric_goal = 'max'
+        #loss_func = SoftMarginLoss()
+        #loss_func_name = 'SoftMarginLoss'
+        loss_func = MSELoss()
+        loss_func_name = 'MSELoss'
+    else:
+        metrics = {'mae': MAE()}
+        main_metric = 'mae'
+        main_metric_goal = 'min'
+        loss_func = MSELoss()
+        loss_func_name = 'MSELoss'
+
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
@@ -172,7 +235,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
     time_start = timer()
-    data = MolDataloader(process=process, extra_args=dataloader_args_dict,
+    data = MolDataloader(process=process, classification=classification,
+                         extra_args=dataloader_args_dict,
                          noH=noH,
                          target_column=target_column, graph_method=features)
     time_end = timer()
@@ -227,6 +291,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             tr_indices, te_indices, val_indices, indices = split_dataset(data, splitter=splitter,
                                                                          tr_frac=max(training_fractions),
                                                                          subset=subset)
+
+            print('MAE if use mean train for test:', abs(labels.numpy()[te_indices]-(labels.numpy()[tr_indices].mean())).mean()*std)
+
             if len(training_fractions)>1:
                 tr_indices = tr_indices[:int(tr_frac*len(indices))]
 
@@ -246,6 +313,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 print(f"{input_edge_feats_dim=}")
 
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
+                              classification = hyper_dict['classification'],
+                              arch = hyper_dict['arch'],
                               max_radius=hyper_dict['radius'],
                               max_neighbors=hyper_dict['max_neighbors'],
                               sum_mode=hyper_dict['sum_mode'],
@@ -267,7 +336,10 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
                                     num_workers=num_workers)
 
-            trainer = ReactTrainer(model=model, std=std, device=device, metrics={'mae':MAE()},
+
+            trainer = ReactTrainer(model=model, std=std, device=device,
+                                   metrics=metrics, loss_func=loss_func,
+                                   main_metric=main_metric, main_metric_goal=main_metric_goal,
                                    run_dir=run_dir, run_name=run_name_chk,
                                    sampler=sampler, val_per_batch=val_per_batch,
                                    checkpoint=checkpoint, num_epochs=num_epochs,
@@ -293,16 +365,26 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 # file dump for each split
                 data_split_string = 'test_split_' + str(CV)
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
-                if print_predictions:
-                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy())
 
-                mae_split = test_metrics['mae'] * std
-                rmse_split = np.sqrt(test_metrics['MSELoss'])*std
-                maes.append(mae_split)
-                rmses.append(rmse_split)
-                if wandb.run is not None:
-                    wandb.run.summary["test_score"] = mae_split
-                    wandb.run.summary["test_rmse"] = rmse_split
+                if print_predictions:
+                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy(), classification=classification)
+
+                if classification:
+                    acc_split = test_metrics[main_metric] * std
+                    loss_split = test_metrics[loss_func_name]*std
+                    maes.append(acc_split)
+                    rmses.append(loss_split)
+                    if wandb.run is not None:
+                        wandb.run.summary["test_score"] = acc_split
+                        wandb.run.summary["test_loss"] = loss_split
+                else:
+                    mae_split = test_metrics[main_metric] * std
+                    rmse_split = np.sqrt(test_metrics[loss_func_name])*std
+                    maes.append(mae_split)
+                    rmses.append(rmse_split)
+                    if wandb.run is not None:
+                        wandb.run.summary["test_score"] = mae_split
+                        wandb.run.summary["test_rmse"] = rmse_split
 
                 if print_repr:
                     for x_indices, x_loader, x_title in zip((train_data.indices, val_data.indices, test_data.indices),
