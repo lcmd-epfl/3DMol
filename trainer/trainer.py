@@ -148,6 +148,14 @@ class Trainer():
                 if self.eval_per_epochs > 0 and epoch % self.eval_per_epochs == 0:
                     self.run_per_epoch_evaluations(val_loader)
 
+                # check if improve
+                if val_score >= self.best_val_score and self.main_metric_goal == 'max' or val_score <= self.best_val_score and self.main_metric_goal == 'min':
+                    epochs_no_improve = 0
+                    self.best_val_score = val_score
+                    self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.best_checkpoint.pt')
+                else:
+                    epochs_no_improve += 1
+
                 # val loss is MSE, shouldn't be affected by data normalisation
                 val_loss = metrics[type(self.loss_func).__name__]
                 if torch.isfinite(self.best_val_score.cpu()):
@@ -158,13 +166,7 @@ class Trainer():
                 self.val_loss_for_wandb = val_loss
                 self.val_score_for_wandb = val_score
 
-                # save the model with the best main_metric depending on wether we want to maximize or minimize the main metric
-                if val_score >= self.best_val_score and self.main_metric_goal == 'max' or val_score <= self.best_val_score and self.main_metric_goal == 'min':
-                    epochs_no_improve = 0
-                    self.best_val_score = val_score
-                    self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.best_checkpoint.pt')
-                else:
-                    epochs_no_improve += 1
+                # save the model with the best main_metric
                 self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.last_checkpoint.pt')
                 print(f'Epochs with no improvement: [ {epochs_no_improve} ] and the best {self.main_metric} was in {epoch - epochs_no_improve}')
                 if epochs_no_improve >= self.patience and epoch >= self.minimum_epochs:  # stopping criterion
