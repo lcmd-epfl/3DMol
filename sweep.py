@@ -1,9 +1,10 @@
 import os
+import sys
 from datetime import datetime
 import argparse
 import pprint
 import wandb
-from train import train
+from train import train, Logger
 
 
 def train_wrapper():
@@ -21,7 +22,6 @@ def train_wrapper():
         except Exception as e:
             print(e)
             pass
-
 
 
 parser = argparse.ArgumentParser()
@@ -80,7 +80,11 @@ if not os.path.exists(run_dir):
         os.makedirs(run_dir)
     except:
         pass
-logname = 'sweep.log'
+logname = 'sweep'
+
+logpath = os.path.join(run_dir, f'{logname}.log')
+sys.stdout = Logger(logpath=logpath, syspart=sys.stdout)
+sys.stderr = Logger(logpath=logpath, syspart=sys.stderr)
 
 wandb.login()
 
@@ -124,6 +128,7 @@ parameters_dict.update({ 'target_column': { 'value': target_column} })
 parameters_dict.update({ 'seed': { 'value': 123} })
 parameters_dict.update({ 'splitter': { 'value': splitter[dataset]} })
 parameters_dict.update({ 'classification': { 'value': False }})
+parameters_dict.update({ 'arch': { 'value': 'normal' }})
 
 sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)
