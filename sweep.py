@@ -49,17 +49,17 @@ epochs = {
         'tmPHOTO': 128,
         }
 target_columns_good = {
-        'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld', 'N_FOD'),
+        'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld'),
         'tmSCO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
         'tmPHOTO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
         }
 splitter = {
-        'yuri': 'test:data/yuri/splits/fold_0_test_indices.npy',
+        'yuri': 'test:data/yuri/splits/0_test_indices.txt',
         'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy',
         'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_0_test_indices.npy',
         }
 dataset_full = {
-        'yuri': 'yuri',
+        'yuri': 'data/yuri/dataloader_yuri.py:TMGSspinPlus',
         'tmSCO': 'data/kulik/dataloader_kulik.py:tmSCO',
         'tmPHOTO': 'data/kulik/dataloader_kulik.py:tmPHOTO',
         }
