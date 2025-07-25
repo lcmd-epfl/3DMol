@@ -8,7 +8,7 @@
 #SBATCH --time=05:00
 #SBATCH --job-name=TMGSspinPlus-gap-vector
 #SBATCH --array=0-4
-##SBATCH --qos=debug
+#SBATCH --qos=debug        # so they run in order
 ##SBATCH --partition=h100
 #SBATCH --partition=l40s
 
