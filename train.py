@@ -186,7 +186,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           val_per_batch=True, eval_per_epochs=0, patience=150,
           minimum_epochs=0, models_to_save=[], clip_grad=100, log_iterations=100,
           lr_scheduler=ReduceLROnPlateau, factor=0.6, min_lr=8.0e-6, mode='max', lr_scheduler_patience=60,
-          lr_verbose=True,
           ):
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
@@ -347,7 +346,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    scheduler_step_per_batch = False, # CHANGED THIS
                                    lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
                                    lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
-                                   lr_scheduler_patience=lr_scheduler_patience, lr_verbose=lr_verbose)
+                                   lr_scheduler_patience=lr_scheduler_patience)
 
             time_start = timer()
             val_metrics, _, _ = trainer.train(train_loader, val_loader)
