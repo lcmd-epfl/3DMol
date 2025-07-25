@@ -13,4 +13,4 @@ for i in range(n):
     idx = np.loadtxt(f'refcode_subs/total_sub_{i}.txt', dtype=str)
     df1 = df[df['refcode'].isin(idx)].reset_index(drop=True)
     assert len(df1)==len(idx)
-    df1.to_csv(f'Property_TM-GSspinPlus_{len(idx)}_{i}.csv', index=False)
+    df1.to_csv(f'gap_TM-GSspinPlus_{len(idx)}_{i}.csv', index=False)

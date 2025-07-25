@@ -28,8 +28,8 @@ python train.py \
 --experiment_name 3DMol-yuri-timing \
 --CV 1 \
 --num_epochs 128 \
---dataloader_args "csv_path:data/yuri/refcode_gap_500_${FOLD}.csv" \
---splitter random
+--dataloader_args "csv_path:data/yuri/gap_TM-GSspinPlus_500_${FOLD}.csv" \
+--splitter random \
 --logdir /scratch/briling/cv \
 --print_predictions \
 --wandb_name time-500-TMGSspinPlus-gap-inv-noH-ns64-d32-l3-vector-both \

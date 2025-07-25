@@ -28,7 +28,7 @@ python train.py \
 --experiment_name 3DMol-yuri-timing \
 --CV 1 \
 --num_epochs 128 \
---splitter random
+--splitter random \
 --logdir /scratch/briling/cv/ \
 --print_predictions \
 --wandb_name time-TMGSspinPlus-gap-inv-noH-ns64-d32-l3-vector-both \
