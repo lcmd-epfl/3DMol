@@ -1,10 +1,11 @@
 import numpy as np
 import torch
-from torch_geometric.data import Data
+from torch_geometric import data as tgdata
 import rdkit
 from rdkit import Chem
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
 
+torch.serialization.add_safe_globals([tgdata.data.DataEdgeAttr, tgdata.data.DataTensorAttr, tgdata.storage.GlobalStorage])
 
 def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
     """

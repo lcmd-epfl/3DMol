@@ -54,7 +54,7 @@ class Trainer():
                  checkpoint=None, num_epochs=0, eval_per_epochs=0, patience=0,
                  minimum_epochs=0, models_to_save=[], clip_grad=None, log_iterations=0, lr=0.0001,
                  weight_decay=0.0001, lr_scheduler=None, factor=0, min_lr=0, mode='max', lr_scheduler_patience=0,
-                 lr_verbose=True, val_per_batch=True, std=1):
+                 val_per_batch=True, std=1):
 
         self.device = device
         self.std = std # stdev of data. to adjust val scores.
@@ -80,7 +80,6 @@ class Trainer():
         self.min_lr = min_lr
         self.mode = mode
         self.lr_scheduler_patience = lr_scheduler_patience
-        self.lr_verbose = lr_verbose
         self.optim = optim(self.model.parameters(), lr=lr, weight_decay=weight_decay)
 
         self.val_loss_for_wandb = None
@@ -88,8 +87,8 @@ class Trainer():
         self.val_score_best_for_wandb = -1e16 if self.main_metric_goal == 'max' else 1e16
 
         if lr_scheduler:  # Needs "from torch.optim.lr_scheduler import *" to work
-            self.lr_scheduler = lr_scheduler(self.optim, mode=mode, factor=factor, patience=lr_scheduler_patience,
-                                            min_lr=min_lr, verbose=lr_verbose)
+            self.lr_scheduler = lr_scheduler(self.optim, mode=mode, factor=factor,
+                                             patience=lr_scheduler_patience, min_lr=min_lr)
         else:
             self.lr_scheduler = None
 
@@ -120,7 +119,7 @@ class Trainer():
                         'clip_grad':clip_grad, 'log_iterations':log_iterations,
                         'lr':lr, 'weight decay':weight_decay, 'lr scheduler':lr_scheduler,
                         'factor':factor, 'min_lr':min_lr, 'mode':mode,
-                        'lr_scheduler_patience':lr_scheduler_patience, 'lr_verbose':lr_verbose}
+                        'lr_scheduler_patience':lr_scheduler_patience}
         for key, value in self.hparams.items():
             print(f'{key}: {value}')
 
@@ -148,6 +147,14 @@ class Trainer():
                 if self.eval_per_epochs > 0 and epoch % self.eval_per_epochs == 0:
                     self.run_per_epoch_evaluations(val_loader)
 
+                # check if improve
+                if val_score >= self.best_val_score and self.main_metric_goal == 'max' or val_score <= self.best_val_score and self.main_metric_goal == 'min':
+                    epochs_no_improve = 0
+                    self.best_val_score = val_score
+                    self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.best_checkpoint.pt')
+                else:
+                    epochs_no_improve += 1
+
                 # val loss is MSE, shouldn't be affected by data normalisation
                 val_loss = metrics[type(self.loss_func).__name__]
                 if torch.isfinite(self.best_val_score.cpu()):
@@ -158,13 +165,7 @@ class Trainer():
                 self.val_loss_for_wandb = val_loss
                 self.val_score_for_wandb = val_score
 
-                # save the model with the best main_metric depending on wether we want to maximize or minimize the main metric
-                if val_score >= self.best_val_score and self.main_metric_goal == 'max' or val_score <= self.best_val_score and self.main_metric_goal == 'min':
-                    epochs_no_improve = 0
-                    self.best_val_score = val_score
-                    self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.best_checkpoint.pt')
-                else:
-                    epochs_no_improve += 1
+                # save the model with the best main_metric
                 self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.last_checkpoint.pt')
                 print(f'Epochs with no improvement: [ {epochs_no_improve} ] and the best {self.main_metric} was in {epoch - epochs_no_improve}')
                 if epochs_no_improve >= self.patience and epoch >= self.minimum_epochs:  # stopping criterion

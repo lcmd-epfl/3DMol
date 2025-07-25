@@ -1,9 +1,10 @@
 import os
+import sys
 from datetime import datetime
 import argparse
 import pprint
 import wandb
-from train import train
+from train import train, Logger
 
 
 def train_wrapper():
@@ -21,7 +22,6 @@ def train_wrapper():
         except Exception as e:
             print(e)
             pass
-
 
 
 parser = argparse.ArgumentParser()
@@ -49,17 +49,17 @@ epochs = {
         'tmPHOTO': 128,
         }
 target_columns_good = {
-        'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld', 'N_FOD'),
+        'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld'),
         'tmSCO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
         'tmPHOTO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
         }
 splitter = {
-        'yuri': 'test:data/yuri/splits/fold_0_test_indices.npy',
+        'yuri': 'test:data/yuri/splits/0_test_indices.txt',
         'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy',
         'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_0_test_indices.npy',
         }
 dataset_full = {
-        'yuri': 'yuri',
+        'yuri': 'data/yuri/dataloader_yuri.py:TMGSspinPlus',
         'tmSCO': 'data/kulik/dataloader_kulik.py:tmSCO',
         'tmPHOTO': 'data/kulik/dataloader_kulik.py:tmPHOTO',
         }
@@ -80,7 +80,11 @@ if not os.path.exists(run_dir):
         os.makedirs(run_dir)
     except:
         pass
-logname = 'sweep.log'
+logname = 'sweep'
+
+logpath = os.path.join(run_dir, f'{logname}.log')
+sys.stdout = Logger(logpath=logpath, syspart=sys.stdout)
+sys.stderr = Logger(logpath=logpath, syspart=sys.stderr)
 
 wandb.login()
 
@@ -123,6 +127,8 @@ parameters_dict.update({ 'features': { 'value': features[dataset]} })
 parameters_dict.update({ 'target_column': { 'value': target_column} })
 parameters_dict.update({ 'seed': { 'value': 123} })
 parameters_dict.update({ 'splitter': { 'value': splitter[dataset]} })
+parameters_dict.update({ 'classification': { 'value': False }})
+parameters_dict.update({ 'arch': { 'value': 'normal' }})
 
 sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)
