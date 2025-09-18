@@ -7,7 +7,7 @@
 #SBATCH --mem=4GB
 #SBATCH --time=2:00:00
 #SBATCH --job-name=HS_LS_same_fold-OctaFull-LUMO-vector
-#SBATCH --array=0
+#SBATCH --array=0-9
 
 FOLD=$SLURM_ARRAY_TASK_ID
 

@@ -38,7 +38,7 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
             train_frac_bash = 'TRAIN_FRAC=0.599'
         elif split_type == 'HS_LS_same_fold':
             splitter = f'test:data/kulik/OctaKulik-splits/HS_LS_same_fold_{size}/${{FOLD}}_test_indices.txt'
-            array = '0'
+            array = '0-9'
             train_frac_bash = 'TRAIN_FRAC=0.7995'
 
         header=f"""#!/bin/bash -l
