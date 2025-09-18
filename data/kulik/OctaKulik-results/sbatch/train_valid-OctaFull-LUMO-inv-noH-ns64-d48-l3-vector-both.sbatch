@@ -25,7 +25,7 @@ python train.py \
 --num_epochs 512 \
 --splitter test:data/kulik/OctaKulik-splits/train_valid_$3612/${FOLD}_test_indices.txt \
 --train_frac ${TRAIN_FRAC} \
---logdir /scratch/izar/briling/cv \
+--logdir /scratch/briling/cv/ \
 --print_predictions \
 --wandb_name cv10-train_valid-OctaFull-LUMO-inv-noH-ns64-d48-l3-vector-both \
 --arch normal \

@@ -69,7 +69,7 @@ python train.py \\"""
 --num_epochs 512 \\
 --splitter {splitter} \\
 --train_frac ${{TRAIN_FRAC}} \\
---logdir /scratch/izar/briling/cv \\
+--logdir /scratch/briling/cv/ \\
 --print_predictions \\
 --wandb_name cv10-{full_name} \\"""
 

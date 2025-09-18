@@ -25,7 +25,7 @@ python train.py \
 --num_epochs 512 \
 --splitter test:data/kulik/OctaKulik-splits/HS_LS_same_fold_$3612/${FOLD}_test_indices.txt \
 --train_frac ${TRAIN_FRAC} \
---logdir /scratch/izar/briling/cv \
+--logdir /scratch/briling/cv/ \
 --print_predictions \
 --wandb_name cv10-HS_LS_same_fold-OctaFull-gap-inv-noH-ns64-d32-l2-vector-node \
 --arch normal \

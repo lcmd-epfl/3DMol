@@ -25,7 +25,7 @@ python train.py \
 --num_epochs 512 \
 --splitter test:data/kulik/OctaKulik-splits/random_$1806/${FOLD}_test_indices.txt \
 --train_frac ${TRAIN_FRAC} \
---logdir /scratch/izar/briling/cv \
+--logdir /scratch/briling/cv/ \
 --print_predictions \
 --wandb_name cv10-random-OctaLow-splitting-inv-noH-ns48-d48-l3-energy-both \
 --arch normal \
