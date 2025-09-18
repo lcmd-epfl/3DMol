@@ -26,18 +26,18 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
         elif short_dataset == 'OctaLow':
             size = 1806
         if split_type == 'random':
-            splitter = f'test:data/kulik/OctaKulik-splits/random_${size}/${{FOLD}}_test_indices.txt'
+            splitter = f'test:data/kulik/OctaKulik-splits/random_{size}/${{FOLD}}_test_indices.txt'
             array = '0-9'
             if short_dataset=='OctaFull':
                 train_frac_bash = 'if (( $FOLD > 1 )); then TRAIN_FRAC=0.8; else TRAIN_FRAC=0.7995; fi'
             else:
                 train_frac_bash = 'if (( $FOLD > 5 )); then TRAIN_FRAC=0.801; else TRAIN_FRAC=0.8; fi'
         elif split_type == 'train_valid':
-            splitter = f'test:data/kulik/OctaKulik-splits/train_valid_${size}/${{FOLD}}_test_indices.txt'
+            splitter = f'test:data/kulik/OctaKulik-splits/train_valid_{size}/${{FOLD}}_test_indices.txt'
             array = '0'
             train_frac_bash = 'TRAIN_FRAC=0.599'
         elif split_type == 'HS_LS_same_fold':
-            splitter = f'test:data/kulik/OctaKulik-splits/HS_LS_same_fold_${size}/${{FOLD}}_test_indices.txt'
+            splitter = f'test:data/kulik/OctaKulik-splits/HS_LS_same_fold_{size}/${{FOLD}}_test_indices.txt'
             array = '0'
             train_frac_bash = 'TRAIN_FRAC=0.7995'
 

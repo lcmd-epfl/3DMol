@@ -23,7 +23,7 @@ python train.py \
 --experiment_name 3DMol-yuri-cv \
 --CV 1 \
 --num_epochs 512 \
---splitter test:data/kulik/OctaKulik-splits/train_valid_$3612/${FOLD}_test_indices.txt \
+--splitter test:data/kulik/OctaKulik-splits/train_valid_3612/${FOLD}_test_indices.txt \
 --train_frac ${TRAIN_FRAC} \
 --logdir /scratch/briling/cv/ \
 --print_predictions \
