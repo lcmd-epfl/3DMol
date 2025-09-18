@@ -65,8 +65,8 @@ splitter = {
         'yuri': 'test:data/yuri/splits/0_test_indices.txt',
         'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy',
         'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_0_test_indices.npy',
-        'OctaFull': 'test:data/kulik/OctaKulik-splits/3_train_valid_3612/0_test_indices.txt',
-        'OctaLow': 'test:data/kulik/OctaKulik-splits/4_train_valid_1806/0_test_indices.txt',
+        'OctaFull': 'test:data/kulik/OctaKulik-splits/train_valid_3612/0_test_indices.txt',
+        'OctaLow': 'test:data/kulik/OctaKulik-splits/train_valid_1806/0_test_indices.txt',
         }
 dataset_full = {
         'yuri': 'data/yuri/dataloader_yuri.py:TMGSspinPlus',
