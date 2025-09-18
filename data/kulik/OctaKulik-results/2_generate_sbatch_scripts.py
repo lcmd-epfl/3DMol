@@ -21,23 +21,23 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
         full_name = f"{short_name}-ns{base_config['n_s']}-{'nv'+base_config['n_v']+'-' if base_config['n_v']!='0' else ''}d{base_config['distance_emb_dim']}-l{base_config['n_conv_layers']}-{base_config['graph_mode']}-{base_config['sum_mode']}"
 
 
-        if short_dataset == 'OctaKulik':
+        if short_dataset == 'OctaFull':
             size = 3612
         elif short_dataset == 'OctaLow':
             size = 1806
         if split_type == 'random':
-            splitter = 'test:data/kulik/OctaKulik-splits/random_${size}/${{FOLD}}_test_indices.txt'
+            splitter = f'test:data/kulik/OctaKulik-splits/random_${size}/${{FOLD}}_test_indices.txt'
             array = '0-9'
             if short_dataset=='OctaFull':
                 train_frac_bash = 'if (( $FOLD > 1 )); then TRAIN_FRAC=0.8; else TRAIN_FRAC=0.7995; fi'
             else:
                 train_frac_bash = 'if (( $FOLD > 5 )); then TRAIN_FRAC=0.801; else TRAIN_FRAC=0.8; fi'
         elif split_type == 'train_valid':
-            splitter = 'test:data/kulik/OctaKulik-splits/train_valid_${size}/${{FOLD}}_test_indices.txt'
+            splitter = f'test:data/kulik/OctaKulik-splits/train_valid_${size}/${{FOLD}}_test_indices.txt'
             array = '0'
             train_frac_bash = 'TRAIN_FRAC=0.599'
         elif split_type == 'HS_LS_same_fold':
-            splitter = 'test:data/kulik/OctaKulik-splits/HS_LS_same_fold_${size}/${{FOLD}}_test_indices.txt'
+            splitter = f'test:data/kulik/OctaKulik-splits/HS_LS_same_fold_${size}/${{FOLD}}_test_indices.txt'
             array = '0'
             train_frac_bash = 'TRAIN_FRAC=0.7995'
 
