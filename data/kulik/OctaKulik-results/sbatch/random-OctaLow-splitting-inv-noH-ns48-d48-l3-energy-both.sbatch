@@ -29,7 +29,6 @@ python train.py \
 --print_predictions \
 --wandb_name cv10-random-OctaLow-splitting-inv-noH-ns48-d48-l3-energy-both \
 --arch normal \
---classification False \
 --dataset data/kulik/dataloader_kulik.py:OctaLow \
 --distance_emb_dim 48 \
 --dropout_p 0.0 \

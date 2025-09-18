@@ -11,7 +11,7 @@ datasets = ['OctaFull', 'OctaLow']
 project = "equireact/nequimol"
 score_column = 'val_score_best'
 drop_keys = ['num_epochs', 'CV iter', 'epoch', 'subset', 'random_baseline',
-             'train loss', 'val_loss', 'val_score']
+             'train loss', 'val_loss', 'val_score', 'train_frac', 'classification']
 meta_keys = ['run_id', 'sweep_id', 'name', 'val_score_best', 'splitter']
 sweep_ids_dict = {
         'OctaFull': ['pk4929pn', 'y6026ssp', 'srrhrli5'],

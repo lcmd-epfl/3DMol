@@ -29,7 +29,6 @@ python train.py \
 --print_predictions \
 --wandb_name cv10-random-OctaFull-HOMO-inv-noH-ns48-d64-l3-vector-node \
 --arch normal \
---classification False \
 --dataset data/kulik/dataloader_kulik.py:OctaFull \
 --distance_emb_dim 64 \
 --dropout_p 0.05 \

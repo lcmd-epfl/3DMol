@@ -1,6 +1,5 @@
 # run_id=e1t5536y, sweep_id=88u8pxoj, name=helpful-sweep-39, val_score_best=4.278650283813477, splitter=test:data/kulik/OctaKulik-splits/4_train_valid_1806/0_test_indices.txt
 arch	normal
-classification	False
 dataset	data/kulik/dataloader_kulik.py:OctaLow
 distance_emb_dim	48
 dropout_p	0.0
@@ -19,5 +18,4 @@ radius	2.5
 seed	123
 sum_mode	both
 target_column	splitting
-train_frac	0.599
 weight_decay	1e-05
