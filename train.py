@@ -104,8 +104,8 @@ def parse_arguments(arglist=sys.argv[1:]):
 
 
 def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean, classification=False):
-    targ_raw = np.squeeze(torch.vstack(targ_raw).cpu().numpy())
-    pred_raw = np.squeeze(torch.vstack(pred_raw).cpu().numpy())
+    targ_raw = np.ravel(torch.vstack(targ_raw).cpu().numpy())
+    pred_raw = np.ravel(torch.vstack(pred_raw).cpu().numpy())
     if classification:
         print('>>> # idx target prediction_raw prediction error')
         targ = np.copy(targ_raw).astype(int)

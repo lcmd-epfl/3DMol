@@ -74,7 +74,7 @@ def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
 
     print(fnames)
 
-    indices_dict = {key: np.load(fnames[key]) if fnames[key].endswith('.npy') else np.loadtxt(fnames[key], dtype=int) for key in fnames}
+    indices_dict = {key: np.load(fnames[key]) if fnames[key].endswith('.npy') else np.loadtxt(fnames[key], dtype=int, ndmin=1) for key in fnames}
 
     # only test
     if len(fnames)==1 and tuple(fnames.keys())[0]=='test':
