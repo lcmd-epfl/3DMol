@@ -11,7 +11,7 @@
 
 FOLD=$SLURM_ARRAY_TASK_ID
 
-TRAIN_FRAC=0.7995
+if (( $FOLD > 5 )); then TRAIN_FRAC=0.8004; else TRAIN_FRAC=0.7995; fi
 
 module purge
 conda activate equireact-kuma

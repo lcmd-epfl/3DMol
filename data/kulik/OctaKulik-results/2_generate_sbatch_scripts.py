@@ -39,7 +39,7 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
         elif split_type == 'HS_LS_same_fold':
             splitter = f'test:data/kulik/OctaKulik-splits/HS_LS_same_fold_{size}/${{FOLD}}_test_indices.txt'
             array = '0-9'
-            train_frac_bash = 'TRAIN_FRAC=0.7995'
+            train_frac_bash = 'if (( $FOLD > 5 )); then TRAIN_FRAC=0.8004; else TRAIN_FRAC=0.7995; fi'
 
         header=f"""#!/bin/bash -l
 #SBATCH --partition=l40s
