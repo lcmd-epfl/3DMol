@@ -87,7 +87,7 @@ class _Octa(MolDataset):
         self.parameters = self.get_parameters(locals())
 
         if self.parameters.geometry=='default':
-            self.get_xyz_path = lambda idx: f'data/kulik/OctaKulik-xyz/{idx}.xyz'
+            self.get_xyz_path = lambda idx: f'data/kulik/OctaKulik-xyz/{idx}.centered.xyz'
 
         super().__init__(process=process, noH=noH,
                          classification=classification,
