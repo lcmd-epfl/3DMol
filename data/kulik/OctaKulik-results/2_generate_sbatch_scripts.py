@@ -71,7 +71,7 @@ python train.py \\"""
 --train_frac ${{TRAIN_FRAC}} \\
 --logdir /scratch/briling/cv/ \\
 --print_predictions \\
---wandb_name cv10-{full_name} \\"""
+--wandb_name {'cv10-' if split_type != 'train_valid' else ''}{full_name} \\"""
 
         with open(f'sbatch/{full_name}.sbatch', 'w') as f:
             print("\n".join((header, run_config, config)), file=f)

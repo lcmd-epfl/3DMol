@@ -1,0 +1,3 @@
+run_id,sweep_id,name,val_score_best,lr,n_s,n_v,noH,arch,seed,radius,dataset,features,geometry,splitter,sum_mode,dropout_p,invariant,graph_mode,graph_method,weight_decay,max_neighbors,n_conv_layers,target_column,distance_emb_dim
+9acganyz,28o32247,visionary-sweep-58,4.0665717124938965,0.0005,64,,True,normal,123,2.5,data/kulik/dataloader_kulik.py:OctaLow,torchchem_v1,default,test:data/kulik/OctaKulik-splits/train_valid_1806/0_test_indices.txt,both,0,True,vector_masked,torchchem_v1,1e-05,25,3,splitting,32
+zrv1ynzo,0lfuf5ow,jumping-sweep-49,4.058198928833008,0.0005,64,,True,normal,123,2.5,data/kulik/dataloader_kulik.py:OctaLow,torchchem_v1,default,test:data/kulik/OctaKulik-splits/train_valid_1806/0_test_indices.txt,both,0,True,vector,torchchem_v1,1e-05,50,3,splitting,16

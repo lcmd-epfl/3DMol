@@ -14,8 +14,8 @@ drop_keys = ['num_epochs', 'CV iter', 'epoch', 'subset', 'random_baseline',
              'train loss', 'val_loss', 'val_score', 'train_frac', 'classification']
 meta_keys = ['run_id', 'sweep_id', 'name', 'val_score_best', 'splitter']
 sweep_ids_dict = {
-        'OctaFull': ['pk4929pn', 'y6026ssp', 'srrhrli5'],
-        'OctaLow':  ['88u8pxoj'],
+        'OctaFull': [],
+        'OctaLow':  ['28o32247', '0lfuf5ow'],
         }
 
 if not os.path.isfile(raw_data_path):
