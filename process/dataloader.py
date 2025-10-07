@@ -97,7 +97,7 @@ class MolDataset(Dataset):
 
         self.mol_graphs = []
 
-        for i, idx in (enumerate(tqdm(self.indices, desc="making graphs")) if self.verbose>=1 else self.indices):
+        for i, idx in enumerate(tqdm(self.indices, desc="making graphs", disable=not self.verbose)):
             xyz = self.get_xyz_path(idx)
             asemol = self.read_xyz(xyz)
 
