@@ -127,7 +127,11 @@ class EquiReact(nn.Module):
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e",
                 f"{n_s}x0e + {n_v}x1o + {n_v}x1e + {n_s}x0o"
             ]
-            irrep_last = f"{n_s}x0e + {n_s}x0o"
+            if self.n_conv_layers >=3:
+                irrep_last = f"{n_s}x0e + {n_s}x0o"
+            else:
+                irrep_last = f"{n_s}x0e"
+
 
         self.node_embedding = nn.Sequential(
             nn.Linear(node_fdim, n_s),
