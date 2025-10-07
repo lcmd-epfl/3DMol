@@ -364,7 +364,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
 
                 if print_predictions:
-                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy(), classification=classification)
+                    print_test_predictions(test_data.indices, targ, pred, data.std.item(), data.mean.item(), classification=classification)
 
                 if classification:
                     acc_split = test_metrics[main_metric] * std
