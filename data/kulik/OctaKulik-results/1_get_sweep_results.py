@@ -14,7 +14,7 @@ drop_keys = ['num_epochs', 'CV iter', 'epoch', 'subset', 'random_baseline',
              'train loss', 'val_loss', 'val_score', 'train_frac', 'classification']
 meta_keys = ['run_id', 'sweep_id', 'name', 'val_score_best', 'splitter']
 sweep_ids_dict = {
-        'OctaFull': [],
+        'OctaFull': ['k53wwg1s', 'qasmeoji', 'hx17lynf', 'paotvegn', '80jxsf3q', '3mmya8wb'],
         'OctaLow':  ['28o32247', '0lfuf5ow'],
         }
 

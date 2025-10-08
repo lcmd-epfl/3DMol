@@ -1,0 +1,21 @@
+# run_id=s6qkpv2u, sweep_id=hx17lynf, name=crimson-sweep-54, val_score_best=1.0166453123092651, splitter=test:data/kulik/OctaKulik-splits/train_valid_3612/0_test_indices.txt
+arch	normal
+dataset	data/kulik/dataloader_kulik.py:OctaFull
+distance_emb_dim	64
+dropout_p	0.05
+features	torchchem_v1
+geometry	default
+graph_method	torchchem_v1
+graph_mode	vector_masked
+invariant	True
+lr	0.001
+max_neighbors	50
+n_conv_layers	3
+n_s	64
+n_v	None
+noH	True
+radius	5.0
+seed	123
+sum_mode	node
+target_column	LUMO
+weight_decay	1e-05
