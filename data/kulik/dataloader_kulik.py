@@ -68,3 +68,60 @@ class tmSCO(MolDataset):
         assert sum(mask)==1
         assert len(mask)==len(asemol)
         return mask
+
+
+class _Octa(MolDataset):
+    def __init__(self, process=True, verbose=4,
+                 extra_args=None,
+                 classification=False,
+                 target_column=None, geometry=None, graph_method=None,
+                 noH=True, check=False, csv_path=None):
+
+        self.version = 2  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
+        self.csv_path = f'data/kulik/{csv_path}'
+        self.processed_dir='data/kulik/processed/'
+        self.smiles_column = None
+        self.id_column = 'refcode'
+        self.default_parameters = dict(geometry='default', target_column=None, graph_method='torchchem_v1')
+        bad_indices = None
+        self.parameters = self.get_parameters(locals())
+
+        if self.parameters.geometry=='default':
+            self.get_xyz_path = lambda idx: f'data/kulik/OctaKulik-xyz/{idx}.centered.xyz'
+
+        super().__init__(process=process, noH=noH,
+                         classification=classification,
+                         check=check, bad_indices=bad_indices,
+                         verbose=verbose)
+
+
+    def get_local_mask(self, asemol, **kwargs):
+        metals = np.array(['Cr', 'Mn', 'Fe', 'Co'])[:,None]
+        mask = (np.array(asemol.symbols)==metals).sum(axis=0)
+        assert sum(mask)==1
+        assert len(mask)==len(asemol)
+        return mask
+
+
+class OctaFull(_Octa):
+    def __init__(self, process=True, verbose=4,
+                 extra_args=None,
+                 classification=False,
+                 target_column=None, geometry=None, graph_method=None,
+                 noH=True, check=False):
+        super().__init__(process=process, verbose=verbose, extra_args=extra_args,
+                         classification=classification,
+                         target_column=target_column, geometry=geometry, graph_method=graph_method,
+                         noH=noH, check=check, csv_path='OctaKulik_property_HOMO_LUMO_gap.csv')
+
+
+class OctaLow(_Octa):
+    def __init__(self, process=True, verbose=4,
+                 extra_args=None,
+                 classification=False,
+                 target_column=None, geometry=None, graph_method=None,
+                 noH=True, check=False):
+        super().__init__(process=process, verbose=verbose, extra_args=extra_args,
+                         classification=classification,
+                         target_column=target_column, geometry=geometry, graph_method=graph_method,
+                         noH=noH, check=check, csv_path='OctaKulik_property_splitting.csv')

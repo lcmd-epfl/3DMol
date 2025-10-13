@@ -5,7 +5,10 @@ import rdkit
 from rdkit import Chem
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
 
-torch.serialization.add_safe_globals([tgdata.data.DataEdgeAttr, tgdata.data.DataTensorAttr, tgdata.storage.GlobalStorage])
+try:
+    torch.serialization.add_safe_globals([tgdata.data.DataEdgeAttr, tgdata.data.DataTensorAttr, tgdata.storage.GlobalStorage])
+except:
+    pass
 
 def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
     """
@@ -31,9 +34,9 @@ def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
     else:
         raise NotImplementedError
     if local_mask is None:
-        data = Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32))
+        data = tgdata.Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32))
     else:
-        data = Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32),
+        data = tgdata.Data(x=x, y=torch.tensor(y), pos=torch.tensor(coords, dtype=torch.float32),
                     local_mask=torch.tensor(local_mask, dtype=torch.bool))
     return data.to(device)
 
@@ -43,7 +46,7 @@ def get_empty_graph(features='smiles'):
         num_node_feat = smiles_featurizer(Chem.MolFromSmiles('C')).shape[-1]
     else:
         raise NotImplementedError
-    return Data(x=torch.zeros((0, num_node_feat)), y=torch.tensor(-1), pos=torch.zeros((0,3)))
+    return tgdata.Data(x=torch.zeros((0, num_node_feat)), y=torch.tensor(-1), pos=torch.zeros((0,3)))
 
 
 def smiles_featurizer(mol):

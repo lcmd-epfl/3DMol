@@ -104,8 +104,8 @@ def parse_arguments(arglist=sys.argv[1:]):
 
 
 def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean, classification=False):
-    targ_raw = np.squeeze(torch.vstack(targ_raw).cpu().numpy())
-    pred_raw = np.squeeze(torch.vstack(pred_raw).cpu().numpy())
+    targ_raw = np.ravel(torch.vstack(targ_raw).cpu().numpy())
+    pred_raw = np.ravel(torch.vstack(pred_raw).cpu().numpy())
     if classification:
         print('>>> # idx target prediction_raw prediction error')
         targ = np.copy(targ_raw).astype(int)
@@ -364,7 +364,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
 
                 if print_predictions:
-                    print_test_predictions(test_data.indices, targ, pred, data.std.numpy(), data.mean.numpy(), classification=classification)
+                    print_test_predictions(test_data.indices, targ, pred, data.std.item(), data.mean.item(), classification=classification)
 
                 if classification:
                     acc_split = test_metrics[main_metric] * std

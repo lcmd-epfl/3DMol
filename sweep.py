@@ -37,36 +37,50 @@ features = {
             'yuri': 'torchchem_v1',
             'tmSCO': 'torchchem_v1',
             'tmPHOTO': 'torchchem_v1',
+            'OctaFull': 'torchchem_v1',
+            'OctaLow': 'torchchem_v1',
             }
 geometry = {
         'yuri': 'default',
         'tmSCO': 'xtb',
         'tmPHOTO': 'xtb',
+        'OctaFull': 'default',
+        'OctaLow': 'default',
         }
 epochs = {
         'yuri': 128,
         'tmSCO': 128,
         'tmPHOTO': 128,
+        'OctaFull': 128,
+        'OctaLow': 128,
         }
 target_columns_good = {
         'yuri': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld'),
         'tmSCO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
         'tmPHOTO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
+        'OctaFull': ('HOMO', 'LUMO', 'gap'),
+        'OctaLow': ('splitting'),
         }
 splitter = {
         'yuri': 'test:data/yuri/splits/0_test_indices.txt',
         'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy',
         'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_0_test_indices.npy',
+        'OctaFull': 'test:data/kulik/OctaKulik-splits/train_valid_3612/0_test_indices.txt',
+        'OctaLow': 'test:data/kulik/OctaKulik-splits/train_valid_1806/0_test_indices.txt',
         }
 dataset_full = {
         'yuri': 'data/yuri/dataloader_yuri.py:TMGSspinPlus',
         'tmSCO': 'data/kulik/dataloader_kulik.py:tmSCO',
         'tmPHOTO': 'data/kulik/dataloader_kulik.py:tmPHOTO',
+        'OctaFull': 'data/kulik/dataloader_kulik.py:OctaFull',
+        'OctaLow': 'data/kulik/dataloader_kulik.py:OctaLow',
         }
 train_frac = {
     'yuri': 0.8,
     'tmSCO': 0.798,
     'tmPHOTO': 0.8,
+    'OctaFull': 0.599,
+    'OctaLow': 0.599,
     }
 project = 'nequimol'
 
