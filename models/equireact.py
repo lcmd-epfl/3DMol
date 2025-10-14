@@ -35,16 +35,20 @@ class GaussianSmearing(nn.Module):
 class TensorProductConvLayer(nn.Module):
 
     def __init__(self, in_irreps, sh_irreps, out_irreps, edge_fdim, residual=True, dropout=0.0,
-                 h_dim=None, relu_in_fc=True):
+                 h_dim=None, relu_in_fc=True, internal_weights=False):
         super(TensorProductConvLayer, self).__init__()
         self.in_irreps = in_irreps
         self.out_irreps = out_irreps
         self.sh_irreps = sh_irreps
         self.residual = residual
+        self.internal_weights = internal_weights
         if h_dim is None:
             h_dim = edge_fdim
 
-        self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
+        if self.internal_weights is False:  # normal option
+            self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
+        else:
+            self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, internal_weights=True, shared_weights=True)
 
         if relu_in_fc:
             self.fc_net = nn.Sequential(
@@ -62,7 +66,11 @@ class TensorProductConvLayer(nn.Module):
 
     def forward(self, x, edge_index, edge_attr, edge_sh, out_nodes=None, aggr='mean'):
         edge_src, edge_dst = edge_index
-        tp_out = self.tp(x[edge_src], edge_sh, self.fc_net(edge_attr))
+
+        if self.internal_weights is False:
+            tp_out = self.tp(x[edge_src], edge_sh, self.fc_net(edge_attr))
+        else:
+            tp_out = self.tp(x[edge_src], edge_sh)
 
         out_nodes = out_nodes or x.shape[0]
 
@@ -85,6 +93,7 @@ class EquiReact(nn.Module):
                  sum_mode='node', verbose=False, device='cpu', graph_mode='energy',
                  random_baseline=False, invariant=False,
                  classification = False, arch='normal',
+                 internal_weights=False,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -165,6 +174,7 @@ class EquiReact(nn.Module):
                 "residual": False,
                 "dropout": dropout_p,
                 "relu_in_fc": (self.arch!='no_relu_in_fc'),
+                "internal_weights": internal_weights,
             }
 
             layer = TensorProductConvLayer(**parameters)
