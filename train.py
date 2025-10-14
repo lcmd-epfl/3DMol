@@ -428,7 +428,8 @@ if __name__ == '__main__':
         print(f"creating run dir {run_dir}")
         os.makedirs(run_dir)
 
-    logname = f'{args.wandb_name}-{datetime.now().strftime("%y%m%d-%H%M%S.%f")}-{getuser()}'
+    SLURM_JOB_ID=os.environ["SLURM_JOB_ID"] if "SLURM_JOB_ID" in os.environ else ""
+    logname = f'{args.wandb_name}-{SLURM_JOB_ID}-{datetime.now().strftime("%y%m%d-%H%M%S")}-{getuser()}'
     logpath = os.path.join(run_dir, f'{logname}.log')
     print(f"STDOUT> {logpath}")
     sys.stdout = Logger(logpath=logpath, syspart=sys.stdout)
