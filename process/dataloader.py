@@ -52,7 +52,7 @@ class MolDataset(Dataset):
             self.df.reset_index(inplace=True)
 
         self.nmols = len(self.df)
-        self.indices = self.df[self.id_column].to_list()
+        self.indices = self.df[self.id_column].to_numpy()
         self.labels = torch.tensor(self.df[self.parameters.target_column].values)
         if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
             self.smiles = self.df[self.smiles_column]
