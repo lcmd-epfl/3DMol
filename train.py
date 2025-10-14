@@ -137,16 +137,19 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, classificatio
         accuracy = (TP+TN)/(TP+TN+FP+FN)
         print(f'{accuracy=:.4f}')
 
-        recall = TP/(TP+FN)
-        FPR = FP/N0
-        precision = TP/P
-        F1 = TP / (TP + (FP+FN)/2)
+        def check_div(a, b):
+            return a/b if b else np.inf
+
+        recall = check_div(TP, TP+FN)
+        FPR = check_div(FP, N0)
+        precision = check_div(TP, P)
+        F1 = check_div(TP, TP+(FP+FN)/2)
         print(f'+1: {recall=:.4f} {FPR=:.4f} {precision=:.4f} {F1=:.4f}')
 
-        recall = TN/(TN+FP)
-        FNR = FN/P0
-        precision = TN/N
-        F1 = TN / (TN + (FP+FN)/2)
+        recall = check_div(TN, TN+FP)
+        FNR = check_div(FN, P0)
+        precision = check_div(TN, N)
+        F1 = check_div(TN, TN+(FP+FN)/2)
         print(f'-1: {recall=:.4f} {FNR=:.4f} {precision=:.4f} {F1=:.4f}')
 
 
