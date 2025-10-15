@@ -79,7 +79,7 @@ if classification:
     metric = { 'name': 'val_score_best', 'goal': 'maximize' }
 else:
     metric = { 'name': 'val_score_best', 'goal': 'minimize' }
-sweep_config = { 'method': 'bayes', 'metric': metric }
+sweep_config = { 'method': 'bayes', 'metric': metric, name: f'{target_column}_{script_args.arch}' }
 
 parameters_dict = {
     'distance_emb_dim': { 'values': [16, 32, 48, 64] },
