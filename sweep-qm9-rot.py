@@ -66,11 +66,16 @@ if not os.path.exists(run_dir):
         os.makedirs(run_dir)
     except:
         pass
+
+
+classification_targets = ('rot589_sign', 'rot633_sign', 'rot355_sign')
+classification = True if target_column in classification_targets else False
+
 logname = 'sweep.log'
 
 wandb.login()
 
-if script_args.classification:
+if classification:
     metric = { 'name': 'val_score_best', 'goal': 'maximize' }
 else:
     metric = { 'name': 'val_score_best', 'goal': 'minimize' }
@@ -86,10 +91,6 @@ parameters_dict = {
     'sum_mode': { 'values' : ['node', 'both'] },
     'lr':  { 'values' : [0.00005, 0.0001, 0.0005, 0.001] },
     }
-
-
-classification_targets = ('rot589_sign', 'rot633_sign', 'rot355_sign')
-classification = True if target_column in classification_targets else False
 
 parameters_dict.update({ 'weight_decay': { 'value': 0 }})
 parameters_dict.update({ 'classification': { 'value': classification }})
