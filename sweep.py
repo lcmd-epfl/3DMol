@@ -104,7 +104,7 @@ sys.stderr = Logger(logpath=logpath, syspart=sys.stderr)
 wandb.login()
 
 metric = { 'name': 'val_score_best', 'goal': 'minimize' }
-sweep_config = { 'method': 'bayes', 'metric': metric, name: f'{dataset}_{target_column}_{local=}' }
+sweep_config = { 'method': 'bayes', 'metric': metric, 'name': f'{dataset}_{target_column}_{local=}' }
 
 parameters_dict = {
     'distance_emb_dim': { 'values': [16, 32, 48, 64] },
