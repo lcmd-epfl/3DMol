@@ -28,9 +28,10 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
 #SBATCH --time=5:00:00
-#SBATCH --job-name={short_dataset}-{target}-{base_config['graph_mode']}
+#SBATCH --job-name={target}-{base_config['arch']}
 #SBATCH --array=0-19
 
+FOLD=$SLURM_ARRAY_TASK_ID
 if (( $FOLD > 9 )) ; then SEED=$((666 + $FOLD - 10)) ; else SEED=$((123 + $FOLD)) ; fi
 
 module purge

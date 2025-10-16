@@ -6,9 +6,10 @@
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
 #SBATCH --time=5:00:00
-#SBATCH --job-name=QM9Rotation-rot589-vector
+#SBATCH --job-name=rot589-both_nonscaled
 #SBATCH --array=0-19
 
+FOLD=$SLURM_ARRAY_TASK_ID
 if (( $FOLD > 9 )) ; then SEED=$((666 + $FOLD - 10)) ; else SEED=$((123 + $FOLD)) ; fi
 
 module purge
