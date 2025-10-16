@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
-#SBATCH --time=5:00:00
+#SBATCH --time=12:00:00
 #SBATCH --job-name=rot589-both_nonscaled
 #SBATCH --array=0-19
 
@@ -22,6 +22,7 @@ python train.py \
 --experiment_name 3DMol-rotation-cv \
 --CV 1 \
 --seed $SEED \
+--target_column rot589 \
 --num_epochs 128 \
 --splitter random \
 --logdir /scratch/briling/cv/ \
