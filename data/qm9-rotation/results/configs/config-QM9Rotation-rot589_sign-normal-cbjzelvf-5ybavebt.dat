@@ -1,0 +1,23 @@
+# run_id=5ybavebt, sweep_id=cbjzelvf, name=prime-sweep-20, val_score_best=0.8948135375976562, splitter=random
+arch	normal
+classification	True
+dataset	data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation
+distance_emb_dim	64
+dropout_p	0.05
+features	torchchem_v1
+geometry	dft
+graph_mode	vector
+internal_weights	False
+invariant	False
+lr	0.0005
+max_neighbors	50
+n_conv_layers	3
+n_s	48
+n_v	32
+noH	False
+radius	5.0
+seed	666
+sum_mode	both
+target_column	rot589_sign
+train_frac	0.8
+weight_decay	0

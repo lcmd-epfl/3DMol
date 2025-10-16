@@ -1,0 +1,23 @@
+# run_id=8za5pkjr, sweep_id=xp9bn2ho, name=rich-sweep-25, val_score_best=32.21350860595703, splitter=random
+arch	pseudo
+classification	False
+dataset	data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation
+distance_emb_dim	48
+dropout_p	0.0
+features	torchchem_v1
+geometry	dft
+graph_mode	vector
+internal_weights	False
+invariant	False
+lr	0.0005
+max_neighbors	50
+n_conv_layers	3
+n_s	32
+n_v	32
+noH	False
+radius	5.0
+seed	666
+sum_mode	node
+target_column	rot589
+train_frac	0.8
+weight_decay	0
