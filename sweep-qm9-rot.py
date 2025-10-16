@@ -71,6 +71,8 @@ if not os.path.exists(run_dir):
 classification_targets = ('rot589_sign', 'rot633_sign', 'rot355_sign')
 classification = True if target_column in classification_targets else False
 
+
+
 logname = 'sweep.log'
 
 wandb.login()
@@ -86,15 +88,21 @@ parameters_dict = {
     'dropout_p': { 'values': [0.0, 0.05, 0.1] },
     'max_neighbors': { 'values': [10, 25, 50] },
     'n_s': { 'values': [16, 32, 48] },
-    'n_v': { 'values': [16, 32, 48] },
     'radius': { 'values' : [2.5, 5.0, 10.0] },
     'sum_mode': { 'values' : ['node', 'both'] },
     'lr':  { 'values' : [0.00005, 0.0001, 0.0005, 0.001] },
     }
 
+scalar_targets = ('rot589_abs', 'rot633_abs', 'rot355_abs')
+if target_column in scalar_targets:
+    parameters_dict.update({ 'n_v': { 'value': None }})
+    parameters_dict.update({ 'invariant': { 'value': True }})
+else:
+    parameters_dict.update({ 'n_v': { 'values': [16, 32, 48] }})
+    parameters_dict.update({ 'invariant': { 'value': False }})
+
 parameters_dict.update({ 'weight_decay': { 'value': 0 }})
 parameters_dict.update({ 'classification': { 'value': classification }})
-parameters_dict.update({ 'invariant': { 'value': False }})
 parameters_dict.update({ 'arch': { 'value': script_args.arch }})
 parameters_dict.update({ 'n_conv_layers': { 'value': 3 }})
 parameters_dict.update({ 'graph_mode': { 'value': 'vector' }})
