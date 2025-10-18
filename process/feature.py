@@ -567,7 +567,7 @@ try:
         #     occ_v = occ_v.astype(int)
         #     en = en.astype(int)
 
-        geom_node_feat = torch.tensor(
+        geom_node_feat = torch.tensor(np.array(
             [
                 degree,
                 sa_volume / 10,
@@ -576,7 +576,7 @@ try:
                 ve,
                 en,
             ]
-        ).T
+        ).T)
         return geom_node_feat
 
 except ImportError as m:
