@@ -252,6 +252,16 @@ class EquiReact(nn.Module):
         self.classif = nn.Sigmoid()
 
 
+        if embedding_specs is not None:
+            from models.embeddings import GenericJointEmbedding
+            self.joint_embedding = GenericJointEmbedding(
+                base_dim=self.n_s_full,
+                embedding_specs=embedding_specs,
+                out_dim=self.n_s_full,
+            )
+
+
+
     def build_graph(self, data):
 
         radius_edges = radius_graph(data.pos, self.max_radius, data.batch)
@@ -274,6 +284,12 @@ class EquiReact(nn.Module):
             print('dim of edge sph harmonics', edge_sh.shape)
 
         x = self.node_embedding(x)
+
+        if extra is not None:
+            x_extra = self.joint_embedding(data.batch, extra)
+            x = x + x_extra
+
+
         edge_attr_emb = self.edge_embedding(edge_attr)
         if self.verbose:
             print('dim of x after node embedding', x.shape)
