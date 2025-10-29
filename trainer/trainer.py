@@ -51,7 +51,8 @@ class Trainer():
                  optim=Adam, main_metric_goal: str = 'min',
                  loss_func=torch.nn.MSELoss(), scheduler_step_per_batch: bool = True, sampler=None,
                  run_dir='', run_name='',
-                 checkpoint=None, num_epochs=0, eval_per_epochs=0, patience=0,
+                 checkpoint=None, fine_tuning=False,
+                 num_epochs=0, eval_per_epochs=0, patience=0,
                  minimum_epochs=0, models_to_save=[], clip_grad=None, log_iterations=0, lr=0.0001,
                  weight_decay=0.0001, lr_scheduler=None, factor=0, min_lr=0, mode='max', lr_scheduler_patience=0,
                  val_per_batch=True, std=1):
@@ -67,6 +68,7 @@ class Trainer():
         self.main_metric_goal = main_metric_goal
         self.scheduler_step_per_batch = scheduler_step_per_batch
         self.checkpoint = checkpoint
+        self.fine_tuning = fine_tuning
         self.num_epochs = num_epochs
         self.eval_per_epochs = eval_per_epochs
         self.patience = patience
@@ -98,14 +100,16 @@ class Trainer():
             self.optim.load_state_dict(check['optimizer_state_dict'])
             if self.lr_scheduler != None and check['scheduler_state_dict'] != None:
                 self.lr_scheduler.load_state_dict(check['scheduler_state_dict'])
+
+        if self.checkpoint and not self.fine_tuning:
             self.start_epoch = check['epoch']
             self.best_val_score = check['best_val_score']
             self.optim_steps = check['optim_steps']
         else:
-            # not sure this is needed
             self.start_epoch = 1
             self.optim_steps = 0
             self.best_val_score = torch.tensor(-np.inf) if self.main_metric_goal == 'max' else torch.tensor(np.inf)  # running score to decide whether or not a new model should be saved
+
         self.log_dir = run_dir
         self.run_name = run_name
 

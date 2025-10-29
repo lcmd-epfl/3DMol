@@ -64,6 +64,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
+    g_run.add_argument('--fine_tuning'        , action='store_true', default=False    ,  help='if checkpoint is for fine-tuning')
     g_run.add_argument('--dataloader_args'    , type=str           , default=None     ,  help='additional dataloader arguments (key1:val1;key2:val2)')
 
     g_hyper = p.add_argument_group('hyperparameters')
@@ -169,6 +170,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           device='cuda',
           num_epochs=65536,
           checkpoint=False,
+          fine_tuning=False,
           verbose=False,
           print_predictions=False,
           eval_on_test=True,
@@ -347,7 +349,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    main_metric=main_metric, main_metric_goal=main_metric_goal,
                                    run_dir=run_dir, run_name=run_name_chk,
                                    sampler=sampler, val_per_batch=val_per_batch,
-                                   checkpoint=checkpoint, num_epochs=num_epochs,
+                                   checkpoint=checkpoint, fine_tuning=fine_tuning,
+                                   num_epochs=num_epochs,
                                    eval_per_epochs=eval_per_epochs, patience=patience,
                                    minimum_epochs=minimum_epochs, models_to_save=models_to_save,
                                    clip_grad=clip_grad, log_iterations=log_iterations,
@@ -426,7 +429,10 @@ if __name__ == '__main__':
         run_dir = os.path.join(args.logdir, args.experiment_name)
     if not os.path.exists(run_dir):
         print(f"creating run dir {run_dir}")
-        os.makedirs(run_dir)
+        try:
+            os.makedirs(run_dir)
+        except:
+            pass
 
     SLURM_JOB_ID=os.environ["SLURM_JOB_ID"] if "SLURM_JOB_ID" in os.environ else ""
     logname = f'{args.wandb_name}-{SLURM_JOB_ID}-{datetime.now().strftime("%y%m%d-%H%M%S")}-{getuser()}'
@@ -458,6 +464,7 @@ if __name__ == '__main__':
           device=args.device,
           num_epochs=args.num_epochs,
           checkpoint=args.checkpoint,
+          fine_tuning=args.fine_tuning,
           verbose=args.verbose,
           print_predictions=args.print_predictions,
           eval_on_test=True,
