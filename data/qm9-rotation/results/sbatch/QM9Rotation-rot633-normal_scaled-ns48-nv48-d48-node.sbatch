@@ -5,10 +5,11 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
-#SBATCH --time=5:00:00
-#SBATCH --job-name=QM9Rotation-rot633-vector
+#SBATCH --time=12:00:00
+#SBATCH --job-name=rot633-normal_scaled
 #SBATCH --array=0-19
 
+FOLD=$SLURM_ARRAY_TASK_ID
 if (( $FOLD > 9 )) ; then SEED=$((666 + $FOLD - 10)) ; else SEED=$((123 + $FOLD)) ; fi
 
 module purge
@@ -21,6 +22,7 @@ python train.py \
 --experiment_name 3DMol-rotation-cv \
 --CV 1 \
 --seed $SEED \
+--target_column rot633 \
 --num_epochs 128 \
 --splitter random \
 --logdir /scratch/briling/cv/ \
