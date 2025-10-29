@@ -15,7 +15,8 @@ drop_keys = ['num_epochs', 'CV iter', 'epoch', 'subset', 'random_baseline',
 meta_keys = ['run_id', 'sweep_id', 'name', 'val_score_best', 'splitter']
 sweep_ids_dict = {
 'QM9Rotation': ['2j04491n', '1ye8y6u7', '5h3mvga0', 'cbjzelvf', 'g92r08ig', 'iwikpcza',
-                'rlv9i41m', 'sn8p3eku', 'xp9bn2ho', '5uxvq7v3', '7t2x2nnm', 'uxhyjx14'],
+                'rlv9i41m', 'sn8p3eku', 'xp9bn2ho', '5uxvq7v3', '7t2x2nnm', 'uxhyjx14',
+                '7ipb3qgs'],
 }
 
 if not os.path.isfile(raw_data_path):
