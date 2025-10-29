@@ -112,6 +112,7 @@ class EquiReact(nn.Module):
                  random_baseline=False, invariant=False,
                  classification = False, arch='normal',
                  internal_weights=False,
+                 embedding_specs=None,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -263,7 +264,7 @@ class EquiReact(nn.Module):
         return data.x.to(self.device), radius_edges.to(self.device), edge_length_emb.to(self.device), edge_sh.to(self.device)
 
 
-    def forward_repr_mol(self, data):
+    def forward_repr_mol(self, data, extra):
 
         x, edge_index, edge_attr, edge_sh = self.build_graph(data)
         if self.verbose:
@@ -313,12 +314,12 @@ class EquiReact(nn.Module):
         return x, edge_index, edge_attr
 
 
-    def forward_energy_mode(self, data):
+    def forward_energy_mode(self, data, extra):
 
         if data.x.shape[0]==0:
             return torch.zeros((data.num_graphs, 1), device=self.device)
 
-        x, (src, dst), edge_attr = self.forward_repr_mol(data)
+        x, (src, dst), edge_attr = self.forward_repr_mol(data, extra)
         data.batch = data.batch.to(self.device)
 
         if self.random_baseline:
@@ -354,8 +355,8 @@ class EquiReact(nn.Module):
         return score
 
 
-    def forward_vector_mode(self, graph):
-        x, (src, dst), edge_attr = self.forward_repr_mol(graph)
+    def forward_vector_mode(self, graph, extra):
+        x, (src, dst), edge_attr = self.forward_repr_mol(graph, extra)
         if self.sum_mode == 'both':
             xedge = scatter_add(edge_attr, index=src, dim=0)
             xedge = F.pad(xedge, (0, 0, 0, x.shape[0]-xedge.shape[0]))
@@ -393,12 +394,12 @@ class EquiReact(nn.Module):
         return score
 
 
-    def forward(self, data, return_repr=False):
+    def forward(self, data, extra, return_repr=False):
         if self.graph_mode in ['vector', 'vector_masked']:
-            energy = self.forward_vector_mode(data)
+            energy = self.forward_vector_mode(data, extra)
             representations = None  # TODO
         elif self.graph_mode == 'energy':
-            energy = self.forward_energy_mode(data)
+            energy = self.forward_energy_mode(data, extra)
             representations = None  # TODO
 
         return energy, representations

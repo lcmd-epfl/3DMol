@@ -9,6 +9,7 @@ import copy
 import random
 from collections import defaultdict
 from timeit import default_timer as timer
+import ast
 
 import numpy as np
 import torch
@@ -92,6 +93,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--arch'                 , type=str           , default='normal'       ,  help='normal/both/pseudo')
     g_hyper.add_argument('--internal_weights'     , action='store_true', default=False          ,  help='if use internal weights in tensor products')
     g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
+    g_hyper.add_argument('--embedding_specs'      , type=str           , default=None           ,  help='MACE extra embedding specs')
 
     args = p.parse_args(arglist)
 
@@ -217,6 +219,12 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         loss_func_name = 'MSELoss'
 
 
+    if hyper_dict['embedding_specs'] is None:
+        embedding_specs = None
+    else:
+        embedding_specs = ast.literal_eval(hyper_dict['embedding_specs'])
+
+
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
     if dataset=='proparg':
@@ -244,7 +252,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     data = MolDataloader(process=process, classification=classification,
                          extra_args=dataloader_args_dict,
                          noH=noH,
-                         target_column=target_column, graph_method=features)
+                         target_column=target_column, graph_method=features,
+                         embedding_specs=embedding_specs)
     time_end = timer()
     print(f'\ndl_time: {time_end-time_start} s\n')
 
@@ -319,6 +328,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 print(f"{input_edge_feats_dim=}")
 
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
+                              embedding_specs = embedding_specs,
                               classification = hyper_dict['classification'],
                               internal_weights=hyper_dict['internal_weights'],
                               arch = hyper_dict['arch'],
