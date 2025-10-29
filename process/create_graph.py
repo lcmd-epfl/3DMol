@@ -28,7 +28,7 @@ def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
         x = smiles_featurizer(mol)
     elif features=='torchchem_v1':
         from process.feature import atom_geom
-        x = atom_geom(atoms, torch.tensor(coords), bin=True)
+        x = atom_geom(atoms, torch.tensor(coords))
         x = x.type(torch.Tensor)
 
     else:

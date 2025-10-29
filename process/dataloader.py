@@ -25,7 +25,7 @@ class MolDataset(Dataset):
                  extra_args=None,
                  classification=False,
                  noH=True, verbose=1, check=False):
-        global_version = 2  # INCREASE WHEN BREAKING CHANGES
+        global_version = 3  # INCREASE WHEN BREAKING CHANGES
         self.noH = noH
         self.graph_method = self.parameters.graph_method
         self.verbose = verbose
