@@ -85,6 +85,7 @@ train_frac = {
 project = 'nequimol'
 
 dataset = script_args.dataset
+local = script_args.local
 target_column = script_args.target
 if target_column not in target_columns_good[dataset]:
     raise RuntimeError
@@ -103,7 +104,7 @@ sys.stderr = Logger(logpath=logpath, syspart=sys.stderr)
 wandb.login()
 
 metric = { 'name': 'val_score_best', 'goal': 'minimize' }
-sweep_config = { 'method': 'bayes', 'metric': metric }
+sweep_config = { 'method': 'bayes', 'metric': metric, 'name': f'{dataset}_{target_column}_{local=}' }
 
 parameters_dict = {
     'distance_emb_dim': { 'values': [16, 32, 48, 64] },
@@ -118,7 +119,7 @@ parameters_dict = {
     }
 
 
-if script_args.local:
+if local:
     parameters_dict.update({'graph_mode': { 'value': 'vector_masked' }})
 else:
     parameters_dict.update({'graph_mode': { 'values': ['energy', 'vector'] }})

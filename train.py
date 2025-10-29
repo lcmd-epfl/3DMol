@@ -52,6 +52,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run = p.add_argument_group('external run parameters')
     g_run.add_argument('--experiment_name'    , type=str           , default=''       ,  help='name that will be added to the runs folder output')
     g_run.add_argument('--wandb_name'         , type=str           , default=None     ,  help='name of wandb run')
+    g_run.add_argument('--project'            , type=str           , default='nequimol', help='name of wandb project')
     g_run.add_argument('--device'             , type=str           , default='cuda'   ,  help='cuda or cpu')
     g_run.add_argument('--logdir'             , type=str           , default='logs'   ,  help='log dir')
     g_run.add_argument('--checkpoint'         , type=str           , default=None     ,  help='path of the checkpoint file to continue training')
@@ -63,6 +64,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
+    g_run.add_argument('--fine_tuning'        , action='store_true', default=False    ,  help='if checkpoint is for fine-tuning')
     g_run.add_argument('--dataloader_args'    , type=str           , default=None     ,  help='additional dataloader arguments (key1:val1;key2:val2)')
 
     g_hyper = p.add_argument_group('hyperparameters')
@@ -88,6 +90,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--features'             , type=str           , default=None           ,  help='featurizer')
     g_hyper.add_argument('--geometry'             , type=str           , default=None           ,  help='geometry (dft/xtb/etc)')
     g_hyper.add_argument('--arch'                 , type=str           , default='normal'       ,  help='normal/both/pseudo')
+    g_hyper.add_argument('--internal_weights'     , action='store_true', default=False          ,  help='if use internal weights in tensor products')
     g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
 
     args = p.parse_args(arglist)
@@ -103,18 +106,18 @@ def parse_arguments(arglist=sys.argv[1:]):
     return args, arg_groups
 
 
-def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean, classification=False):
+def print_test_predictions(data, test_indices, targ_raw, pred_raw, classification=False):
     targ_raw = np.ravel(torch.vstack(targ_raw).cpu().numpy())
     pred_raw = np.ravel(torch.vstack(pred_raw).cpu().numpy())
     if classification:
-        print('>>> # idx target prediction_raw prediction error')
         targ = np.copy(targ_raw).astype(int)
         pred = np.zeros_like(pred_raw, dtype=int)
         pred[np.where(pred_raw<0)]=-1
         pred[np.where(pred_raw>=0)]=1
         err = pred-targ
 
-        for x in zip(test_indices, targ, pred_raw, pred, err):
+        print('>>> # idx name target prediction_raw prediction error')
+        for x in zip(test_indices, data.indices[test_indices], targ, pred_raw, pred, err):
             print('>>>', *x, sep='\t')
 
         d_target = defaultdict(int, zip(*np.unique(targ, return_counts=True)))
@@ -136,24 +139,29 @@ def print_test_predictions(test_indices, targ_raw, pred_raw, data_std, data_mean
         accuracy = (TP+TN)/(TP+TN+FP+FN)
         print(f'{accuracy=:.4f}')
 
-        recall = TP/(TP+FN)
-        FPR = FP/N0
-        precision = TP/P
-        F1 = TP / (TP + (FP+FN)/2)
+        def check_div(a, b):
+            return a/b if b else np.inf
+
+        recall = check_div(TP, TP+FN)
+        FPR = check_div(FP, N0)
+        precision = check_div(TP, P)
+        F1 = check_div(TP, TP+(FP+FN)/2)
         print(f'+1: {recall=:.4f} {FPR=:.4f} {precision=:.4f} {F1=:.4f}')
 
-        recall = TN/(TN+FP)
-        FNR = FN/P0
-        precision = TN/N
-        F1 = TN / (TN + (FP+FN)/2)
+        recall = check_div(TN, TN+FP)
+        FNR = check_div(FN, P0)
+        precision = check_div(TN, N)
+        F1 = check_div(TN, TN+(FP+FN)/2)
         print(f'-1: {recall=:.4f} {FNR=:.4f} {precision=:.4f} {F1=:.4f}')
 
 
     else:
-        print('>>> # idx target_stdized prediction_stdized target prediction error')
+        data_std = data.std.item()
+        data_mean = data.mean.item()
         targ = targ_raw*data_std+data_mean
         pred = pred_raw*data_std+data_mean
-        for x in zip(test_indices, targ_raw, pred_raw, targ, pred, pred-targ):
+        print('>>> # idx name target_stdized prediction_stdized target prediction error')
+        for x in zip(test_indices, data.indices[test_indices], targ_raw, pred_raw, targ, pred, pred-targ):
             print('>>>', *x, sep='\t')
 
 
@@ -162,6 +170,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           device='cuda',
           num_epochs=65536,
           checkpoint=False,
+          fine_tuning=False,
           verbose=False,
           print_predictions=False,
           eval_on_test=True,
@@ -311,6 +320,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
 
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
                               classification = hyper_dict['classification'],
+                              internal_weights=hyper_dict['internal_weights'],
                               arch = hyper_dict['arch'],
                               max_radius=hyper_dict['radius'],
                               max_neighbors=hyper_dict['max_neighbors'],
@@ -339,7 +349,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    main_metric=main_metric, main_metric_goal=main_metric_goal,
                                    run_dir=run_dir, run_name=run_name_chk,
                                    sampler=sampler, val_per_batch=val_per_batch,
-                                   checkpoint=checkpoint, num_epochs=num_epochs,
+                                   checkpoint=checkpoint, fine_tuning=fine_tuning,
+                                   num_epochs=num_epochs,
                                    eval_per_epochs=eval_per_epochs, patience=patience,
                                    minimum_epochs=minimum_epochs, models_to_save=models_to_save,
                                    clip_grad=clip_grad, log_iterations=log_iterations,
@@ -364,7 +375,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
 
                 if print_predictions:
-                    print_test_predictions(test_data.indices, targ, pred, data.std.item(), data.mean.item(), classification=classification)
+                    print_test_predictions(data, test_data.indices, targ, pred, classification=classification)
 
                 if classification:
                     acc_split = test_metrics[main_metric] * std
@@ -418,15 +429,20 @@ if __name__ == '__main__':
         run_dir = os.path.join(args.logdir, args.experiment_name)
     if not os.path.exists(run_dir):
         print(f"creating run dir {run_dir}")
-        os.makedirs(run_dir)
+        try:
+            os.makedirs(run_dir)
+        except:
+            pass
 
-    logname = f'{args.wandb_name}-{datetime.now().strftime("%y%m%d-%H%M%S.%f")}-{getuser()}'
+    SLURM_JOB_ID=os.environ["SLURM_JOB_ID"] if "SLURM_JOB_ID" in os.environ else ""
+    logname = f'{args.wandb_name}-{SLURM_JOB_ID}-{datetime.now().strftime("%y%m%d-%H%M%S")}-{getuser()}'
     logpath = os.path.join(run_dir, f'{logname}.log')
     print(f"STDOUT> {logpath}")
     sys.stdout = Logger(logpath=logpath, syspart=sys.stdout)
     sys.stderr = Logger(logpath=logpath, syspart=sys.stderr)
 
-    project = 'nequimol'
+    project = args.project
+    print(f'WANDB> {project}')
     print(f'WANDB> {args.wandb_name if args.wandb_name else "unspecified"}')
 
     print()
@@ -448,6 +464,7 @@ if __name__ == '__main__':
           device=args.device,
           num_epochs=args.num_epochs,
           checkpoint=args.checkpoint,
+          fine_tuning=args.fine_tuning,
           verbose=args.verbose,
           print_predictions=args.print_predictions,
           eval_on_test=True,

@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -35,16 +36,37 @@ class GaussianSmearing(nn.Module):
 class TensorProductConvLayer(nn.Module):
 
     def __init__(self, in_irreps, sh_irreps, out_irreps, edge_fdim, residual=True, dropout=0.0,
-                 h_dim=None, relu_in_fc=True):
+                 h_dim=None, relu_in_fc=True, internal_weights=False, arch='normal'):
         super(TensorProductConvLayer, self).__init__()
         self.in_irreps = in_irreps
         self.out_irreps = out_irreps
         self.sh_irreps = sh_irreps
         self.residual = residual
+        self.internal_weights = internal_weights
         if h_dim is None:
             h_dim = edge_fdim
 
-        self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
+        if self.internal_weights is False:  # normal option
+            self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
+        else:
+            self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, internal_weights=True, shared_weights=True)
+
+            if arch in ['normal_weights100', 'both_weights100', 'pseudo_weights100']:
+                if '0o' in self.tp.irreps_out:
+                    out_irreps_list = str(self.tp.irreps_out).split('+')
+                    out_irreps_pseudoscalar = [*map(lambda x: x.endswith('0o'), out_irreps_list)]
+                    assert sum(out_irreps_pseudoscalar)==1
+                    idx_irrep_pseudoscalar = out_irreps_pseudoscalar.index(True)
+
+                    weights_pointer = 0
+                    for i, instr in enumerate(tp.instructions):
+                        weights_pointer += math.prod(instr.path_shape)
+                        if i==idx_irrep_pseudoscalar:
+                            weights_pointer_end = weights_pointer + math.prod(instr.path_shape)
+                            break
+                    with torch.no_grad():
+                        self.tp.weight[weights_pointer:weights_pointer_end] *= 100.0
+
 
         if relu_in_fc:
             self.fc_net = nn.Sequential(
@@ -62,7 +84,11 @@ class TensorProductConvLayer(nn.Module):
 
     def forward(self, x, edge_index, edge_attr, edge_sh, out_nodes=None, aggr='mean'):
         edge_src, edge_dst = edge_index
-        tp_out = self.tp(x[edge_src], edge_sh, self.fc_net(edge_attr))
+
+        if self.internal_weights is False:
+            tp_out = self.tp(x[edge_src], edge_sh, self.fc_net(edge_attr))
+        else:
+            tp_out = self.tp(x[edge_src], edge_sh)
 
         out_nodes = out_nodes or x.shape[0]
 
@@ -85,6 +111,7 @@ class EquiReact(nn.Module):
                  sum_mode='node', verbose=False, device='cpu', graph_mode='energy',
                  random_baseline=False, invariant=False,
                  classification = False, arch='normal',
+                 internal_weights=False,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -165,6 +192,8 @@ class EquiReact(nn.Module):
                 "residual": False,
                 "dropout": dropout_p,
                 "relu_in_fc": (self.arch!='no_relu_in_fc'),
+                "internal_weights": internal_weights,
+                "arch": self.arch,
             }
 
             layer = TensorProductConvLayer(**parameters)
@@ -253,7 +282,12 @@ class EquiReact(nn.Module):
 
         def update_dict(x_dict, x_update, irreps):
             n0 = 0
-            for key in str(irreps).split('+'):
+            keys = str(irreps).split('+')
+            # delete keys not in irreps (anything not going to updated)
+            for key in set(x_dict.keys())-set(keys):
+                del x_dict[key]
+            # update
+            for key in keys:
                 n, sym = key.split('x')
                 l = int(sym[:-1])
                 n = int(n) * (2*l+1)
@@ -264,6 +298,7 @@ class EquiReact(nn.Module):
                     x_dict[key] = update
                 n0 += n
 
+        # TODO precompute all the strig operations ???
         scalar_key = f'{self.n_s}x0e'
         pseudoscalar_key = f'{self.n_s}x0o'
         x_dict = {scalar_key: x}
@@ -332,7 +367,7 @@ class EquiReact(nn.Module):
             print('reaction x dims', x.shape)
         if self.sum_mode == 'node':
 
-            if self.arch in ['normal', 'no_relu_in_fc']:
+            if self.arch in ['normal', 'no_relu_in_fc', 'normal_weights100']:
                 score = self.score_predictor_nodes(x)
             elif self.arch=='normal_scaled':
                 x[:,self.n_s:]*=1e7
@@ -341,12 +376,14 @@ class EquiReact(nn.Module):
                 score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
                 score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
                 score = score1 * score2
-            elif self.arch=='both_nonscaled':
+            elif self.arch in ['both_nonscaled', 'both_weights100']:
                 score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
                 score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
                 score = score1 * score2
             elif self.arch=='pseudo':
                 score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+            elif self.arch in ['pseudo_nonscaled', 'pseudo_weights100']:
+                score = self.score_predictor_nodes_half(x[:,self.n_s:])
 
             if self.classification is True:
                 score = self.classif(score) * 2 - 1

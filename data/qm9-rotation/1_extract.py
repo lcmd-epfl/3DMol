@@ -9,6 +9,7 @@ elements = np.array(['H', 'C', 'N', 'O', 'F'])
 
 data_dict = {
         'idx' : [],
+        'n_centers' : [],
         'rot633' : [],
         'rot589' : [],
         'rot355' : [],
@@ -16,15 +17,19 @@ data_dict = {
 
 for i in tqdm(data):
     idx =i['index']
-    rot633, rot589, rot355 = i['rotation']
+    ncenters = len(i['chiral_centers'])
+    rot633, rot589, rot355 = i['rotation']   # order from Author's github and verified with Gaussian
     coords = i['xyz'][:,:3]
     atoms = i['xyz'][:,3:]
     atoms = elements[np.where(atoms==1.0)[1]]
+    coords = coords[:len(atoms)]
+    coords -= coords.mean(axis=0)
 
     data_dict['idx'   ].append(idx)
     data_dict['rot633'].append(rot633)
     data_dict['rot589'].append(rot589)
     data_dict['rot355'].append(rot355)
+    data_dict['n_centers'].append(ncenters)
 
     with open(f'xyz/{idx}.xyz', 'w') as f:
         print(len(atoms), file=f)

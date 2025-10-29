@@ -1,0 +1,23 @@
+# run_id=kjuvm99h, sweep_id=sn8p3eku, name=lilac-sweep-7, val_score_best=31.83194732666016, splitter=random
+arch	pseudo_nonscaled
+classification	False
+dataset	data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation
+distance_emb_dim	64
+dropout_p	0.05
+features	torchchem_v1
+geometry	dft
+graph_mode	vector
+internal_weights	False
+invariant	False
+lr	0.0005
+max_neighbors	25
+n_conv_layers	3
+n_s	48
+n_v	32
+noH	False
+radius	5.0
+seed	666
+sum_mode	node
+target_column	rot589
+train_frac	0.8
+weight_decay	0

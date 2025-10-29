@@ -1,0 +1,23 @@
+# run_id=p3mh45nv, sweep_id=2j04491n, name=solar-sweep-16, val_score_best=31.762470245361328, splitter=random
+arch	normal
+classification	False
+dataset	data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation
+distance_emb_dim	32
+dropout_p	0.0
+features	torchchem_v1
+geometry	dft
+graph_mode	vector
+internal_weights	False
+invariant	False
+lr	0.001
+max_neighbors	10
+n_conv_layers	3
+n_s	48
+n_v	32
+noH	False
+radius	10.0
+seed	666
+sum_mode	both
+target_column	rot589
+train_frac	0.8
+weight_decay	0
