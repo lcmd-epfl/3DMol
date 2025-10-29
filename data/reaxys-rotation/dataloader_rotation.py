@@ -4,11 +4,9 @@ from process.dataloader import MolDataset
 
 
 class Rotation(MolDataset):
-    def __init__(self, process=True, verbose=4,
-                 extra_args=None,
-                 classification=False,
-                 target_column=None, geometry=None, graph_method=None,
-                 noH=True, check=False):
+    def __init__(self, extra_args=None, target_column=None,
+                 geometry=None, graph_method=None,
+                 verbose=4, check=False, **kwargs):
 
         self.version = 4  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         dirname = os.path.dirname(__file__)
@@ -27,9 +25,5 @@ class Rotation(MolDataset):
         if self.parameters.geometry=='xtb':
             self.get_xyz_path = lambda idx: f'{dirname}/xyz-xtb/{idx}.xyz.xtbopt.xyz'
 
-        super().__init__(process=process, noH=noH,
-                         classification=classification,
-                         check=check,
-                         bad_indices=bad_indices,
-                         verbose=verbose)
+        super().__init__(bad_indices=bad_indices, verbose=verbose, check=check, **kwargs)
 

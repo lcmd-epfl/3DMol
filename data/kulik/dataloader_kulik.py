@@ -3,11 +3,9 @@ from process.dataloader import MolDataset
 
 
 class tmPHOTO(MolDataset):
-    def __init__(self, process=True, verbose=4,
-                 extra_args=None,
-                 classification=False,
-                 target_column=None, geometry=None, graph_method=None,
-                 noH=True, check=False):
+    def __init__(self, extra_args=None, target_column=None,
+                 geometry=None, graph_method=None,
+                 verbose=4, check=False, **kwargs):
 
         self.version = 2  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.processed_dir='data/kulik/processed/'
@@ -38,11 +36,9 @@ class tmPHOTO(MolDataset):
 
 
 class tmSCO(MolDataset):
-    def __init__(self, process=True, verbose=4,
-                 extra_args=None,
-                 classification=False,
-                 target_column=None, geometry=None, graph_method=None,
-                 noH=True, check=False):
+    def __init__(self, extra_args=None, target_column=None,
+                 geometry=None, graph_method=None,
+                 verbose=4, check=False, **kwargs):
 
         self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/kulik/tmSCO_property.csv'
@@ -71,11 +67,10 @@ class tmSCO(MolDataset):
 
 
 class _Octa(MolDataset):
-    def __init__(self, process=True, verbose=4,
-                 extra_args=None,
-                 classification=False,
-                 target_column=None, geometry=None, graph_method=None,
-                 noH=True, check=False, csv_path=None):
+    def __init__(self, extra_args=None, target_column=None,
+                 geometry=None, graph_method=None,
+                 csv_path=None,
+                 verbose=4, check=False, **kwargs):
 
         self.version = 2  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path = f'data/kulik/{csv_path}'
@@ -89,10 +84,7 @@ class _Octa(MolDataset):
         if self.parameters.geometry=='default':
             self.get_xyz_path = lambda idx: f'data/kulik/OctaKulik-xyz/{idx}.centered.xyz'
 
-        super().__init__(process=process, noH=noH,
-                         classification=classification,
-                         check=check, bad_indices=bad_indices,
-                         verbose=verbose)
+        super().__init__(bad_indices=bad_indices, verbose=verbose, check=check, **kwargs)
 
 
     def get_local_mask(self, asemol, **kwargs):
@@ -104,24 +96,10 @@ class _Octa(MolDataset):
 
 
 class OctaFull(_Octa):
-    def __init__(self, process=True, verbose=4,
-                 extra_args=None,
-                 classification=False,
-                 target_column=None, geometry=None, graph_method=None,
-                 noH=True, check=False):
-        super().__init__(process=process, verbose=verbose, extra_args=extra_args,
-                         classification=classification,
-                         target_column=target_column, geometry=geometry, graph_method=graph_method,
-                         noH=noH, check=check, csv_path='OctaKulik_property_HOMO_LUMO_gap.csv')
+    def __init__(self, **kwargs):
+        super().__init__(csv_path='OctaKulik_property_HOMO_LUMO_gap.csv', **kwargs)
 
 
 class OctaLow(_Octa):
-    def __init__(self, process=True, verbose=4,
-                 extra_args=None,
-                 classification=False,
-                 target_column=None, geometry=None, graph_method=None,
-                 noH=True, check=False):
-        super().__init__(process=process, verbose=verbose, extra_args=extra_args,
-                         classification=classification,
-                         target_column=target_column, geometry=geometry, graph_method=graph_method,
-                         noH=noH, check=check, csv_path='OctaKulik_property_splitting.csv')
+    def __init__(self, **kwargs):
+        super().__init__(csv_path='OctaKulik_property_splitting.csv', **kwargs)
