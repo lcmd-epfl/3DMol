@@ -39,7 +39,7 @@ python train.py \
 --max_neighbors 10 \
 --n_conv_layers 3 \
 --n_s 32 \
---n_v None \
+--n_v 0 \
 --radius 5.0 \
 --sum_mode node \
 --train_frac 0.8 \
