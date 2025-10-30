@@ -75,7 +75,7 @@ class MolDataset(Dataset):
         assert self.nmols==len(self.mol_graphs)
 
         if embedding_specs is not None:
-            self.extra = [{key: self.df[key].values[i] for key in embedding_specs.keys()} for i in range(len(self.df))]
+            self.extra = [{key: torch.tensor(self.df[key].values[i].item()) for key in embedding_specs.keys()} for i in range(len(self.df))]
 
         if classification:
             self.check_classes()
