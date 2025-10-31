@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --partition=gpu
+#SBATCH --partition=l40s
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=1
@@ -8,7 +8,6 @@
 #SBATCH --time=2:00:00
 #SBATCH --job-name=tmSCO-Polarizability-vector_masked
 #SBATCH --array=0-9
-#SBATCH --exclude=i39
 
 FOLD=$SLURM_ARRAY_TASK_ID
 
@@ -16,7 +15,7 @@ TRAIN_FRAC=0.798
 if [ $FOLD != 0 ]; then TRAIN_FRAC=$(printf "%.1f" $TRAIN_FRAC); fi
 
 module purge
-conda activate equireact
+conda activate equireact-kuma
 python -c 'import torch; print(torch.cuda.is_available())'
 wandb enabled
 
@@ -27,7 +26,7 @@ python train.py \
 --num_epochs 512 \
 --splitter test:data/kulik/tmSCO-splits/tmSCO_${FOLD}_test_indices.npy \
 --train_frac ${TRAIN_FRAC} \
---logdir /scratch/izar/briling/cv \
+--logdir /scratch/briling/cv \
 --print_predictions \
 --wandb_name cv10-tmSCO-Polarizability-inv-noH-ns64-d48-l3-vector_masked-node \
 --dataset data/kulik/dataloader_kulik.py:tmSCO \
