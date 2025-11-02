@@ -21,10 +21,7 @@ class tmPHOTO(MolDataset):
         if self.parameters.geometry=='xtb':
             self.get_xyz_path = lambda idx: f'data/kulik/tmPHOTO-xyz/{idx}.xyz'
 
-        super().__init__(process=process, noH=noH,
-                         classification=classification,
-                         check=check, bad_indices=bad_indices,
-                         verbose=verbose)
+        super().__init__(bad_indices=bad_indices, verbose=verbose, check=check, **kwargs)
 
 
     def get_local_mask(self, asemol, **kwargs):
@@ -52,10 +49,7 @@ class tmSCO(MolDataset):
         if self.parameters.geometry=='xtb':
             self.get_xyz_path = lambda idx: f'data/kulik/tmSCO-xyz/{idx}.xyz'
 
-        super().__init__(process=process, noH=noH,
-                         classification=classification,
-                         check=check, bad_indices=bad_indices,
-                         verbose=verbose)
+        super().__init__(bad_indices=bad_indices, verbose=verbose, check=check, **kwargs)
 
 
     def get_local_mask(self, asemol, **kwargs):
