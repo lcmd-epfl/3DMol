@@ -27,7 +27,7 @@ python train.py \
 --train_frac ${TRAIN_FRAC} \
 --logdir /scratch/briling/cv/ \
 --print_predictions \
---wandb_name cv10-random-OctaLow_emb-splitting-inv-noH-ns64-d16-l3-vector-both \
+--wandb_name cv10-random-OctaLow_emb_low-splitting-inv-noH-ns64-d16-l3-vector-both \
 --arch normal \
 --dataset data/kulik/dataloader_kulik.py:OctaLow \
 --distance_emb_dim 16 \
@@ -48,5 +48,5 @@ python train.py \
 --sum_mode both \
 --target_column splitting \
 --weight_decay 1e-05 \
---embedding_specs '{"multiplicity":{"type":"categorical","per":"graph","in_dim":1,"emb_dim":1024,"num_classes":101,"offset":0},"total_charge":{"type":"categorical","per":"graph","in_dim":1,"emb_dim":1024,"num_classes":201,"offset":100}}' 
+--embedding_specs '{"low_spin":{"type":"categorical","per":"graph","in_dim":1,"emb_dim":1024,"num_classes":101,"offset":0},"total_charge":{"type":"categorical","per":"graph","in_dim":1,"emb_dim":1024,"num_classes":201,"offset":100}}'
 
