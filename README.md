@@ -1,17 +1,18 @@
 ```
-conda install python=3.10.10
-pip install scipy numpy
-conda config --add channels pyg
-conda config --add channels nvidia
-conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit==10.2.8 -c pytorch -c nvidia
-conda install networkx==2.8.4 h5py==3.7
-pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-1.12.1+cu102.html
-pip install e3nn
-pip install rdkit==2023.03.1
-pip install pyaml wandb ase
-conda install pyg
-conda install pandas==2.0.2
+TORCH="2.7.0"
+CUDA="126"
+ENV_NAME="3dmol"
+conda create -n ${ENV_NAME} python=3.12.11
+conda activate ${ENV_NAME}
+conda install numpy==1.26.4
+conda install tqdm
+conda install networkx==3.5 h5py==3.14.0 pandas==2.3.1
+pip install torch==${TORCH} torchvision torchaudio
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv torch_geometric -f https://data.pyg.org/whl/torch-${TORCH}+cu${CUDA}.html
+pip install pyaml==25.7.0 wandb==0.21.0 ase==3.25.0
+pip install e3nn==0.5.1
+pip install rdkit==2025.3.3
 pip install chemprop==1.6.1
-pip install git+https://github.com/lcmd-epfl/cell2mol
 pip install morfeus-ml==0.7.2
+pip install git+https://github.com/lcmd-epfl/cell2mol
 ```
