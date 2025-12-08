@@ -2,11 +2,9 @@ from process.dataloader import MolDataset
 
 
 class PropargReactants(MolDataset):
-    def __init__(self, process=True, verbose=4,
-                 extra_args=None,
-                 classification=False,
-                 target_column=None, geometry=None, graph_method=None,
-                 noH=True, check=False):
+    def __init__(self, extra_args=None, target_column=None,
+                 geometry=None, graph_method=None,
+                 verbose=4, check=False, **kwargs):
 
         self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         self.csv_path='data/proparg/data_reactants.csv'
@@ -24,6 +22,4 @@ class PropargReactants(MolDataset):
             raise RuntimeError(f'unknown geometry {geometry}')
         self.get_xyz_path = lambda idx: f'{files_dir}/{idx}.r.xyz'
 
-        super().__init__(process=process, noH=noH, check=check,
-                         classification=classification,
-                         verbose=verbose)
+        super().__init__(bad_indices=bad_indices, verbose=verbose, check=check, **kwargs)

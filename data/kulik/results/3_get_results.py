@@ -9,16 +9,16 @@ import wandb
 results_path = 'results.csv'
 raw_data_path = 'cv_runs.csv'
 datasets = ['tmSCO', 'tmPHOTO']
-project = "equireact/nequimol"
+project = "equireact/3dmol-TMC-benchmark"
 drop_keys = ['CV iter', 'subset', 'random_baseline',
              'train loss', 'val_loss', 'val_score']
 
-lost_ids = ['gtgy65ds', 'smvao5hw']
+lost_ids = []
 
 if not os.path.isfile(raw_data_path):
     api = wandb.Api(timeout=20)
     runs = api.runs(project)
-    runs_lost = (api.run(f"equireact/nequimol/{idx}") for idx in lost_ids)
+    runs_lost = (api.run(f"{project}/{idx}") for idx in lost_ids)
 
     summary_list = []
     for run in chain(runs, runs_lost):

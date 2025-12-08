@@ -22,10 +22,12 @@ class MolDataset(Dataset):
 
 
     def __init__(self, process=True, bad_indices=None,
+                 embedding_specs=None,
                  extra_args=None,
                  classification=False,
                  noH=True, verbose=1, check=False):
-        global_version = 2  # INCREASE WHEN BREAKING CHANGES
+
+        global_version = 3  # INCREASE WHEN BREAKING CHANGES
         self.noH = noH
         self.graph_method = self.parameters.graph_method
         self.verbose = verbose
@@ -72,6 +74,9 @@ class MolDataset(Dataset):
         assert self.nmols==len(self.labels)
         assert self.nmols==len(self.mol_graphs)
 
+        if embedding_specs is not None:
+            self.extra = [{key: torch.tensor(self.df[key].values[i].item()) for key in embedding_specs.keys()} for i in range(len(self.df))]
+
         if classification:
             self.check_classes()
         else:
@@ -83,9 +88,8 @@ class MolDataset(Dataset):
 
 
     def __getitem__(self, idx):
-        mol = self.mol_graphs[idx]
-        label = self.labels[idx]
-        return self.labels[idx], idx, self.mol_graphs[idx]
+        extra = self.extra[idx] if hasattr(self, 'extra') else None
+        return self.labels[idx], idx, self.mol_graphs[idx], extra
 
 
     def process(self):

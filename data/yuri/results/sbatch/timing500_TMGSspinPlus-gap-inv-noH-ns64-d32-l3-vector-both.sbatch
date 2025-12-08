@@ -24,6 +24,7 @@ for i in data/yuri/0-XYZS/*.xyz; do
 done
 
 python train.py \
+--project "3dmol-TMC-benchmark" \
 --device cuda \
 --experiment_name 3DMol-yuri-timing \
 --CV 1 \

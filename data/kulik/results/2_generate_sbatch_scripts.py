@@ -21,7 +21,7 @@ for config in glob('configs/config-*-*-*-????????-????????.dat'):
         train_frac_bash = 'if (( $FOLD > 7 )); then TRAIN_FRAC=${TRAIN_FRAC}004; fi'
 
     header=f"""#!/bin/bash -l
-#SBATCH --partition=gpu
+#SBATCH --partition=l40s
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=1
@@ -30,7 +30,6 @@ for config in glob('configs/config-*-*-*-????????-????????.dat'):
 #SBATCH --time=2:00:00
 #SBATCH --job-name={short_dataset}-{base_config['target_column']}-{base_config['graph_mode']}
 #SBATCH --array=0-9
-#SBATCH --exclude=i39
 
 FOLD=$SLURM_ARRAY_TASK_ID
 
@@ -38,7 +37,7 @@ TRAIN_FRAC={base_config['train_frac']}
 {train_frac_bash}
 
 module purge
-conda activate equireact
+conda activate equireact-kuma
 python -c 'import torch; print(torch.cuda.is_available())'
 wandb enabled
 
@@ -50,7 +49,7 @@ python train.py \\"""
 --num_epochs 512 \\
 --splitter test:data/kulik/{short_dataset}-splits/{short_dataset}_${{FOLD}}_test_indices.npy \\
 --train_frac ${{TRAIN_FRAC}} \\
---logdir /scratch/izar/briling/cv \\
+--logdir /scratch/briling/cv \\
 --print_predictions \\
 --wandb_name cv10-{full_name} \\"""
 
