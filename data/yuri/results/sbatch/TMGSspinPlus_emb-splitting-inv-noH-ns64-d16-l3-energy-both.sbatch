@@ -17,6 +17,7 @@ python -c 'import torch; print(torch.cuda.is_available())'
 wandb enabled
 
 python train.py \
+--project "3dmol-TMC-benchmark" \
 --device cuda \
 --experiment_name 3DMol-yuri-cv \
 --CV 1 \
