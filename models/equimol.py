@@ -102,7 +102,7 @@ class TensorProductConvLayer(nn.Module):
         return out
 
 
-class EquiReact(nn.Module):
+class EquiMol(nn.Module):
 
     def __init__(self, node_fdim: int, edge_fdim: int, sh_lmax: int = 2,
                  n_s: int = 16, n_v: int = 16, n_conv_layers: int = 2,
@@ -381,7 +381,7 @@ class EquiReact(nn.Module):
             x *= graph.local_mask.to(self.device)[:,None]
         x = scatter_add(x, index=graph.batch.to(self.device), dim=0)
         if self.verbose:
-            print('reaction x dims', x.shape)
+            print(f'{x.shape=}')
         if self.sum_mode == 'node':
 
             if self.arch in ['normal', 'no_relu_in_fc', 'normal_weights100']:

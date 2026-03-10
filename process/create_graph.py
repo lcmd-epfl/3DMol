@@ -18,7 +18,7 @@ def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
     data.pos -> xyz coordinates
     data.edge_index -> --
     data.edge_attr -> --
-    data.y -> reaction id
+    data.y -> data point id
     """
     assert coords.shape[0] == len(atoms), "different number of atoms"
     assert coords.shape[1] == 3, "wrong dimensionality of coordinates"

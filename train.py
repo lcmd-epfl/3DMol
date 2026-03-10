@@ -26,8 +26,8 @@ import faulthandler
 faulthandler.enable()
 
 from trainer.metrics import MAE, Accuracy
-from trainer.react_trainer import ReactTrainer
-from models.equireact import EquiReact
+from trainer.mol_trainer import MolTrainer
+from models.equimol import EquiMol
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
@@ -84,7 +84,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path')
     g_hyper.add_argument('--random_baseline'      , action='store_true', default=False          ,  help='random baseline (no graph conv)')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
-    g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if run "InReact"')
+    g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if run invariant version')
     g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate for adam')
     g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001         ,  help='weight decay for adam')
     g_hyper.add_argument('--train_frac'           , type=float         , default=0.9            ,  help='training fraction to use (val/te will be equally split over rest)')
@@ -317,22 +317,22 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 print(f"{input_node_feats_dim=}")
                 print(f"{input_edge_feats_dim=}")
 
-            model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
-                              embedding_specs = embedding_specs,
-                              classification = hyper_dict['classification'],
-                              internal_weights=hyper_dict['internal_weights'],
-                              arch = hyper_dict['arch'],
-                              max_radius=hyper_dict['radius'],
-                              max_neighbors=hyper_dict['max_neighbors'],
-                              sum_mode=hyper_dict['sum_mode'],
-                              n_s=hyper_dict['n_s'],
-                              n_v=hyper_dict['n_v'],
-                              n_conv_layers=hyper_dict['n_conv_layers'],
-                              distance_emb_dim=hyper_dict['distance_emb_dim'],
-                              graph_mode=hyper_dict['graph_mode'],
-                              dropout_p=hyper_dict['dropout_p'],
-                              random_baseline=hyper_dict['random_baseline'],
-                              invariant=hyper_dict['invariant'])
+            model = EquiMol(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
+                            embedding_specs = embedding_specs,
+                            classification = hyper_dict['classification'],
+                            internal_weights=hyper_dict['internal_weights'],
+                            arch = hyper_dict['arch'],
+                            max_radius=hyper_dict['radius'],
+                            max_neighbors=hyper_dict['max_neighbors'],
+                            sum_mode=hyper_dict['sum_mode'],
+                            n_s=hyper_dict['n_s'],
+                            n_v=hyper_dict['n_v'],
+                            n_conv_layers=hyper_dict['n_conv_layers'],
+                            distance_emb_dim=hyper_dict['distance_emb_dim'],
+                            graph_mode=hyper_dict['graph_mode'],
+                            dropout_p=hyper_dict['dropout_p'],
+                            random_baseline=hyper_dict['random_baseline'],
+                            invariant=hyper_dict['invariant'])
             print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
             sampler = None
@@ -344,20 +344,20 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                     num_workers=num_workers)
 
 
-            trainer = ReactTrainer(model=model, std=std, device=device,
-                                   metrics=metrics, loss_func=loss_func,
-                                   main_metric=main_metric, main_metric_goal=main_metric_goal,
-                                   run_dir=run_dir, run_name=run_name_chk,
-                                   sampler=sampler, val_per_batch=val_per_batch,
-                                   checkpoint=checkpoint, fine_tuning=fine_tuning,
-                                   num_epochs=num_epochs,
-                                   eval_per_epochs=eval_per_epochs, patience=patience,
-                                   minimum_epochs=minimum_epochs, models_to_save=models_to_save,
-                                   clip_grad=clip_grad, log_iterations=log_iterations,
-                                   scheduler_step_per_batch = False, # CHANGED THIS
-                                   lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
-                                   lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
-                                   lr_scheduler_patience=lr_scheduler_patience)
+            trainer = MolTrainer(model=model, std=std, device=device,
+                                 metrics=metrics, loss_func=loss_func,
+                                 main_metric=main_metric, main_metric_goal=main_metric_goal,
+                                 run_dir=run_dir, run_name=run_name_chk,
+                                 sampler=sampler, val_per_batch=val_per_batch,
+                                 checkpoint=checkpoint, fine_tuning=fine_tuning,
+                                 num_epochs=num_epochs,
+                                 eval_per_epochs=eval_per_epochs, patience=patience,
+                                 minimum_epochs=minimum_epochs, models_to_save=models_to_save,
+                                 clip_grad=clip_grad, log_iterations=log_iterations,
+                                 scheduler_step_per_batch = False, # CHANGED THIS
+                                 lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
+                                 lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
+                                 lr_scheduler_patience=lr_scheduler_patience)
 
             time_start = timer()
             val_metrics, _, _ = trainer.train(train_loader, val_loader)
