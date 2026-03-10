@@ -19,14 +19,14 @@ conda activate equireact-kuma
 python -c 'import torch; print(torch.cuda.is_available())'
 wandb enabled
 
-for i in data/yuri/0-XYZS/*.xyz; do
+for i in data/TMGSspinPlus/0-XYZS/*.xyz; do
         md5sum $i;
 done
 
 python train.py \
 --project "3dmol-TMC-benchmark" \
 --device cuda \
---experiment_name 3DMol-yuri-timing \
+--experiment_name 3DMol-TMGSspinPlus-timing \
 --CV 1 \
 --num_epochs 128 \
 --splitter random \
@@ -34,7 +34,7 @@ python train.py \
 --print_predictions \
 --wandb_name time-TMGSspinPlus-gap-inv-noH-ns64-d32-l3-vector-both \
 --arch normal \
---dataset data/yuri/dataloader_yuri.py:TMGSspinPlus \
+--dataset data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus \
 --distance_emb_dim 32 \
 --dropout_p 0.0 \
 --features torchchem_v1 \

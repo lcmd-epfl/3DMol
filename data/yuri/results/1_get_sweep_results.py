@@ -3,7 +3,6 @@
 import os.path
 from itertools import chain
 import pandas as pd
-import wandb
 
 raw_data_path = 'sweep_best_runs.csv'
 max_runs = 64
@@ -18,6 +17,8 @@ sweep_ids = ['lif8aeuy', 'yqyy9zgs', 'mly7kccj', 'j8flw45y', 'bozlc35j', '2swidc
 
 
 if not os.path.isfile(raw_data_path):
+
+    import wandb
 
     summary_list = []
     api = wandb.Api()
@@ -46,6 +47,8 @@ else:
 
 
 for _, d in df.iterrows():
+    d['dataset']  = d['dataset'].replace('yuri', 'TMGSspinPlus')
+    d['splitter'] = d['splitter'].replace('yuri', 'TMGSspinPlus')
     print(d)
     run_id = d['run_id']
     sweep_id = d['sweep_id']

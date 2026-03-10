@@ -1,6 +1,6 @@
-# run_id=3v18cjfp, sweep_id=r0ni4mgm, name=misunderstood-sweep-13, val_score_best=0.0259193480014801, splitter=test:data/yuri/splits/0_test_indices.txt
+# run_id=3v18cjfp, sweep_id=r0ni4mgm, name=misunderstood-sweep-13, val_score_best=0.0259193480014801, splitter=test:data/TMGSspinPlus/splits/0_test_indices.txt
 arch	normal
-dataset	data/yuri/dataloader_yuri.py:TMGSspinPlus
+dataset	data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus
 distance_emb_dim	16
 dropout_p	0.0
 features	torchchem_v1

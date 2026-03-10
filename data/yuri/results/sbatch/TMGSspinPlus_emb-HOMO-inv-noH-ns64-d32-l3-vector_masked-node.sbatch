@@ -19,15 +19,15 @@ wandb enabled
 python train.py \
 --project "3dmol-TMC-benchmark" \
 --device cuda \
---experiment_name 3DMol-yuri-cv \
+--experiment_name 3DMol-TMGSspinPlus-cv \
 --CV 1 \
 --num_epochs 512 \
---splitter test:data/yuri/splits/${FOLD}_test_indices.txt \
+--splitter test:data/TMGSspinPlus/splits/${FOLD}_test_indices.txt \
 --logdir /scratch/briling/cv/ \
 --print_predictions \
 --wandb_name cv10-TMGSspinPlus_emb-HOMO-inv-noH-ns64-d32-l3-vector_masked-node \
 --arch normal \
---dataset data/yuri/dataloader_yuri.py:TMGSspinPlus \
+--dataset data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus \
 --distance_emb_dim 32 \
 --dropout_p 0.1 \
 --features torchchem_v1 \

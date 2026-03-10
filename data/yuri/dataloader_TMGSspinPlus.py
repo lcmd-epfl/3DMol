@@ -7,19 +7,20 @@ class TMGSspinPlus(MolDataset):
                  geometry=None, graph_method=None,
                  verbose=4, check=False, **kwargs):
 
-        self.version = 5  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
-        self.processed_dir='data/yuri/processed/'
+        self.version = 6  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
+        wd = 'os.path.dirname(__file__)'
+        self.processed_dir=f'{wd}/processed/'
         self.smiles_column = None
         self.id_column = 'refcode'
         self.default_parameters = dict(geometry='default', target_column='gap', graph_method='torchchem_v1',
-                                       _dl_extra_csv_path='data/yuri/Property_TM-GSspinPlus_2260.csv')
+                                       _dl_extra_csv_path=f'{wd}/Property_TM-GSspinPlus_2260.csv')
         bad_indices = None
         self.parameters = self.get_parameters(locals() | (extra_args if extra_args else {}))
 
         self.csv_path = self.parameters._dl_extra_csv_path
 
         if self.parameters.geometry=='default':
-            self.get_xyz_path = lambda idx: f'data/yuri/0-XYZS/{idx}.xyz'
+            self.get_xyz_path = lambda idx: f'{wd}/0-XYZS/{idx}.xyz'
         elif self.parameters.geometry=='xtb':
             raise NotImplementedError
 

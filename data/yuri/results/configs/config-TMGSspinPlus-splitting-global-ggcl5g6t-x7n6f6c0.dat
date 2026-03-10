@@ -1,6 +1,6 @@
-# run_id=x7n6f6c0, sweep_id=ggcl5g6t, name=mild-sweep-49, val_score_best=7.932286739349365, splitter=test:data/yuri/splits/0_test_indices.txt
+# run_id=x7n6f6c0, sweep_id=ggcl5g6t, name=mild-sweep-49, val_score_best=7.932286739349365, splitter=test:data/TMGSspinPlus/splits/0_test_indices.txt
 arch	normal
-dataset	data/yuri/dataloader_yuri.py:TMGSspinPlus
+dataset	data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus
 distance_emb_dim	16
 dropout_p	0.0
 features	torchchem_v1

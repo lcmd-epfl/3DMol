@@ -1,6 +1,6 @@
-# run_id=x1rzlfzd, sweep_id=zy4w3ezs, name=honest-sweep-23, val_score_best=8.127105712890625, splitter=test:data/yuri/splits/0_test_indices.txt
+# run_id=x1rzlfzd, sweep_id=zy4w3ezs, name=honest-sweep-23, val_score_best=8.127105712890625, splitter=test:data/TMGSspinPlus/splits/0_test_indices.txt
 arch	normal
-dataset	data/yuri/dataloader_yuri.py:TMGSspinPlus
+dataset	data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus
 distance_emb_dim	64
 dropout_p	0.05
 features	torchchem_v1

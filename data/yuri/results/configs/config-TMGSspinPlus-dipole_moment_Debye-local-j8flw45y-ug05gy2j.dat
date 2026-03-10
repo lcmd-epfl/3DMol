@@ -1,6 +1,6 @@
-# run_id=ug05gy2j, sweep_id=j8flw45y, name=exalted-sweep-60, val_score_best=1.9459151029586792, splitter=test:data/yuri/splits/0_test_indices.txt
+# run_id=ug05gy2j, sweep_id=j8flw45y, name=exalted-sweep-60, val_score_best=1.9459151029586792, splitter=test:data/TMGSspinPlus/splits/0_test_indices.txt
 arch	normal
-dataset	data/yuri/dataloader_yuri.py:TMGSspinPlus
+dataset	data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus
 distance_emb_dim	16
 dropout_p	0.1
 features	torchchem_v1

@@ -1,6 +1,6 @@
-# run_id=fxtd4uei, sweep_id=bozlc35j, name=graceful-sweep-24, val_score_best=0.3821024298667908, splitter=test:data/yuri/splits/0_test_indices.txt
+# run_id=fxtd4uei, sweep_id=bozlc35j, name=graceful-sweep-24, val_score_best=0.3821024298667908, splitter=test:data/TMGSspinPlus/splits/0_test_indices.txt
 arch	normal
-dataset	data/yuri/dataloader_yuri.py:TMGSspinPlus
+dataset	data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus
 distance_emb_dim	32
 dropout_p	0.0
 features	torchchem_v1

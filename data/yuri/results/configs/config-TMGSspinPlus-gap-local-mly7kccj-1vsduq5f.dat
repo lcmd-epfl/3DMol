@@ -1,6 +1,6 @@
-# run_id=1vsduq5f, sweep_id=mly7kccj, name=elated-sweep-62, val_score_best=0.3719390630722046, splitter=test:data/yuri/splits/0_test_indices.txt
+# run_id=1vsduq5f, sweep_id=mly7kccj, name=elated-sweep-62, val_score_best=0.3719390630722046, splitter=test:data/TMGSspinPlus/splits/0_test_indices.txt
 arch	normal
-dataset	data/yuri/dataloader_yuri.py:TMGSspinPlus
+dataset	data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus
 distance_emb_dim	48
 dropout_p	0.1
 features	torchchem_v1
