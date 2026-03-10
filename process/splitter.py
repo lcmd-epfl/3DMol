@@ -1,21 +1,11 @@
 import re
 import numpy as np
 import pandas as pd
-from chemprop.data.utils import get_data_from_smiles
-from process.scaffold import scaffold_split
 
 indices_names = ('train', 'test', 'val')
 
 def remove_atom_map_number_manual(smi):
     return re.sub(':[0-9]+', '', smi)
-
-
-def get_scaffold_splits(data, indices=None, sizes=(0.8, 0.1, 0.1)):
-    smiles = pd.read_csv(data.csv_path, index_col=0)[data.smiles_column].to_numpy()
-    smiles = smiles[indices]
-    chemprop_dataset = get_data_from_smiles([[remove_atom_map_number_manual(x)] for x in smiles])
-    train_idx, test_idx, val_idx = scaffold_split(chemprop_dataset, sizes=sizes, balanced=True)
-    return indices[train_idx], indices[test_idx], indices[val_idx]
 
 
 def get_y_splits(data, splitter, indices, tr_size, te_size):
@@ -138,10 +128,6 @@ def split_dataset(data, splitter, tr_frac, subset=None):
     elif splitter in ['sizeasc', 'sizedesc']:
         print(f"Splitting based on molecular size ({'ascending' if splitter=='sizeasc' else 'descending'} order)")
         tr_indices, te_indices, val_indices = get_size_splits(data, splitter, indices, tr_size, te_size)
-
-    elif splitter == 'scaffold':
-        print("Using scaffold splits")
-        tr_indices, te_indices, val_indices = get_scaffold_splits(data, indices, sizes=(tr_frac, 1-(tr_frac+te_frac), te_frac))
 
     elif sum(splitter.startswith(f'{i}:') for i in indices_names):
         print("Using indices from file")

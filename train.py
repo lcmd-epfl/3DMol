@@ -1,5 +1,6 @@
 import os
 import sys
+import importlib.util
 import argparse
 from ast import literal_eval
 import traceback
@@ -80,7 +81,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--sum_mode'             , type=str           , default='node'         ,  help='sum node (node, edge, or both)')
     g_hyper.add_argument('--graph_mode'           , type=str           , default='energy'       ,  help='prediction mode, energy, or vector')
     g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'        ,  help='cyclo / gdb / proparg')
-    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / scaffold / yasc / ydesc / test:path')
+    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path')
     g_hyper.add_argument('--random_baseline'      , action='store_true', default=False          ,  help='random baseline (no graph conv)')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
     g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if run "InReact"')
@@ -227,26 +228,15 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
-    if dataset=='proparg':
-        from process.dataloader_proparg import PropargReactants as MolDataloader
-    elif dataset=='test':
-        from process.dataloader_test import TestSet as MolDataloader
-    elif dataset=='dsC7O2H10nsd':
-        from process.dataloader_qm9 import dsC7O2H10nsd as MolDataloader
-    elif dataset=='qm9':
-        from process.dataloader_qm9 import QM9 as MolDataloader
-    else:
-        try:
-            dataloader_path, dataloader_class = dataset.split(':')
-            import importlib.util
-            import sys
-            spec = importlib.util.spec_from_file_location('GenMolDataset', dataloader_path)
-            foo = importlib.util.module_from_spec(spec)
-            sys.modules['GenMolDataset'] = foo
-            spec.loader.exec_module(foo)
-            MolDataloader = vars(foo)[dataloader_class]
-        except:
-            raise NotImplementedError(f'Cannot load the {dataset} dataset.')
+    try:
+        dataloader_path, dataloader_class = dataset.split(':')
+        spec = importlib.util.spec_from_file_location('GenMolDataset', dataloader_path)
+        foo = importlib.util.module_from_spec(spec)
+        sys.modules['GenMolDataset'] = foo
+        spec.loader.exec_module(foo)
+        MolDataloader = vars(foo)[dataloader_class]
+    except:
+        raise NotImplementedError(f'Cannot load the {dataset} dataset.')
 
     time_start = timer()
     data = MolDataloader(process=process, classification=classification,

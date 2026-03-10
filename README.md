@@ -1,3 +1,11 @@
+# 3DMol
+
+Geometric deep learning model for molecular properties based on [e3nn](https://e3nn.org).
+
+
+## Installation
+
+Change torch and cuda versions to the ones that work for your hardware and run:
 ```
 TORCH="2.7.0"
 CUDA="126"
@@ -12,7 +20,6 @@ pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv t
 pip install pyaml==25.7.0 wandb==0.21.0 ase==3.25.0
 pip install e3nn==0.5.1
 pip install rdkit==2025.3.3
-pip install chemprop==1.6.1
 pip install morfeus-ml==0.7.2
 pip install git+https://github.com/lcmd-epfl/cell2mol
 ```
