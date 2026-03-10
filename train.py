@@ -54,7 +54,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run = p.add_argument_group('external run parameters')
     g_run.add_argument('--experiment_name'    , type=str           , default=''       ,  help='name that will be added to the runs folder output')
     g_run.add_argument('--wandb_name'         , type=str           , default=None     ,  help='name of wandb run')
-    g_run.add_argument('--project'            , type=str           , default='nequimol', help='name of wandb project')
+    g_run.add_argument('--project'            , type=str           , default='3dmol-TMC-benchmark', help='name of wandb project')
     g_run.add_argument('--device'             , type=str           , default='cuda'   ,  help='cuda or cpu')
     g_run.add_argument('--logdir'             , type=str           , default='logs'   ,  help='log dir')
     g_run.add_argument('--checkpoint'         , type=str           , default=None     ,  help='path of the checkpoint file to continue training')
