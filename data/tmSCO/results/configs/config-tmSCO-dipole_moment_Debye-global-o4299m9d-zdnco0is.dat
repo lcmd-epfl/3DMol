@@ -1,0 +1,21 @@
+# run_id=zdnco0is, sweep_id=o4299m9d, name=twilight-sweep-52, val_score_best=1.9631323686558293, splitter=test:data/tmSCO/splits/tmSCO_0_test_indices.npy
+dataset	data/tmSCO/dataloader_tmSCO.py:tmSCO
+distance_emb_dim	32
+dropout_p	0.1
+features	torchchem_v1
+geometry	xtb
+graph_method	torchchem_v1
+graph_mode	vector_masked
+invariant	True
+lr	0.001
+max_neighbors	10
+n_conv_layers	3
+n_s	64
+n_v	nan
+noH	True
+radius	10.0
+seed	123
+sum_mode	node
+target_column	dipole_moment_Debye
+train_frac	0.798
+weight_decay	1e-05

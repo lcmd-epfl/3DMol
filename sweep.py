@@ -63,17 +63,17 @@ target_columns_good = {
         }
 splitter = {
         'TMGSspinPlus': 'test:data/TMGSspinPlus/splits/0_test_indices.txt',
-        'tmSCO': 'test:data/kulik/tmSCO-splits/tmSCO_0_test_indices.npy',
-        'tmPHOTO': 'test:data/kulik/tmPHOTO-splits/tmPHOTO_0_test_indices.npy',
-        'OctaFull': 'test:data/kulik/OctaKulik-splits/train_valid_3612/0_test_indices.txt',
-        'OctaLow': 'test:data/kulik/OctaKulik-splits/train_valid_1806/0_test_indices.txt',
+        'tmSCO': 'test:data/tmSCO/splits/tmSCO_0_test_indices.npy',
+        'tmPHOTO': 'test:data/tmPHOTO/splits/tmPHOTO_0_test_indices.npy',
+        'OctaFull': 'test:data/OctaMK/splits/train_valid_3612/0_test_indices.txt',
+        'OctaLow': 'test:data/OctaMK/splits/train_valid_1806/0_test_indices.txt',
         }
 dataset_full = {
         'TMGSspinPlus': 'data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus',
-        'tmSCO': 'data/kulik/dataloader_kulik.py:tmSCO',
-        'tmPHOTO': 'data/kulik/dataloader_kulik.py:tmPHOTO',
-        'OctaFull': 'data/kulik/dataloader_kulik.py:OctaFull',
-        'OctaLow': 'data/kulik/dataloader_kulik.py:OctaLow',
+        'tmSCO': 'data/tmSCO/dataloader_tmSCO.py:tmSCO',
+        'tmPHOTO': 'data/tmPHOTO/dataloader_tmPHOTO.py:tmPHOTO',
+        'OctaFull': 'data/OctaMK/dataloader_OctaMK.py:OctaFull',
+        'OctaLow': 'data/OctaMK/dataloader_OctaMK.py:OctaLow',
         }
 train_frac = {
     'TMGSspinPlus': 0.8,

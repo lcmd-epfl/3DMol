@@ -1,0 +1,21 @@
+# run_id=zrv1ynzo, sweep_id=0lfuf5ow, name=jumping-sweep-49, val_score_best=4.058198928833008, splitter=test:data/OctaMK/splits/train_valid_1806/0_test_indices.txt
+arch	normal
+dataset	data/OctaMK/dataloader_OctaMK.py:OctaLow
+distance_emb_dim	16
+dropout_p	0.0
+features	torchchem_v1
+geometry	default
+graph_method	torchchem_v1
+graph_mode	vector
+invariant	True
+lr	0.0005
+max_neighbors	50
+n_conv_layers	3
+n_s	64
+n_v	nan
+noH	True
+radius	2.5
+seed	123
+sum_mode	both
+target_column	splitting
+weight_decay	1e-05

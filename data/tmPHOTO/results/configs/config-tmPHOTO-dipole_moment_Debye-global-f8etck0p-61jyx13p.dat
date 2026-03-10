@@ -1,0 +1,21 @@
+# run_id=61jyx13p, sweep_id=f8etck0p, name=kind-sweep-15, val_score_best=1.4895820998612244, splitter=test:data/tmPHOTO/splits/tmPHOTO_0_test_indices.npy
+dataset	data/tmPHOTO/dataloader_tmPHOTO.py:tmPHOTO
+distance_emb_dim	16
+dropout_p	0.1
+features	torchchem_v1
+geometry	xtb
+graph_method	torchchem_v1
+graph_mode	vector_masked
+invariant	True
+lr	0.001
+max_neighbors	50
+n_conv_layers	3
+n_s	32
+n_v	nan
+noH	True
+radius	5.0
+seed	123
+sum_mode	both
+target_column	dipole_moment_Debye
+train_frac	0.8
+weight_decay	1e-05

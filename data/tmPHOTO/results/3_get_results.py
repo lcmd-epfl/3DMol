@@ -8,7 +8,7 @@ import wandb
 
 results_path = 'results.csv'
 raw_data_path = 'cv_runs.csv'
-dataset = 'TMGSspinPlus'
+datasets = ['tmPHOTO']
 project = "equireact/3dmol-TMC-benchmark"
 drop_keys = ['CV iter', 'subset', 'random_baseline',
              'train loss', 'val_loss', 'val_score']
@@ -22,7 +22,7 @@ if not os.path.isfile(raw_data_path):
 
     summary_list = []
     for run in chain(runs, runs_lost):
-        if run.config['dataset'].split(':')[-1] != dataset or run.sweep is not None:
+        if run.config['dataset'].split(':')[-1] not in datasets or run.sweep is not None:
             continue
 
         d1 = {'run_id': run.id, 'name': run.name}
@@ -38,7 +38,6 @@ if not os.path.isfile(raw_data_path):
     df = pd.DataFrame(summary_list)
     df.drop(labels=drop_keys, axis=1, inplace=True)
     df.drop_duplicates(inplace=True, ignore_index=True)
-    df.sort_values(['name', 'run_id'], inplace=True)
     df.to_csv(raw_data_path, index=False)
 else:
     df = pd.read_csv(raw_data_path)
@@ -46,18 +45,16 @@ else:
 
 results = []
 for name in set(df.name):
-    if not name.startswith('cv10'):
-        continue
     d = df[df['name'] == name].reset_index(drop=True)
     assert len(d) == 10, f'{name} {len(d)}'
     assert len(set(d['splitter'])) == 10
     results.append({
         'name': name,
-        #'dataset':   d.dataset[0].split(':')[-1],
+        'dataset':   d.dataset[0].split(':')[-1],
         'target':    d.target_column[0],
-        #'geometry':  d.geometry[0],
+        'geometry':  d.geometry[0],
         'scope':     'local' if d.graph_mode[0]=='vector_masked' else 'global',
-        #'invariant': d.invariant[0],
+        'invariant': d.invariant[0],
         'mae_mean':  d.test_score.mean(),
         'mae_std':   d.test_score.std(),
         'rmse_mean': d.test_rmse.mean(),
@@ -65,5 +62,5 @@ for name in set(df.name):
         })
 
 results = pd.DataFrame(results)
-results.sort_values(by=['target', 'scope'], inplace=True, ignore_index=True)
+results.sort_values(by=['dataset', 'target', 'scope'], inplace=True, ignore_index=True)
 results.to_csv(results_path, index=False)

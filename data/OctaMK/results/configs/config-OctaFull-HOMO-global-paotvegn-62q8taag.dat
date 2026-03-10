@@ -1,0 +1,21 @@
+# run_id=62q8taag, sweep_id=paotvegn, name=faithful-sweep-42, val_score_best=0.8855604529380798, splitter=test:data/OctaMK/splits/train_valid_3612/0_test_indices.txt
+arch	normal
+dataset	data/OctaMK/dataloader_OctaMK.py:OctaFull
+distance_emb_dim	64
+dropout_p	0.0
+features	torchchem_v1
+geometry	default
+graph_method	torchchem_v1
+graph_mode	vector_masked
+invariant	True
+lr	0.001
+max_neighbors	10
+n_conv_layers	3
+n_s	64
+n_v	nan
+noH	True
+radius	5.0
+seed	123
+sum_mode	node
+target_column	HOMO
+weight_decay	1e-05
