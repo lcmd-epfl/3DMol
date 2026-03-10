@@ -35,49 +35,42 @@ script_args = parser.parse_args()
 
 features = {
             'TMGSspinPlus': 'torchchem_v1',
-            'tmSCO': 'torchchem_v1',
             'tmPHOTO': 'torchchem_v1',
             'OctaFull': 'torchchem_v1',
             'OctaLow': 'torchchem_v1',
             }
 geometry = {
         'TMGSspinPlus': 'default',
-        'tmSCO': 'xtb',
         'tmPHOTO': 'xtb',
         'OctaFull': 'default',
         'OctaLow': 'default',
         }
 epochs = {
         'TMGSspinPlus': 128,
-        'tmSCO': 128,
         'tmPHOTO': 128,
         'OctaFull': 128,
         'OctaLow': 128,
         }
 target_columns_good = {
         'TMGSspinPlus': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'splitting', 'hirshfeld'),
-        'tmSCO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
         'tmPHOTO': ('HOMO', 'LUMO', 'gap', 'dipole_moment_Debye', 'Dispersion_E', 'Metal_q', 'Polarizability'),
         'OctaFull': ('HOMO', 'LUMO', 'gap'),
         'OctaLow': ('splitting'),
         }
 splitter = {
         'TMGSspinPlus': 'test:data/TMGSspinPlus/splits/0_test_indices.txt',
-        'tmSCO': 'test:data/tmSCO/splits/tmSCO_0_test_indices.npy',
         'tmPHOTO': 'test:data/tmPHOTO/splits/tmPHOTO_0_test_indices.npy',
         'OctaFull': 'test:data/OctaMK/splits/train_valid_3612/0_test_indices.txt',
         'OctaLow': 'test:data/OctaMK/splits/train_valid_1806/0_test_indices.txt',
         }
 dataset_full = {
         'TMGSspinPlus': 'data/TMGSspinPlus/dataloader_TMGSspinPlus.py:TMGSspinPlus',
-        'tmSCO': 'data/tmSCO/dataloader_tmSCO.py:tmSCO',
         'tmPHOTO': 'data/tmPHOTO/dataloader_tmPHOTO.py:tmPHOTO',
         'OctaFull': 'data/OctaMK/dataloader_OctaMK.py:OctaFull',
         'OctaLow': 'data/OctaMK/dataloader_OctaMK.py:OctaLow',
         }
 train_frac = {
     'TMGSspinPlus': 0.8,
-    'tmSCO': 0.798,
     'tmPHOTO': 0.8,
     'OctaFull': 0.599,
     'OctaLow': 0.599,
