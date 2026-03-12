@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 from datetime import datetime
@@ -31,6 +33,7 @@ parser.add_argument('--id', default=None, help='sweep id if continue a sweep')
 parser.add_argument('-n', '--num', default=64, help='number of runs')
 parser.add_argument('--equivariant', action='store_true', help='use equivariant model (default: invariant)')
 parser.add_argument('--local', action='store_true', help='use local (masked) model')
+parser.add_argument('--project', type=str, default='3dmol-TMC-benchmark', help='name of wandb project')
 script_args = parser.parse_args()
 
 features = {
@@ -75,7 +78,6 @@ train_frac = {
     'OctaFull': 0.599,
     'OctaLow': 0.599,
     }
-project = 'nequimol'
 
 dataset = script_args.dataset
 local = script_args.local
@@ -142,6 +144,6 @@ sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)
 
 wandb_name = 'test'
-sweep_id = wandb.sweep(sweep_config, project=project) if script_args.id is None else script_args.id
+sweep_id = wandb.sweep(sweep_config, project=script_args.project) if script_args.id is None else script_args.id
 print(sweep_id)
-wandb.agent(sweep_id, train_wrapper, count=script_args.num, project=project)
+wandb.agent(sweep_id, train_wrapper, count=script_args.num, project=script_args.project)
