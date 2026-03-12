@@ -20,7 +20,7 @@ class TMGSspinPlus(MolDataset):
         self.csv_path = self.parameters._dl_extra_csv_path
 
         if self.parameters.geometry=='default':
-            self.get_xyz_path = lambda idx: f'{wd}/0-XYZS/{idx}.xyz'
+            self.get_xyz_path = lambda idx: f'{wd}/xyz/{idx}.xyz'
         elif self.parameters.geometry=='xtb':
             raise NotImplementedError
 
