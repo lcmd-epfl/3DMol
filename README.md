@@ -46,6 +46,23 @@ wandb enabled
 ```
 See also a submission script [example](data/TMGSspinPlus/results/0_submit-sweep.sbatch).
 
+The following hyperparameters can be optimized:
+
+| parameter          | description                                             |
+| -------------------|---------------------------------------------------------|
+| `lr`               | Adam initial learning rate                              |
+| `weight_decay`     | Adam weight decay parameter                             |
+| `n_s`              | node and edge features embedding size                   |
+| `n_v`              | $\ell>0$ embedding size (for the equivariant version only)  |
+| `distance_emb_dim` | number of initial edge features                         |
+| `n_conv_layers`    | number of convolutional layers (2 or 3)                 |
+| `radius`           | radial cutoff, Å                                        |
+| `max_neighbors`    | maximum number of atom neighbors                        |
+| `dropout_p`        | dropout probability                                     |
+| `sum_mode`         | which features (node/edge) go to the representations    |
+| `graph_mode`       | the manner to construct the global representation from the local ones (for the global version only) |
+
+
 ### Training
 
 For training and evaluation the logging with W&B is optional.
@@ -89,6 +106,7 @@ wandb enabled
     --train_frac 0.8 \
     --weight_decay 1e-05 \
 ```
+The global version is enabled by `--graph_mode [energy|vector]`.
 The results (log and checkpoint files) will be saved to `%LOGDIR/%EXPERIMENT_NAME/%WANDB_NAME.*`.
 We recommend to set `--logdir` to your scratch directory.
 
