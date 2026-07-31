@@ -1,41 +1,71 @@
+#!/usr/bin/env python3
+
+import os
+from urllib.request import urlretrieve
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-# https://zenodo.org/records/13380412
-data = np.load('qm9-or.npy', allow_pickle=True)
-
+url = 'https://zenodo.org/records/13380412/files/qm9-or.npy'
 elements = np.array(['H', 'C', 'N', 'O', 'F'])
+lambdas = [633, 589, 355]  # order from Author's github https://github.com/bcmort/OHECC and verified with Gaussian
+max_idx_len = 6  # indices are 6-number strings
 
-data_dict = {
-        'idx' : [],
-        'n_centers' : [],
-        'rot633' : [],
-        'rot589' : [],
-        'rot355' : [],
-        }
+orig_path = 'qm9-or.npy'
+csv_path = 'data_raw.csv'
+xyz_dir = 'xyz'
+overwrite_xyz = False
 
-for i in tqdm(data):
-    idx =i['index']
-    ncenters = len(i['chiral_centers'])
-    rot633, rot589, rot355 = i['rotation']   # order from Author's github and verified with Gaussian
-    coords = i['xyz'][:,:3]
-    atoms = i['xyz'][:,3:]
-    atoms = elements[np.where(atoms==1.0)[1]]
-    coords = coords[:len(atoms)]
-    coords -= coords.mean(axis=0)
 
-    data_dict['idx'   ].append(idx)
-    data_dict['rot633'].append(rot633)
-    data_dict['rot589'].append(rot589)
-    data_dict['rot355'].append(rot355)
-    data_dict['n_centers'].append(ncenters)
+def download(fpath, url):
 
-    with open(f'xyz/{idx}.xyz', 'w') as f:
+    class TqdmUpTo(tqdm):
+        def update_to(self, b=1, bsize=1, tsize=None):
+            if tsize is not None:
+                self.total = tsize
+            return self.update(b * bsize - self.n)
+
+    with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1,
+                  desc=url.split('/')[-1]) as t:
+        urlretrieve(url, filename=fpath, reporthook=t.update_to, data=None)
+        t.total = t.n
+
+
+def write_xyz(fpath, comment, atoms, coords):
+    with open(fpath, 'w') as f:
         print(len(atoms), file=f)
-        print(idx, file=f)
+        print(comment, file=f)
         for q, r in zip(atoms, coords):
             print(q, *r, file=f)
 
-df = pd.DataFrame(data_dict)
-df.to_csv('data_raw.csv', index=False)
+
+def extract_xyz(idx, xyz):
+    fname = f'{xyz_dir}/{idx}.xyz'
+    if overwrite_xyz or not os.path.isfile(fname):
+        coords = xyz[:,:3]
+        atoms = xyz[:,3:]
+        atoms = elements[np.where(atoms==1.0)[1]]
+        coords = coords[:len(atoms)]
+        coords -= coords.mean(axis=0)
+        write_xyz(fname, idx, atoms, coords)
+
+
+def main():
+    if not os.path.isfile(orig_path):
+        download(orig_path, url)
+
+    data = np.load(orig_path, allow_pickle=True)
+    idx = np.zeros(len(data), dtype=f'<U{max_idx_len}')
+    rot = np.zeros((len(data), len(lambdas)))
+
+    for i, entry in enumerate(tqdm(data)):
+        idx[i] = entry['index']
+        rot[i,:] = entry['rotation']
+        extract_xyz(idx[i], entry['xyz'])
+
+    df = pd.DataFrame({'idx': idx} | {f'rot{la}': rot[:,i] for i, la in enumerate(lambdas)})
+    df.to_csv(csv_path, index=False)
+
+
+if __name__=='__main__':
+    main()

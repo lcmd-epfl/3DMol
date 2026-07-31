@@ -1,0 +1,29 @@
+Step 4:
+
+chiral and at least one |α|>1 104387
+achiral and all |α|<1 12187
+weird: chiral and all |α|=<1 356
+weird: achiral and at least one |α|>1 4486
+weird: chiral and at least one |α|>1 but at least one |α|=0: 18
+
+
+Step 5:
+
+k= 0.57 b=  -1.36       R^2= 0.489      outliers= 14
+k= 0.75 b=  -0.55       R^2= 0.929      outliers= 35
+k= 0.81 b=  -0.16       R^2= 0.995      outliers= 14
+k= 0.82 b=  -0.07       R^2= 0.997      outliers=  0
+
+k= 5.05 b= -36.62       R^2= 0.001      outliers= 13
+k= 4.51 b= -15.67       R^2= 0.028      outliers= 46
+k= 4.24 b=  -8.43       R^2= 0.094      outliers= 72
+k= 4.25 b=   4.89       R^2= 0.195      outliers= 92
+k= 5.47 b=   3.87       R^2= 0.439      outliers= 66
+k= 5.71 b=   7.36       R^2= 0.584      outliers= 39
+k= 5.70 b=   6.51       R^2= 0.629      outliers= 27
+k= 5.69 b=   5.98       R^2= 0.656      outliers= 20
+k= 5.69 b=   5.71       R^2= 0.674      outliers=  8
+k= 5.69 b=   5.94       R^2= 0.681      outliers=  4
+k= 5.70 b=   5.72       R^2= 0.684      outliers=  1
+k= 5.69 b=   5.84       R^2= 0.685      outliers=  0
+
