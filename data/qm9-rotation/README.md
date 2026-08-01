@@ -80,6 +80,9 @@ k= 5.69 b=   5.94       R^2= 0.681      outliers=  4    threshold=20σ
 k= 5.70 b=   5.72       R^2= 0.684      outliers=  1    threshold=20σ
 k= 5.69 b=   5.84       R^2= 0.685      outliers=  0    threshold=20σ
 
+589 vs 633
+k= 0.83 b=  -0.02       R^2= 0.999      outliers=  0    threshold=100σ
+
 *** 104369 total, 103916 (99.6%) kept, 453 (0.4%) removed
 ```
 Modifies `data.csv`.

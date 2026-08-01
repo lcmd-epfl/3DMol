@@ -29,8 +29,23 @@ def plot_outliers():
     plt.show()
 
 
+def print_stats(df):
+    for la in [589, 633, 355]:
+        idx = np.argsort(x:=df[f'rot{la}_abs'].to_numpy())
+        x = x[idx]
+        print(la)
+        print('median', '\t', x[len(x)//2])
+        print('mean',   '\t', x.mean())
+        print('std',    '\t', x.std())
+        print('P95',    '\t', x[int(len(x)*0.95)])
+        print('max',    '\t', x[-1])
+        print('id',     '\t', df.iloc[idx[-1]].name)
+        print()
+
+
 def main():
     df = pd.read_csv(csv_path, dtype={'idx': str}, index_col='idx')
+    #print_stats(df)
     tot = len(df)
     df.drop(labels=worst, axis=0, inplace=True, errors='ignore')
 
@@ -54,10 +69,16 @@ def main():
             break
     print()
 
+    print('589 vs 633')
+    df['y'] = df['rot633']
+    find_outliers(df, threshold=100)
+    print()
+
     df.drop(labels=['x', 'y', 'y_pred', 'dy', 'outlier'], axis=1, inplace=True)
     df.to_csv(csv_path)
     print('*** {} total, {} ({:.1f}%) kept, {} ({:.1f}%) removed'.format(tot, kept:=len(df), kept/tot*100, removed:=tot-kept, removed/tot*100))
 
+    #print_stats(df)
 
 if __name__=='__main__':
     main()
