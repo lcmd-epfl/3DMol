@@ -5,23 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from e3nn import o3
 from torch_scatter import scatter, scatter_add
-from torch_cluster import radius_graph
 
-
-class GaussianSmearing(nn.Module):
-    # used to embed the edge distances
-    def __init__(self, start=0.0, stop=5.0, num_gaussians=50, device='cpu'):
-        super().__init__()
-        self.device = device
-        mu = torch.linspace(start, stop, num_gaussians).to(self.device)
-        self.coeff = -0.5 / (mu[1] - mu[0]).item() ** 2
-        self.register_buffer('mu', mu)
-
-    def forward(self, dist):
-        # right now mixed devices
-        dist = dist.to(self.device)
-        dist = dist.view(-1, 1) - self.mu.view(1, -1)
-        return torch.exp(self.coeff * torch.pow(dist, 2))
+from .graph import BuildGraph
 
 
 class TensorProductConvLayer(nn.Module):
@@ -158,8 +143,6 @@ class EquiReact(nn.Module):
             nn.Linear(n_s, n_s)
         )
 
-        self.dist_expansion = GaussianSmearing(start=0.0, stop=max_radius, num_gaussians=distance_emb_dim, device=self.device)
-
         conv_layers = []
         for i in range(n_conv_layers):
             in_irreps = irrep_seq[min(i, len(irrep_seq) - 1)]
@@ -235,23 +218,13 @@ class EquiReact(nn.Module):
 
         self.classif = nn.Sigmoid()
 
-
-
-    def build_graph(self, data):
-
-        radius_edges = radius_graph(data.pos, self.max_radius, data.batch)
-
-        src, dst = radius_edges
-        edge_vec = data.pos[dst.long()] - data.pos[src.long()]
-        edge_length_emb = self.dist_expansion(edge_vec.norm(dim=-1))
-
-        edge_sh = o3.spherical_harmonics(self.sh_irreps, edge_vec, normalize=True, normalization='component')
-        return data.x.to(self.device), radius_edges.to(self.device), edge_length_emb.to(self.device), edge_sh.to(self.device)
+        self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius, distance_emb_dim=self.distance_emb_dim, device=self.device)
 
 
     def forward_repr_mol(self, data, extra):
 
         x, edge_index, edge_attr, edge_sh = self.build_graph(data)
+
         if self.verbose:
             print('dim of x', x.shape)
             print('dim of radius_graph (edges)', edge_index.shape)
@@ -308,7 +281,7 @@ class EquiReact(nn.Module):
     def forward_mol(self, graph, extra):
         x, (src, dst), edge_attr = self.forward_repr_mol(graph, extra)
         if self.graph_mode=='vector_masked':
-            x *= graph.local_mask.to(self.device)[:,None]
+            x *= graph.local_mask[:,None]
         x = scatter_add(x, index=graph.batch.to(self.device), dim=0)
         if self.verbose:
             print('reaction x dims', x.shape)

@@ -7,12 +7,12 @@ class CustomCollator(object):
         self.device = device
 
     def __call__(self, batch):
-        data = list(map(list, zip(*batch)))
+        data = list(map(list, zip(*batch)))  # on cpu
         targets, idx, graphs, extra = data
         targets = torch.tensor(targets).float().reshape(-1, 1).to(self.device)
-        graphs = Batch.from_data_list(graphs)
+        graphs = Batch.from_data_list(graphs).to(self.device)
         if extra[0] is not None:
             extra = {key: torch.tensor([d[key] for d in extra], device=self.device) for key in extra[0].keys()}
         else:
             extra = None
-        return graphs, extra, targets, idx
+        return graphs, extra, targets, idx  # on device except for idx
