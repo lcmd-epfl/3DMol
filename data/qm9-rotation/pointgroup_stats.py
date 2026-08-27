@@ -5,6 +5,7 @@ import pandas as pd
 
 for path, col in [
         ('data_raw.csv', 'point_group'),
+        ('data_raw.csv', 'point_group_noH'),
         ('data.csv', 'point_group'),
         ('data.csv', 'point_group_noH'),
          ]:
