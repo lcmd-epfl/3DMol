@@ -1,0 +1,104 @@
+element:C	2529028	(7.9e+01%)	134090	(1.0e+02%)	
+element:N	148675	(4.6e+00%)	74950	(5.6e+01%)	
+element:S	23270	(7.2e-01%)	20240	(1.5e+01%)	
+element:O	440635	(1.4e+01%)	125529	(9.4e+01%)	
+element:Cl	13597	(4.2e-01%)	10728	(8.0e+00%)	
+element:Br	6333	(2.0e-01%)	5415	(4.0e+00%)	
+element:P	4635	(1.4e-01%)	3846	(2.9e+00%)	
+element:F	30918	(9.6e-01%)	13156	(9.8e+00%)	
+element:Si	8258	(2.6e-01%)	7105	(5.3e+00%)	
+element:I	1331	(4.1e-02%)	1223	(9.1e-01%)	
+element:B	1319	(4.1e-02%)	1283	(9.6e-01%)	
+element:Pd	117	(3.6e-03%)	97	(7.2e-02%)	*
+element:Li	23	(7.2e-04%)	21	(1.6e-02%)	*
+element:Mg	8	(2.5e-04%)	8	(6.0e-03%)	*
+element:Se	586	(1.8e-02%)	521	(3.9e-01%)	*
+element:Mn	16	(5.0e-04%)	16	(1.2e-02%)	*
+element:Eu	7	(2.2e-04%)	7	(5.2e-03%)	*
+element:Sn	267	(8.3e-03%)	262	(2.0e-01%)	*
+element:Te	26	(8.1e-04%)	22	(1.6e-02%)	*
+element:Zn	18	(5.6e-04%)	18	(1.3e-02%)	*
+element:Hg	23	(7.2e-04%)	18	(1.3e-02%)	*
+element:Sc	1	(3.1e-05%)	1	(7.5e-04%)	*
+element:Ni	113	(3.5e-03%)	109	(8.1e-02%)	*
+element:Dy	12	(3.7e-04%)	12	(8.9e-03%)	*
+element:Rh	65	(2.0e-03%)	51	(3.8e-02%)	*
+element:As	39	(1.2e-03%)	31	(2.3e-02%)	*
+element:Al	3	(9.3e-05%)	3	(2.2e-03%)	*
+element:Ge	69	(2.1e-03%)	69	(5.1e-02%)	*
+element:Pt	142	(4.4e-03%)	135	(1.0e-01%)	*
+element:Na	2	(6.2e-05%)	2	(1.5e-03%)	*
+element:Fe	19	(5.9e-04%)	17	(1.3e-02%)	*
+element:Co	128	(4.0e-03%)	116	(8.7e-02%)	*
+element:Ru	54	(1.7e-03%)	54	(4.0e-02%)	*
+element:Cu	96	(3.0e-03%)	89	(6.6e-02%)	*
+element:Pr	2	(6.2e-05%)	2	(1.5e-03%)	*
+element:Yb	7	(2.2e-04%)	7	(5.2e-03%)	*
+element:Mo	8	(2.5e-04%)	6	(4.5e-03%)	*
+element:Cr	23	(7.2e-04%)	23	(1.7e-02%)	*
+element:V	36	(1.1e-03%)	35	(2.6e-02%)	*
+element:Ti	16	(5.0e-04%)	16	(1.2e-02%)	*
+element:Ir	6	(1.9e-04%)	3	(2.2e-03%)	*
+element:Os	2	(6.2e-05%)	2	(1.5e-03%)	*
+element:Zr	3	(9.3e-05%)	3	(2.2e-03%)	*
+element:Au	9	(2.8e-04%)	8	(6.0e-03%)	*
+element:Re	2	(6.2e-05%)	2	(1.5e-03%)	*
+element:Cd	1	(3.1e-05%)	1	(7.5e-04%)	*
+element:Bi	6	(1.9e-04%)	6	(4.5e-03%)	*
+element:Sm	2	(6.2e-05%)	2	(1.5e-03%)	*
+element:Ag	3	(9.3e-05%)	2	(1.5e-03%)	*
+element:Ca	1	(3.1e-05%)	1	(7.5e-04%)	*
+element:In	1	(3.1e-05%)	1	(7.5e-04%)	*
+element:Pb	1	(3.1e-05%)	1	(7.5e-04%)	*
+element:C	2485904	(7.9e+01%)	132314	(1.0e+02%)	
+element:N	145975	(4.6e+00%)	73940	(5.6e+01%)	
+element:S	22920	(7.3e-01%)	20066	(1.5e+01%)	
+element:O	435727	(1.4e+01%)	124180	(9.4e+01%)	
+element:Cl	13305	(4.2e-01%)	10518	(7.9e+00%)	
+element:Br	6241	(2.0e-01%)	5349	(4.0e+00%)	
+element:P	4156	(1.3e-01%)	3615	(2.7e+00%)	
+element:F	30192	(9.6e-01%)	13031	(9.8e+00%)	
+element:Si	8107	(2.6e-01%)	6990	(5.3e+00%)	
+element:I	1252	(4.0e-02%)	1164	(8.8e-01%)	
+element:B	1312	(4.2e-02%)	1279	(9.7e-01%)	
+element:Pd	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Li	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Mg	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Se	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Mn	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Eu	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Sn	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Te	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Zn	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Hg	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Sc	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Ni	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Dy	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Rh	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:As	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Al	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Ge	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Pt	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Na	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Fe	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Co	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Ru	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Cu	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Pr	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Yb	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Mo	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Cr	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:V	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Ti	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Ir	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Os	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Zr	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Au	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Re	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Cd	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Bi	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Sm	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Ag	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Ca	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:In	0	(0.0e+00%)	0	(0.0e+00%)	*
+element:Pb	0	(0.0e+00%)	0	(0.0e+00%)	*
