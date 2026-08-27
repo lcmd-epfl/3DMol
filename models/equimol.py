@@ -8,15 +8,6 @@ from torch_scatter import scatter, scatter_add
 from torch_cluster import radius_graph
 
 
-def get_device(tensor):
-    int = tensor.get_device()
-    if int == 0:
-        return 'cuda'
-    elif int == -1:
-        return 'cpu'
-    else:
-        return None
-
 class GaussianSmearing(nn.Module):
     # used to embed the edge distances
     def __init__(self, start=0.0, stop=5.0, num_gaussians=50, device='cpu'):
@@ -106,13 +97,12 @@ class EquiReact(nn.Module):
 
     def __init__(self, node_fdim: int, edge_fdim: int, sh_lmax: int = 2,
                  n_s: int = 16, n_v: int = 16, n_conv_layers: int = 2,
-                 max_radius: float = 10.0, max_neighbors: int = 20,
+                 max_radius: float = 10.0,
                  distance_emb_dim: int = 32, dropout_p: float = 0.1,
-                 sum_mode='node', verbose=False, device='cpu', graph_mode='energy',
-                 random_baseline=False, invariant=False,
+                 verbose=False, device='cpu', graph_mode='vector',
+                 invariant=False,
                  classification = False, arch='normal',
                  internal_weights=False,
-                 embedding_specs=None,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -125,20 +115,14 @@ class EquiReact(nn.Module):
         self.sh_irreps = o3.Irreps.spherical_harmonics(lmax=sh_lmax)
         self.n_s, self.n_v = n_s, n_v
         self.n_conv_layers = n_conv_layers
-        self.sum_mode = sum_mode
         self.n_s_full = 2 * self.n_s if (not invariant and self.n_conv_layers >= 3) else self.n_s
         self.distance_emb_dim = distance_emb_dim
         self.max_radius = max_radius
-        self.max_neighbors = max_neighbors
         self.verbose = verbose
         self.graph_mode = graph_mode
         self.device = device
-        self.random_baseline = random_baseline
         self.arch = arch
         self.classification = classification
-        if self.random_baseline:
-            self.graph_mode = 'node'
-            print("random baseline is on, i.e. features will be replaced with random numbers")
 
         if invariant:
             irrep_seq = [
@@ -252,15 +236,6 @@ class EquiReact(nn.Module):
         self.classif = nn.Sigmoid()
 
 
-        if embedding_specs is not None:
-            from models.embeddings import GenericJointEmbedding
-            self.joint_embedding = GenericJointEmbedding(
-                base_dim=self.n_s_full,
-                embedding_specs=embedding_specs,
-                out_dim=self.n_s_full,
-            )
-
-
 
     def build_graph(self, data):
 
@@ -330,92 +305,39 @@ class EquiReact(nn.Module):
         return x, edge_index, edge_attr
 
 
-    def forward_energy_mode(self, data, extra):
-
-        if data.x.shape[0]==0:
-            return torch.zeros((data.num_graphs, 1), device=self.device)
-
-        x, (src, dst), edge_attr = self.forward_repr_mol(data, extra)
-        data.batch = data.batch.to(self.device)
-
-        if self.random_baseline:
-            x = torch.rand(x.shape)
-
-        if self.sum_mode == 'both':
-            score_inputs_nodes = x
-            score_inputs_edges = torch.cat([edge_attr, x[src], x[dst]], dim=-1)
-
-            edge_batch = data.batch[src]
-            scores_nodes = self.score_predictor_nodes(score_inputs_nodes)
-            scores_edges = self.score_predictor_edges(score_inputs_edges)
-
-            score_node = scatter_add(scores_nodes, index=data.batch, dim=0)
-            score_edge = scatter_add(scores_edges, index=edge_batch, dim=0)
-            score_edge = F.pad(score_edge, (0, 0, 0, score_node.shape[0]-score_edge.shape[0]))
-            score = score_node + score_edge
-        elif self.sum_mode == 'node':
-            score_inputs_nodes = x
-            scores_nodes = self.score_predictor_nodes(score_inputs_nodes)
-            score = scatter_add(scores_nodes, index=data.batch, dim=0)
-        elif self.sum_mode == 'edge':
-            score_inputs_edges = torch.cat([edge_attr, x[src], x[dst]], dim=-1)
-            edge_batch = data.batch[src]
-            scores_edges = self.score_predictor_edges(score_inputs_edges)
-            score = scatter_add(scores_edges, index=edge_batch, dim=0)
-        else:
-            raise RuntimeError(f'sum mode {self.sum_mode} not defined')
-
-        padsize = data.num_graphs-score.shape[0]
-        if padsize>0:
-            score = F.pad(score, (0, 0, 0, padsize))
-        return score
-
-
-    def forward_vector_mode(self, graph, extra):
+    def forward_mol(self, graph, extra):
         x, (src, dst), edge_attr = self.forward_repr_mol(graph, extra)
-        if self.sum_mode == 'both':
-            xedge = scatter_add(edge_attr, index=src, dim=0)
-            xedge = F.pad(xedge, (0, 0, 0, x.shape[0]-xedge.shape[0]))
-            x = torch.hstack((x, xedge))
         if self.graph_mode=='vector_masked':
             x *= graph.local_mask.to(self.device)[:,None]
         x = scatter_add(x, index=graph.batch.to(self.device), dim=0)
         if self.verbose:
             print('reaction x dims', x.shape)
-        if self.sum_mode == 'node':
 
-            if self.arch in ['normal', 'no_relu_in_fc', 'normal_weights100']:
-                score = self.score_predictor_nodes(x)
-            elif self.arch=='normal_scaled':
-                x[:,self.n_s:]*=1e7
-                score = self.score_predictor_nodes(x)
-            elif self.arch=='both':
-                score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
-                score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
-                score = score1 * score2
-            elif self.arch in ['both_nonscaled', 'both_weights100']:
-                score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
-                score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
-                score = score1 * score2
-            elif self.arch=='pseudo':
-                score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
-            elif self.arch in ['pseudo_nonscaled', 'pseudo_weights100']:
-                score = self.score_predictor_nodes_half(x[:,self.n_s:])
+        if self.arch in ['normal', 'no_relu_in_fc', 'normal_weights100']:
+            score = self.score_predictor_nodes(x)
+        elif self.arch=='normal_scaled':
+            x[:,self.n_s:]*=1e7
+            score = self.score_predictor_nodes(x)
+        elif self.arch=='both':
+            score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
+            score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+            score = score1 * score2
+        elif self.arch in ['both_nonscaled', 'both_weights100']:
+            score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
+            score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
+            score = score1 * score2
+        elif self.arch=='pseudo':
+            score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+        elif self.arch in ['pseudo_nonscaled', 'pseudo_weights100']:
+            score = self.score_predictor_nodes_half(x[:,self.n_s:])
 
-            if self.classification is True:
-                score = self.classif(score) * 2 - 1
+        if self.classification is True:
+            score = self.classif(score) * 2 - 1
 
-        elif self.sum_mode == 'both':
-            score = self.score_predictor_nodes_with_edges(x)
         return score
 
 
-    def forward(self, data, extra, return_repr=False):
-        if self.graph_mode in ['vector', 'vector_masked']:
-            energy = self.forward_vector_mode(data, extra)
-            representations = None  # TODO
-        elif self.graph_mode == 'energy':
-            energy = self.forward_energy_mode(data, extra)
-            representations = None  # TODO
-
-        return energy, representations
+    def forward(self, graph, extra, return_repr=False):
+        predictions = self.forward_mol(graph, extra)
+        representations = None  # TODO
+        return predictions, representations

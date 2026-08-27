@@ -48,20 +48,20 @@ class Logger(object):
         pass
 
 def parse_arguments(arglist=sys.argv[1:]):
-    p = argparse.ArgumentParser()
+    p = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     g_run = p.add_argument_group('external run parameters')
     g_run.add_argument('--experiment_name'    , type=str           , default=''       ,  help='name that will be added to the runs folder output')
     g_run.add_argument('--wandb_name'         , type=str           , default=None     ,  help='name of wandb run')
     g_run.add_argument('--project'            , type=str           , default='nequimol', help='name of wandb project')
-    g_run.add_argument('--device'             , type=str           , default='cuda'   ,  help='cuda or cpu')
+    g_run.add_argument('--device'             , type=str           , default='cuda'   ,  help='device', choices=['cuda', 'cpu'])
     g_run.add_argument('--logdir'             , type=str           , default='logs'   ,  help='log dir')
     g_run.add_argument('--checkpoint'         , type=str           , default=None     ,  help='path of the checkpoint file to continue training')
     g_run.add_argument('--CV'                 , type=int           , default=1        ,  help='cross validate')
     g_run.add_argument('--num_epochs'         , type=int           , default=2500     ,  help='number of times to iterate through all samples')
     g_run.add_argument('--seed'               , type=int           , default=123      ,  help='initial seed values')
     g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='Print dims throughout the training process')
-    g_run.add_argument('--process'            , action='store_true', default=False    ,  help='(re-)process data by force (if data is already there, default is to not reprocess)?')
+    g_run.add_argument('--process'            , action='store_true', default=False    ,  help='reprocess data')
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
@@ -70,18 +70,15 @@ def parse_arguments(arglist=sys.argv[1:]):
 
     g_hyper = p.add_argument_group('hyperparameters')
     g_hyper.add_argument('--subset'               , type=int           , default=None           ,  help='size of a subset to use instead of the full set (tr+te+va)')
-    g_hyper.add_argument('--max_neighbors'        , type=int           , default=20             ,  help='max number of neighbors')
     g_hyper.add_argument('--n_s'                  , type=int           , default=48             ,  help='dimension of node features')
     g_hyper.add_argument('--n_v'                  , type=int           , default=48             ,  help='dimension of extra (p/d) features')
     g_hyper.add_argument('--n_conv_layers'        , type=int           , default=2              ,  help='number of conv layers')
     g_hyper.add_argument('--distance_emb_dim'     , type=int           , default=16             ,  help='how many gaussian funcs to use')
     g_hyper.add_argument('--radius'               , type=float         , default=5.0            ,  help='max radius of graph')
     g_hyper.add_argument('--dropout_p'            , type=float         , default=0.05           ,  help='dropout probability')
-    g_hyper.add_argument('--sum_mode'             , type=str           , default='node'         ,  help='sum node (node, edge, or both)')
-    g_hyper.add_argument('--graph_mode'           , type=str           , default='energy'       ,  help='prediction mode, energy, or vector')
+    g_hyper.add_argument('--graph_mode'           , type=str           , default='vector'       ,  help='graph mode', choices=['vector', 'vector_masked'])
     g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'        ,  help='cyclo / gdb / proparg')
     g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path')
-    g_hyper.add_argument('--random_baseline'      , action='store_true', default=False          ,  help='random baseline (no graph conv)')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
     g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if use an invariant model')
     g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate for adam')
@@ -93,7 +90,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--arch'                 , type=str           , default='normal'       ,  help='normal/both/pseudo')
     g_hyper.add_argument('--internal_weights'     , action='store_true', default=False          ,  help='if use internal weights in tensor products')
     g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
-    g_hyper.add_argument('--embedding_specs'      , type=str           , default=None           ,  help='MACE extra embedding specs')
+    g_hyper.add_argument('--batch_size'           , type=int           , default=8              ,  help='batch size')
 
     args = p.parse_args(arglist)
 
@@ -219,12 +216,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         loss_func_name = 'MSELoss'
 
 
-    if hyper_dict['embedding_specs'] is None:
-        embedding_specs = None
-    else:
-        embedding_specs = ast.literal_eval(hyper_dict['embedding_specs'])
-
-
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
     if dataset=='proparg':
@@ -252,8 +243,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
     data = MolDataloader(process=process, classification=classification,
                          extra_args=dataloader_args_dict,
                          noH=noH,
-                         target_column=target_column, graph_method=features,
-                         embedding_specs=embedding_specs)
+                         target_column=target_column, graph_method=features)
     time_end = timer()
     print(f'\ndl_time: {time_end-time_start} s\n')
 
@@ -328,20 +318,16 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 print(f"{input_edge_feats_dim=}")
 
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
-                              embedding_specs = embedding_specs,
                               classification = hyper_dict['classification'],
                               internal_weights=hyper_dict['internal_weights'],
                               arch = hyper_dict['arch'],
                               max_radius=hyper_dict['radius'],
-                              max_neighbors=hyper_dict['max_neighbors'],
-                              sum_mode=hyper_dict['sum_mode'],
                               n_s=hyper_dict['n_s'],
                               n_v=hyper_dict['n_v'],
                               n_conv_layers=hyper_dict['n_conv_layers'],
                               distance_emb_dim=hyper_dict['distance_emb_dim'],
                               graph_mode=hyper_dict['graph_mode'],
                               dropout_p=hyper_dict['dropout_p'],
-                              random_baseline=hyper_dict['random_baseline'],
                               invariant=hyper_dict['invariant'])
 
             print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
@@ -481,6 +467,7 @@ if __name__ == '__main__':
           eval_on_test=True,
           sweep=False,
           print_repr=args.print_repr,
+          batch_size=args.batch_size,
           # dataset
           dataset=args.dataset,
           dataloader_args=args.dataloader_args,

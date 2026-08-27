@@ -86,10 +86,8 @@ sweep_config = { 'method': 'bayes', 'metric': metric, 'name': f'{target_column}_
 parameters_dict = {
     'distance_emb_dim': { 'values': [16, 32, 48, 64] },
     'dropout_p': { 'values': [0.0, 0.05, 0.1] },
-    'max_neighbors': { 'values': [10, 25, 50] },
     'n_s': { 'values': [16, 32, 48] },
     'radius': { 'values' : [2.5, 5.0, 10.0] },
-    'sum_mode': { 'values' : ['node', 'both'] },
     'lr':  { 'values' : [0.00005, 0.0001, 0.0005, 0.001] },
     }
 
@@ -112,7 +110,6 @@ parameters_dict.update({ 'num_epochs': { 'value': epochs[dataset]} })
 parameters_dict.update({ 'train_frac': { 'value': train_frac[dataset]} })
 parameters_dict.update({ 'noH': { 'value': False} })
 parameters_dict.update({ 'geometry': { 'value': geometry[dataset]} })
-parameters_dict.update({ 'random_baseline': { 'value': False} })
 parameters_dict.update({ 'features': { 'value': features[dataset]} })
 parameters_dict.update({ 'target_column': { 'value': target_column} })
 parameters_dict.update({ 'seed': { 'value': script_args.seed } })
