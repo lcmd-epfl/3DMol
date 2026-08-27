@@ -36,7 +36,7 @@ def get_am(z, coordinates, radii, dm, scale_factor=1.15):
     am = np.zeros((n, n), dtype=float)
     row, col = np.triu_indices(n, 1)
     rm = scale_factor * scipy.spatial.distance.pdist(
-        radii.reshape(-1, 1), metric=lambda x, y: x + y
+        radii.reshape(-1, 1), metric=lambda x, y: (x + y).sum()
     )
     am[row, col] = am[col, row] = dm - rm
     return am < 0

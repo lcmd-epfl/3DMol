@@ -26,7 +26,7 @@ faulthandler.enable()
 
 from trainer.metrics import MAE, Accuracy
 from trainer.react_trainer import ReactTrainer
-from models.equireact import EquiReact
+from models.equimol import EquiReact
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
@@ -80,10 +80,10 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--sum_mode'             , type=str           , default='node'         ,  help='sum node (node, edge, or both)')
     g_hyper.add_argument('--graph_mode'           , type=str           , default='energy'       ,  help='prediction mode, energy, or vector')
     g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'        ,  help='cyclo / gdb / proparg')
-    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / scaffold / yasc / ydesc / test:path')
+    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path')
     g_hyper.add_argument('--random_baseline'      , action='store_true', default=False          ,  help='random baseline (no graph conv)')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
-    g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if run "InReact"')
+    g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if use an invariant model')
     g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate for adam')
     g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001         ,  help='weight decay for adam')
     g_hyper.add_argument('--train_frac'           , type=float         , default=0.9            ,  help='training fraction to use (val/te will be equally split over rest)')
@@ -343,6 +343,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                               dropout_p=hyper_dict['dropout_p'],
                               random_baseline=hyper_dict['random_baseline'],
                               invariant=hyper_dict['invariant'])
+
             print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
             sampler = None
