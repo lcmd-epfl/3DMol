@@ -162,13 +162,13 @@ class Trainer:
 
                 # val loss is MSE, shouldn't be affected by data normalisation
                 val_loss = metrics[type(self.loss_func).__name__]
+
+                wandb_msg = {"val_loss": val_loss, "val_score": val_score, "epoch": self.epoch, "train_score": self.train_score_for_wandb}
                 if torch.isfinite(self.best_val_score.cpu()):
-                    wandb.log({"val_loss": val_loss, "val_score": val_score, "epoch": self.epoch, "val_score_best": self.best_val_score})
+                    wandb_msg["val_score_best"] = self.best_val_score
                 else:
-                    wandb.log({"val_loss": val_loss, "val_score": val_score, "epoch": self.epoch})
+                    wandb.log(wandb_msg)
                 print(f'[Epoch {epoch}] {self.main_metric}: {val_score:.6f} val loss: {val_loss:.6f}')
-                self.val_loss_for_wandb = val_loss
-                self.val_score_for_wandb = val_score
 
                 # save the model with the best main_metric
                 self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.last_checkpoint.pt')
@@ -180,8 +180,6 @@ class Trainer:
                     shutil.copyfile(os.path.join(self.log_dir, f'{self.run_name}.best_checkpoint.pt'),
                                     os.path.join(self.log_dir, f'{self.run_name}.best_checkpoint_{epoch}epochs.pt'))
                 self.after_epoch()
-                # if val_loss > 10000:
-                #    raise Exception
 
         # evaluate on best checkpoint
         if os.path.exists(os.path.join(self.log_dir, f'{self.run_name}.best_checkpoint.pt')):
@@ -222,10 +220,6 @@ class Trainer:
                 if (self.optim_steps % self.log_iterations == 0 or i+1==len(data_loader)) and optim is not None:
                     metrics = self.evaluate_metrics(predictions, targets)
                     metrics[type(self.loss_func).__name__] = loss.item()
-                    if self.val_score_for_wandb is None:
-                        wandb.log({"train loss": loss.item(), "epoch": self.epoch})
-                    else:
-                        wandb.log({"train loss": loss.item(), "epoch": self.epoch, "val_loss": self.val_loss_for_wandb, "val_score": self.val_score_for_wandb, "val_score_best": self.best_val_score})
                     print(f'[Epoch {self.epoch}; Iter {i+1:5d}/{len(data_loader):5d}] train: loss: {loss.item():.7f}')
                 if self.val_per_batch:  # during validation or testing when we want to average metrics over all the data in that dataloader
                     metrics = self.evaluate_metrics(predictions, targets, val=True)
@@ -249,7 +243,8 @@ class Trainer:
             else:
                 return total_metrics, None, None
         else:
-            print(f'[Epoch {self.epoch}] training_{self.main_metric}:', total_metrics[self.main_metric] / len(data_loader) )
+            self.train_score_for_wandb = total_metrics[self.main_metric] / len(data_loader)
+            print(f'[Epoch {self.epoch}] training_{self.main_metric}:', self.train_score_for_wandb)
 
     def after_batch(self, predictions, targets, batch_indices):
         pass
