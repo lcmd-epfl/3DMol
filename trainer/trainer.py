@@ -53,7 +53,7 @@ class Trainer:
                  loss_func=None, scheduler_step_per_batch: bool = True, sampler=None,
                  run_dir='', run_name='',
                  checkpoint=None, fine_tuning=False,
-                 num_epochs=0, eval_per_epochs=0, patience=0,
+                 num_epochs=0, eval_per_epochs=0, patience=0, max_gap=None,
                  minimum_epochs=0, models_to_save=None, clip_grad=None, log_iterations=0, lr=0.0001,
                  weight_decay=0.0001, lr_scheduler=None, factor=0, min_lr=0, mode='max', lr_scheduler_patience=0,
                  val_per_batch=True, std=1):
@@ -73,6 +73,7 @@ class Trainer:
         self.num_epochs = num_epochs
         self.eval_per_epochs = eval_per_epochs
         self.patience = patience
+        self.max_gap = max_gap
         self.minimum_epochs = minimum_epochs
         self.models_to_save = [] if models_to_save is None else models_to_save
         self.clip_grad = clip_grad
@@ -168,14 +169,26 @@ class Trainer:
                     wandb_msg["val_score_best"] = self.best_val_score
                 else:
                     wandb.log(wandb_msg)
-                print(f'[Epoch {epoch}] {self.main_metric}: {val_score:.6f} val loss: {val_loss:.6f}')
+                print(f'[Epoch {epoch}] training_{self.main_metric}: {self.train_score_for_wandb:6f} val_{self.main_metric}: {val_score:.6f} val_loss: {val_loss:.6f}')
 
                 # save the model with the best main_metric
                 self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.last_checkpoint.pt')
+
                 print(f'Epochs with no improvement: [ {epochs_no_improve} ] and the best {self.main_metric} was in {epoch - epochs_no_improve}')
                 if epochs_no_improve >= self.patience and epoch >= self.minimum_epochs:  # stopping criterion
                     print(f'Early stopping criterion based on -{self.main_metric}- that should be {self.main_metric_goal}-imized reached after {epoch} epochs. Best model checkpoint was in epoch {epoch - epochs_no_improve}.')
                     break
+
+                if self.max_gap is not None:
+                    current_gap = val_score - self.train_score_for_wandb
+                    if self.main_metric_goal == 'max':
+                        current_gap *= -1
+                    max_gap = self.max_gap * self.std
+                    print(f'Current score gap: {current_gap}')
+                    if current_gap > max_gap and epoch >= self.minimum_epochs:  # stopping criterion
+                        print(f'Early stopping criterion based on training score {max_gap} better than validation reached. Best model checkpoint was in epoch {epoch - epochs_no_improve}.')
+                        break
+
                 if epoch in self.models_to_save:
                     shutil.copyfile(os.path.join(self.log_dir, f'{self.run_name}.best_checkpoint.pt'),
                                     os.path.join(self.log_dir, f'{self.run_name}.best_checkpoint_{epoch}epochs.pt'))
@@ -244,7 +257,6 @@ class Trainer:
                 return total_metrics, None, None
         else:
             self.train_score_for_wandb = total_metrics[self.main_metric] / len(data_loader)
-            print(f'[Epoch {self.epoch}] training_{self.main_metric}:', self.train_score_for_wandb)
 
     def after_batch(self, predictions, targets, batch_indices):
         pass

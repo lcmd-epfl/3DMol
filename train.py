@@ -57,6 +57,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--CV'                 , type=int           , default=1        ,  help='cross validate')
     g_run.add_argument('--num_epochs'         , type=int           , default=2500     ,  help='number of times to iterate through all samples')
     g_run.add_argument('--patience'           , type=int           , default=150      ,  help='number of epochs with no improvement to stop early')
+    g_run.add_argument('--max_gap'            , type=float         , default=None     ,  help='max. gap in std units between train and validation scores to stop early')
     g_run.add_argument('--seed'               , type=int           , default=123      ,  help='initial seed values')
     g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='Print dims throughout the training process')
     g_run.add_argument('--process'            , action='store_true', default=False    ,  help='reprocess data')
@@ -184,6 +185,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           sweep=False,
           print_repr=False,
           patience=150,
+          max_gap=None,
           # dataset
           dataset=None,
           dataloader_args=None,
@@ -357,7 +359,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    sampler=sampler, val_per_batch=val_per_batch,
                                    checkpoint=checkpoint, fine_tuning=fine_tuning,
                                    num_epochs=num_epochs,
-                                   eval_per_epochs=eval_per_epochs, patience=patience,
+                                   eval_per_epochs=eval_per_epochs, patience=patience, max_gap=max_gap,
                                    minimum_epochs=minimum_epochs, models_to_save=models_to_save,
                                    clip_grad=clip_grad, log_iterations=log_iterations,
                                    scheduler_step_per_batch=False,  # CHANGED THIS
@@ -472,6 +474,7 @@ if __name__ == '__main__':
           batch_size=args.batch_size,
           optimizer=args.optimizer,
           patience=args.patience,
+          max_gap=args.max_gap,
           # dataset
           dataset=args.dataset,
           dataloader_args=args.dataloader_args,
