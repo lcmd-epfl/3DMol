@@ -1,8 +1,6 @@
 import math
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn
 from e3nn import o3
 from torch_scatter import scatter, scatter_add
 
@@ -11,13 +9,12 @@ from .graph import BuildGraph
 
 class TensorProductConvLayer(nn.Module):
 
-    def __init__(self, in_irreps, sh_irreps, out_irreps, edge_fdim, residual=True, dropout=0.0,
+    def __init__(self, in_irreps, sh_irreps, out_irreps, edge_fdim, dropout=0.0,
                  h_dim=None, relu_in_fc=True, internal_weights=False, arch='normal'):
         super(TensorProductConvLayer, self).__init__()
         self.in_irreps = in_irreps
         self.out_irreps = out_irreps
         self.sh_irreps = sh_irreps
-        self.residual = residual
         self.internal_weights = internal_weights
         if h_dim is None:
             h_dim = edge_fdim
@@ -27,7 +24,7 @@ class TensorProductConvLayer(nn.Module):
         else:
             self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, internal_weights=True, shared_weights=True)
 
-            if arch in ['normal_weights100', 'both_weights100', 'pseudo_weights100']:
+            if arch in {'normal_weights100', 'both_weights100', 'pseudo_weights100'}:
                 if '0o' in self.tp.irreps_out:
                     out_irreps_list = str(self.tp.irreps_out).split('+')
                     out_irreps_pseudoscalar = [*map(lambda x: x.endswith('0o'), out_irreps_list)]
@@ -42,7 +39,6 @@ class TensorProductConvLayer(nn.Module):
                             break
                     with torch.no_grad():
                         self.tp.weight[weights_pointer:weights_pointer_end] *= 100.0
-
 
         if relu_in_fc:
             self.fc_net = nn.Sequential(
@@ -67,14 +63,7 @@ class TensorProductConvLayer(nn.Module):
             tp_out = self.tp(x[edge_src], edge_sh)
 
         out_nodes = out_nodes or x.shape[0]
-
         out = scatter(src=tp_out, index=edge_dst, dim=0, dim_size=out_nodes, reduce=aggr)
-        # assert out.shape[0] == x.shape[0]
-
-        if self.residual:
-            padded = F.pad(x, (0, out.shape[-1] - x.shape[-1]))
-            out = out + padded
-
         return out
 
 
@@ -86,7 +75,7 @@ class EquiReact(nn.Module):
                  distance_emb_dim: int = 32, dropout_p: float = 0.1,
                  verbose=False, device='cpu', graph_mode='vector',
                  invariant=False,
-                 classification = False, arch='normal',
+                 classification=False, arch='normal',
                  internal_weights=False,
                  **kwargs):
 
@@ -129,7 +118,6 @@ class EquiReact(nn.Module):
             else:
                 irrep_last = f"{n_s}x0e"
 
-
         self.node_embedding = nn.Sequential(
             nn.Linear(node_fdim, n_s),
             nn.ReLU(),
@@ -157,7 +145,6 @@ class EquiReact(nn.Module):
                 "out_irreps": out_irreps,
                 "edge_fdim": 3 * n_s,
                 "h_dim": 3 * n_s,
-                "residual": False,
                 "dropout": dropout_p,
                 "relu_in_fc": (self.arch!='no_relu_in_fc'),
                 "internal_weights": internal_weights,
@@ -220,8 +207,7 @@ class EquiReact(nn.Module):
 
         self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius, distance_emb_dim=self.distance_emb_dim, device=self.device)
 
-
-    def forward_repr_mol(self, data, extra):
+    def forward_repr_mol(self, data, _extra):
 
         x, edge_index, edge_attr, edge_sh = self.build_graph(data)
 
@@ -232,11 +218,6 @@ class EquiReact(nn.Module):
             print('dim of edge sph harmonics', edge_sh.shape)
 
         x = self.node_embedding(x)
-
-        if extra is not None:
-            x_extra = self.joint_embedding(data.batch, extra)
-            x = x + x_extra
-
 
         edge_attr_emb = self.edge_embedding(edge_attr)
         if self.verbose:
@@ -277,16 +258,15 @@ class EquiReact(nn.Module):
         x = torch.cat((x_dict[scalar_key], x_dict[pseudoscalar_key]), dim=1) if pseudoscalar_key in x_dict else x_dict[scalar_key]
         return x, edge_index, edge_attr
 
-
     def forward_mol(self, graph, extra):
-        x, (src, dst), edge_attr = self.forward_repr_mol(graph, extra)
+        x, _, _ = self.forward_repr_mol(graph, extra)
         if self.graph_mode=='vector_masked':
             x *= graph.local_mask[:,None]
         x = scatter_add(x, index=graph.batch.to(self.device), dim=0)
         if self.verbose:
             print('reaction x dims', x.shape)
 
-        if self.arch in ['normal', 'no_relu_in_fc', 'normal_weights100']:
+        if self.arch in {'normal', 'no_relu_in_fc', 'normal_weights100'}:
             score = self.score_predictor_nodes(x)
         elif self.arch=='normal_scaled':
             x[:,self.n_s:]*=1e7
@@ -295,13 +275,13 @@ class EquiReact(nn.Module):
             score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
             score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
             score = score1 * score2
-        elif self.arch in ['both_nonscaled', 'both_weights100']:
+        elif self.arch in {'both_nonscaled', 'both_weights100'}:
             score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
             score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
             score = score1 * score2
         elif self.arch=='pseudo':
             score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
-        elif self.arch in ['pseudo_nonscaled', 'pseudo_weights100']:
+        elif self.arch in {'pseudo_nonscaled', 'pseudo_weights100'}:
             score = self.score_predictor_nodes_half(x[:,self.n_s:])
 
         if self.classification is True:
@@ -309,8 +289,10 @@ class EquiReact(nn.Module):
 
         return score
 
-
     def forward(self, graph, extra, return_repr=False):
         predictions = self.forward_mol(graph, extra)
-        representations = None  # TODO
+        if return_repr:
+            representations = 0  # TODO
+        else:
+            representations = None  # TODO
         return predictions, representations

@@ -18,16 +18,11 @@ class TestSet(Dataset):
         self.std = torch.tensor(1.0)
         self.parameters = SimpleNamespace()
 
-
     def __len__(self):
         return len(self.labels)
 
-
     def __getitem__(self, idx):
-        mol = self.mol_graphs[idx]
-        label = self.labels[idx]
         return self.labels[idx], idx, self.mol_graphs[idx]
-
 
     def process_homometric(self):
         atoms  = np.array(['He', 'He', 'He', 'He'])
@@ -36,7 +31,6 @@ class TestSet(Dataset):
         mol = Chem.MolFromSmiles('.'.join([f'[{a}]' for a in atoms]))
         self.mol_graphs.append(get_graph(mol, atoms, coords1, 0, features='smiles'))
         self.mol_graphs.append(get_graph(mol, atoms, coords2, 1, features='smiles'))
-
 
     def process_chiral(self):
         atoms = ['C', 'H', 'F', 'Cl', 'Br']

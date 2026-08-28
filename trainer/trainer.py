@@ -12,10 +12,10 @@ from torch.utils.data import DataLoader
 import wandb
 import pyaml
 
-from models import *  # do not remove
-from torch.optim.lr_scheduler import *  # do not remove
 from trainer.lr_schedulers import WarmUpWrapper
 from tqdm import tqdm
+
+MSELoss = torch.nn.MSELoss()
 
 
 def move_to_device(element, device):
@@ -31,6 +31,7 @@ def move_to_device(element, device):
     else:
         return element.to(device) if isinstance(element,(torch.Tensor)) else element
 
+
 def list_detach(element):
     '''
     takes arbitrarily nested list and detaches everyting from computation graph
@@ -42,23 +43,24 @@ def list_detach(element):
     else:
         return element.detach()
 
+
 def concat_if_list(tensor_or_tensors):
     return torch.cat(tensor_or_tensors) if isinstance(tensor_or_tensors, list) else tensor_or_tensors
 
 
-class Trainer():
+class Trainer:
     def __init__(self, model, metrics: Dict[str, Callable], main_metric: str, device: torch.device,
                  optim=Adam, main_metric_goal: str = 'min',
-                 loss_func=torch.nn.MSELoss(), scheduler_step_per_batch: bool = True, sampler=None,
+                 loss_func=MSELoss, scheduler_step_per_batch: bool = True, sampler=None,
                  run_dir='', run_name='',
                  checkpoint=None, fine_tuning=False,
                  num_epochs=0, eval_per_epochs=0, patience=0,
-                 minimum_epochs=0, models_to_save=[], clip_grad=None, log_iterations=0, lr=0.0001,
+                 minimum_epochs=0, models_to_save=None, clip_grad=None, log_iterations=0, lr=0.0001,
                  weight_decay=0.0001, lr_scheduler=None, factor=0, min_lr=0, mode='max', lr_scheduler_patience=0,
                  val_per_batch=True, std=1):
 
         self.device = device
-        self.std = std # stdev of data. to adjust val scores.
+        self.std = std  # stdev of data. to adjust val scores.
         self.model = model.to(self.device)
         self.loss_func = loss_func
         self.metrics = metrics
@@ -73,7 +75,7 @@ class Trainer():
         self.eval_per_epochs = eval_per_epochs
         self.patience = patience
         self.minimum_epochs = minimum_epochs
-        self.models_to_save = models_to_save
+        self.models_to_save = [] if models_to_save is None else models_to_save
         self.clip_grad = clip_grad
         self.log_iterations = log_iterations
         self.lr = lr
@@ -98,7 +100,7 @@ class Trainer():
             check = torch.load(checkpoint, map_location=self.device)
             self.model.load_state_dict(check['model_state_dict'])
             self.optim.load_state_dict(check['optimizer_state_dict'])
-            if self.lr_scheduler != None and check['scheduler_state_dict'] != None:
+            if self.lr_scheduler is not None and check['scheduler_state_dict'] is not None:
                 self.lr_scheduler.load_state_dict(check['scheduler_state_dict'])
 
         if self.checkpoint and not self.fine_tuning:
@@ -113,7 +115,7 @@ class Trainer():
         self.log_dir = run_dir
         self.run_name = run_name
 
-        #for i, param_group in enumerate(self.optim.param_groups):
+        # for i, param_group in enumerate(self.optim.param_groups):
         #    param_group['lr'] = 0.0003
         self.epoch = self.start_epoch
         print(f'Log directory: {self.log_dir}')
@@ -145,7 +147,7 @@ class Trainer():
                 # MAE of prediction is * std of data since data is normalised
                 val_score = metrics[self.main_metric] * self.std
 
-                if self.lr_scheduler!=None and not self.scheduler_step_per_batch:
+                if self.lr_scheduler is not None and not self.scheduler_step_per_batch:
                     self.step_schedulers(metrics=val_score)
 
                 if self.eval_per_epochs > 0 and epoch % self.eval_per_epochs == 0:
@@ -179,7 +181,7 @@ class Trainer():
                     shutil.copyfile(os.path.join(self.log_dir, f'{self.run_name}.best_checkpoint.pt'),
                                     os.path.join(self.log_dir, f'{self.run_name}.best_checkpoint_{epoch}epochs.pt'))
                 self.after_epoch()
-                #if val_loss > 10000:
+                # if val_loss > 10000:
                 #    raise Exception
 
         # evaluate on best checkpoint
@@ -196,9 +198,9 @@ class Trainer():
     def process_batch(self, batch, optim):
         loss, predictions, targets, _ = self.forward_pass(batch)
 
-        if optim != None:  # run backpropagation if an optimizer is provided
+        if optim is not None:  # run backpropagation if an optimizer is provided
             loss.backward()
-            if self.clip_grad != None:
+            if self.clip_grad is not None:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.clip_grad, norm_type=2)
             self.optim.step()
 
@@ -218,7 +220,7 @@ class Trainer():
             *batch, batch_indices = move_to_device(list(batch), self.device)
             loss, predictions, targets = self.process_batch(batch, optim)
             with torch.no_grad():
-                if (self.optim_steps % self.log_iterations == 0 or i+1==len(data_loader)) and optim != None:
+                if (self.optim_steps % self.log_iterations == 0 or i+1==len(data_loader)) and optim is not None:
                     metrics = self.evaluate_metrics(predictions, targets)
                     metrics[type(self.loss_func).__name__] = loss.item()
                     if self.val_score_for_wandb is None:
@@ -231,12 +233,12 @@ class Trainer():
                     metrics[type(self.loss_func).__name__] = loss.item()
                     for key, value in metrics.items():
                         total_metrics[key] += value
-                if optim == None and not self.val_per_batch or return_pred:
+                if optim is None and not self.val_per_batch or return_pred:
                     epoch_loss += loss.item()
                     epoch_targets.extend(targets if isinstance(targets, list) else [targets])
                     epoch_predictions.extend(predictions if isinstance(predictions, list) else [predictions])
                 self.after_batch(predictions, targets, batch_indices)
-        if optim == None:
+        if optim is None:
             loader_len = len(data_loader) if len(data_loader) != 0 else 1
             if self.val_per_batch:
                 total_metrics = {k: v / loader_len for k, v in total_metrics.items()}
@@ -260,31 +262,29 @@ class Trainer():
         # step per batch if that is what we want to do or if we are using a warmup schedule and are still in the warmup period
         we_want = self.scheduler_step_per_batch
         warmup  = isinstance(self.lr_scheduler, WarmUpWrapper) and self.lr_scheduler.total_warmup_steps > self.lr_scheduler._step
-        if self.lr_scheduler != None and (we_want or warmup):
+        if self.lr_scheduler is not None and (we_want or warmup):
             self.step_schedulers()
 
-    def evaluate_metrics(self, predictions, targets, batch=None, val=False) -> Dict[str, float]:
+    def evaluate_metrics(self, predictions, targets, val=False) -> Dict[str, float]:
         metrics = {}
-        metrics[f'mean_pred'] = torch.mean(concat_if_list(predictions)).item()
-        metrics[f'std_pred'] = torch.std(concat_if_list(predictions)).item()
-        metrics[f'mean_targets'] = torch.mean(concat_if_list(targets)).item()
-        metrics[f'std_targets'] = torch.std(concat_if_list(targets)).item()
+        metrics['mean_pred'] = torch.mean(concat_if_list(predictions)).item()
+        metrics['std_pred'] = torch.std(concat_if_list(predictions)).item()
+        metrics['mean_targets'] = torch.mean(concat_if_list(targets)).item()
+        metrics['std_targets'] = torch.std(concat_if_list(targets)).item()
         for key, metric in self.metrics.items():
             if not hasattr(metric, 'val_only') or val:
                 metrics[key] = metric(predictions, targets).item()
         return metrics
 
-
     def get_repr(self, data_loader):
         self.model.eval()
         representations = []
         for batch in tqdm(data_loader):
-            *batch, batch_indices = move_to_device(list(batch), self.device)
+            *batch, _batch_indices = move_to_device(list(batch), self.device)
             _, _, _, rs = self.forward_pass(batch, return_repr=True)
             representations.append(rs.detach().numpy())
         representations = np.vstack(representations)
         return representations
-
 
     def evaluation(self, data_loader: DataLoader, data_split: str = '', return_pred=False):
         self.model.eval()
@@ -297,7 +297,7 @@ class Trainer():
                     value *= self.std
                 f.write(f'{key}: {value}\n')
                 print(f'{key}: {value}')
-        #TODO right now only MAE has the correct units
+        # TODO right now only MAE has the correct units
         return metrics, predictions, targets
 
     def step_schedulers(self, metrics=None):
@@ -305,7 +305,6 @@ class Trainer():
             self.lr_scheduler.step(metrics=metrics)
         except:
             self.lr_scheduler.step()
-
 
     def save_checkpoint(self, epoch: int, checkpoint_name: str):
         """
@@ -320,7 +319,6 @@ class Trainer():
         with open(os.path.join(run_dir, f'{self.run_name}.train_arguments.yaml'), 'w') as yaml_path:
             pyaml.dump(train_args, yaml_path)
 
-
     def save_model_state(self, epoch: int, checkpoint_name: str):
         torch.save({
             'epoch': epoch,
@@ -328,5 +326,5 @@ class Trainer():
             'optim_steps': self.optim_steps,
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optim.state_dict(),
-            'scheduler_state_dict': None if self.lr_scheduler == None else self.lr_scheduler.state_dict()
+            'scheduler_state_dict': None if self.lr_scheduler is None else self.lr_scheduler.state_dict()
         }, os.path.join(self.log_dir, checkpoint_name))

@@ -1,11 +1,7 @@
-from collections import defaultdict
-from copy import copy, deepcopy
+from copy import deepcopy
 from typing import List, Optional
-
 import torch
-from torch.distributions import Categorical
 from torch.utils.data import Sampler, RandomSampler, Subset, Dataset
-from tqdm import tqdm
 
 
 class HardSampler(Sampler[List[int]]):
@@ -50,4 +46,3 @@ class HardSampler(Sampler[List[int]]):
         # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
 
         return len(self.standard_sampler)  # type: ignore
-

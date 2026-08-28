@@ -31,7 +31,7 @@ def get_dm(coordinates):
     return scipy.spatial.distance.pdist(coordinates.numpy())
 
 
-def get_am(z, coordinates, radii, dm, scale_factor=1.15):
+def get_am(z, radii, dm, scale_factor=1.15):
     n = len(z)
     am = np.zeros((n, n), dtype=float)
     row, col = np.triu_indices(n, 1)
@@ -69,11 +69,11 @@ def atom_geom(z, coords):
     cov_radii = get_radii(z, radii="covalent")
     vdw_radii = get_radii(z, radii="vdw")
     cov_dm = get_dm(coords)
-    cov_am = get_am(z, coords, cov_radii, cov_dm, scale_factor=1.15)
+    cov_am = get_am(z, cov_radii, cov_dm, scale_factor=1.15)
     G = nx.from_numpy_array(cov_am, create_using=nx.Graph)
     degree = [val for (i, val) in G.degree()]
     if not (cov_dm > TOL).all():
-        warnings.warn("Some atoms are incredibly close to each other!")
+        warnings.warn("Some atoms are incredibly close to each other!", stacklevel=2)
 
     # a_volume, a_surface = atomic_vs(coords, vdw_radii)
     sasa = SASA(z, coords.numpy(), vdw_radii, probe_radius=0.0, density=0.01)

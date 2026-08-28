@@ -1,6 +1,5 @@
-import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 from e3nn import o3
 from torch_cluster import radius_graph
 
@@ -17,7 +16,6 @@ class GaussianSmearing(nn.Module):
     def forward(self, dist):
         dist = dist.view(-1, 1) - self.mu.view(1, -1)
         return torch.exp(self.coeff * torch.pow(dist, 2))
-
 
 
 class BuildGraph(nn.Module):
@@ -37,6 +35,3 @@ class BuildGraph(nn.Module):
         edge_length_emb = self.dist_expansion(edge_vec.norm(dim=-1))
         edge_sh = o3.spherical_harmonics(self.sh_irreps, edge_vec, normalize=True, normalization='component')
         return data.x, radius_edges, edge_length_emb, edge_sh
-
-
-

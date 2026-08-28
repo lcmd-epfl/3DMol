@@ -1,4 +1,3 @@
-from torch.optim.lr_scheduler import *
 import numpy as np
 
 
@@ -51,10 +50,10 @@ class WarmUpWrapper:
                             raise ValueError('interpolation not implemented:', self.interpolation)
 
         else:
-            if metrics != None:
-                self.wrapped_scheduler.step(metrics=metrics)
-            else:
+            if metrics is None:
                 self.wrapped_scheduler.step()
+            else:
+                self.wrapped_scheduler.step(metrics=metrics)
         self._step += 1
 
     def state_dict(self):

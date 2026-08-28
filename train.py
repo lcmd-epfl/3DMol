@@ -1,28 +1,18 @@
 import os
 import sys
 import argparse
-from ast import literal_eval
-import traceback
 from datetime import datetime
 from getpass import getuser  # os.getlogin() won't work on a cluster
-import copy
 import random
 from collections import defaultdict
 from timeit import default_timer as timer
-import ast
 
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Subset
-from models import *  # do not remove
-from torch.nn import *  # do not remove
-from torch.optim import *  # do not remove
-from torch.optim.lr_scheduler import *  # do not remove
+from torch.nn import MSELoss
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import wandb
-
-# turn on for debugging for C code like Segmentation Faults
-import faulthandler
-faulthandler.enable()
 
 from trainer.metrics import MAE, Accuracy
 from trainer.react_trainer import ReactTrainer
@@ -30,8 +20,12 @@ from models.equimol import EquiReact
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
+# turn on for debugging for C code like Segmentation Faults
+import faulthandler
+faulthandler.enable()
 
-class Logger(object):
+
+class Logger:
     def __init__(self, logpath, syspart=sys.stdout):
         self.terminal = syspart
         self.log = open(logpath, "a")
@@ -46,6 +40,7 @@ class Logger(object):
         # this handles the flush command by doing nothing.
         # you might want to specify some extra behavior here.
         pass
+
 
 def parse_arguments(arglist=sys.argv[1:]):
     p = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -116,12 +111,12 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, classificatio
         err = pred-targ
 
         print('>>> # idx name target prediction_raw prediction error')
-        for x in zip(test_indices, data.indices[test_indices], targ, pred_raw, pred, err):
+        for x in zip(test_indices, data.indices[test_indices], targ, pred_raw, pred, err, strict=True):
             print('>>>', *x, sep='\t')
 
-        d_target = defaultdict(int, zip(*np.unique(targ, return_counts=True)))
-        d_pred   = defaultdict(int, zip(*np.unique(pred, return_counts=True)))
-        d_err    = defaultdict(int, zip(*np.unique(err, return_counts=True)))
+        d_target = defaultdict(int, zip(*np.unique(targ, return_counts=True), strict=True))
+        d_pred   = defaultdict(int, zip(*np.unique(pred, return_counts=True), strict=True))
+        d_err    = defaultdict(int, zip(*np.unique(err, return_counts=True), strict=True))
         N0 = d_target[-1]
         P0 = d_target[1]
         FN = d_err[-2]
@@ -153,14 +148,13 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, classificatio
         F1 = check_div(TN, TN+(FP+FN)/2)
         print(f'-1: {recall=:.4f} {FNR=:.4f} {precision=:.4f} {F1=:.4f}')
 
-
     else:
         data_std = data.std.item()
         data_mean = data.mean.item()
         targ = targ_raw*data_std+data_mean
         pred = pred_raw*data_std+data_mean
         print('>>> # idx name target_stdized prediction_stdized target prediction error')
-        for x in zip(test_indices, data.indices[test_indices], targ_raw, pred_raw, targ, pred, pred-targ):
+        for x in zip(test_indices, data.indices[test_indices], targ_raw, pred_raw, targ, pred, pred-targ, strict=True):
             print('>>>', *x, sep='\t')
 
 
@@ -173,7 +167,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           verbose=False,
           print_predictions=False,
           eval_on_test=True,
-          sweep = False,
+          sweep=False,
           print_repr=False,
           # dataset
           dataset=None,
@@ -186,13 +180,14 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           # splitting
           splitter='random',
           subset=None,
-          training_fractions = [0.8],
+          training_fractions=(0.8,),
           CV=0,
           seed0=123,
           # other (hidden)
           batch_size=8, num_workers=0, pin_memory=False,
           val_per_batch=True, eval_per_epochs=0, patience=150,
-          minimum_epochs=0, models_to_save=[], clip_grad=100, log_iterations=100,
+          minimum_epochs=0,
+          models_to_save=None, clip_grad=100, log_iterations=100,
           lr_scheduler=ReduceLROnPlateau, factor=0.6, min_lr=8.0e-6, mode='max', lr_scheduler_patience=60,
           ):
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
@@ -204,8 +199,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         metrics = {'accuracy': Accuracy()}
         main_metric = 'accuracy'
         main_metric_goal = 'max'
-        #loss_func = SoftMarginLoss()
-        #loss_func_name = 'SoftMarginLoss'
+        # loss_func = SoftMarginLoss()
+        # loss_func_name = 'SoftMarginLoss'
         loss_func = MSELoss()
         loss_func_name = 'MSELoss'
     else:
@@ -214,7 +209,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         main_metric_goal = 'min'
         loss_func = MSELoss()
         loss_func_name = 'MSELoss'
-
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
@@ -237,12 +231,12 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             spec.loader.exec_module(foo)
             MolDataloader = vars(foo)[dataloader_class]
         except:
-            raise NotImplementedError(f'Cannot load the {dataset} dataset.')
+            raise NotImplementedError(f'Cannot load the {dataset} dataset.') from None
 
     time_start = timer()
     data = MolDataloader(process=process, classification=classification,
                          extra_args=dataloader_args_dict,
-                         noH=noH,
+                         noH=noH, geometry=geometry,
                          target_column=target_column, graph_method=features)
     time_end = timer()
     print(f'\ndl_time: {time_end-time_start} s\n')
@@ -302,14 +296,13 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             if len(training_fractions)>1:
                 tr_indices = tr_indices[:int(tr_frac*len(indices))]
 
-
             print(f'total / train / test / val: {len(indices)} {len(tr_indices)} {len(te_indices)} {len(val_indices)}')
             train_data = Subset(data, tr_indices)
             val_data = Subset(data, val_indices)
             test_data = Subset(data, te_indices)
 
             # train sample
-            label, idx, r0graph = train_data[0][:3]
+            _label, _idx, r0graph = train_data[0][:3]
             input_node_feats_dim = r0graph.x.shape[1]
             input_edge_feats_dim = 1
             if verbose:
@@ -318,9 +311,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 print(f"{input_edge_feats_dim=}")
 
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
-                              classification = hyper_dict['classification'],
+                              classification=hyper_dict['classification'],
                               internal_weights=hyper_dict['internal_weights'],
-                              arch = hyper_dict['arch'],
+                              arch=hyper_dict['arch'],
                               max_radius=hyper_dict['radius'],
                               n_s=hyper_dict['n_s'],
                               n_v=hyper_dict['n_v'],
@@ -340,7 +333,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
                                     num_workers=num_workers)
 
-
             trainer = ReactTrainer(model=model, std=std, device=device,
                                    metrics=metrics, loss_func=loss_func,
                                    main_metric=main_metric, main_metric_goal=main_metric_goal,
@@ -351,13 +343,13 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                    eval_per_epochs=eval_per_epochs, patience=patience,
                                    minimum_epochs=minimum_epochs, models_to_save=models_to_save,
                                    clip_grad=clip_grad, log_iterations=log_iterations,
-                                   scheduler_step_per_batch = False, # CHANGED THIS
+                                   scheduler_step_per_batch=False,  # CHANGED THIS
                                    lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
                                    lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
                                    lr_scheduler_patience=lr_scheduler_patience)
 
             time_start = timer()
-            val_metrics, _, _ = trainer.train(train_loader, val_loader)
+            _val_metrics, _, _ = trainer.train(train_loader, val_loader)
             time_end = timer()
             print(f'\ntr_time: {time_end-time_start} s\n')
 
@@ -394,9 +386,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 if print_repr:
                     for x_indices, x_loader, x_title in zip((train_data.indices, val_data.indices, test_data.indices),
                                                             (train_loader, val_loader, test_loader),
-                                                            ('train', 'val', 'test')):
+                                                            ('train', 'val', 'test'), strict=True):
                         representations = trainer.get_repr(x_loader)
-                        for x in zip(x_indices, representations):
+                        for x in zip(x_indices, representations, strict=True):
                             print(f'>>>{x_title}', x[0], *x[1])
 
             time_end = timer()
@@ -406,13 +398,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             if not sweep:
                 wandb.finish()
 
-        if eval_on_test:
-            if torch.__version__.split('.')[0]=='2':
-                maes_  = torch.std_mean(torch.hstack(maes),  correction=0)
-                rmses_ = torch.std_mean(torch.hstack(rmses), correction=0)
-            else:
-                maes_  = torch.std_mean(torch.hstack(maes), unbiased=False)
-                rmses_ = torch.std_mean(torch.hstack(rmses), unbiased=False)
     return maes, rmses
 
 
@@ -440,7 +425,7 @@ if __name__ == '__main__':
 
     project = args.project
     print(f'WANDB> {project}')
-    print(f'WANDB> {args.wandb_name if args.wandb_name else "unspecified"}')
+    print(f'WANDB> {args.wandb_name or "unspecified"}')
 
     print()
     print('COMMAND>', ' '.join(sys.argv))

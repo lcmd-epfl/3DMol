@@ -20,7 +20,6 @@ class MolDataset(Dataset):
         if self.verbose>=priority:
             print(*args)
 
-
     def __init__(self, process=True, bad_indices=None,
                  embedding_specs=None,
                  extra_args=None,
@@ -39,7 +38,7 @@ class MolDataset(Dataset):
         if noH:
             dataset_prefix += '.noH'
         self.paths = SimpleNamespace(
-                mg = join(self.processed_dir, f'{dataset_prefix}.v{global_version}:{self.version}.mol_graphs.pt'),
+                mg=join(self.processed_dir, f'{dataset_prefix}.v{global_version}:{self.version}.mol_graphs.pt'),
                 )
 
         self.print(2, "Loading data into memory...")
@@ -56,10 +55,10 @@ class MolDataset(Dataset):
         self.nmols = len(self.df)
         self.indices = self.df[self.id_column].to_numpy()
         self.labels = torch.tensor(self.df[self.parameters.target_column].values)
-        if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose'):
+        if self.graph_method in {'smiles', 'smiles_mapped', 'smiles_loose'}:
             self.smiles = self.df[self.smiles_column]
 
-        if process == True:
+        if process:
             self.print(2, "Processing by request...")
             self.process()
         else:
@@ -82,15 +81,12 @@ class MolDataset(Dataset):
         else:
             self.standardize_labels()
 
-
     def __len__(self):
         return len(self.labels)
-
 
     def __getitem__(self, idx):
         extra = self.extra[idx] if hasattr(self, 'extra') else None
         return self.labels[idx], idx, self.mol_graphs[idx], extra
-
 
     def process(self):
 
@@ -105,7 +101,7 @@ class MolDataset(Dataset):
             xyz = self.get_xyz_path(idx)
             asemol = self.read_xyz(xyz)
 
-            if self.graph_method in ('smiles', 'smiles_mapped', 'smiles_loose', 'smiles_atoms'):
+            if self.graph_method in {'smiles', 'smiles_mapped', 'smiles_loose', 'smiles_atoms'}:
                 if self.graph_method=='smiles_atoms':
                     smi = '.'.join([f'[{a}:{i+1}]' for i, a in enumerate(asemol.get_chemical_symbols())])
                 else:
@@ -132,7 +128,6 @@ class MolDataset(Dataset):
 
         torch.save(self.mol_graphs, self.paths.mg)
 
-
     def make_smiles_graph(self, smi, asemol, i):
         rdmol = Chem.MolFromSmiles(smi, sanitize=False)
         assert rdmol is not None, f"mol obj {self.indices[i]} is None from smi {smi}"
@@ -143,7 +138,7 @@ class MolDataset(Dataset):
             rdmol = Chem.RemoveAllHs(rdmol, sanitize=False)
             self.sanitize_mol_no_valence_check(rdmol)
 
-        if self.graph_method in ('smiles', 'smiles_loose'):
+        if self.graph_method in {'smiles', 'smiles_loose'}:
             G2D = self.make_nx_graph_from_rdmol(rdmol)
             G3D = self.make_nx_graph_from_asemol(asemol)
             if self.graph_method=='smiles_loose':
@@ -161,11 +156,10 @@ class MolDataset(Dataset):
 
         atom_map = np.array([at.GetAtomMapNum() for at in rdmol.GetAtoms()])
         assert np.all(atom_map>0), f"mol {self.indices[i]} is not atom-mapped"
-        assert len(atom_map)==len(atoms), f"mol {idx} has a wrong number of atoms"
+        assert len(atom_map)==len(atoms), f"mol {self.indices[i]} has a wrong number of atoms"
         atom_map = atom_map.argsort().argsort()  # elements rank
         local_mask = self.get_local_mask(asemol=asemol, rdmol=rdmol)
         return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles', local_mask=local_mask)
-
 
     def check_classes(self):
         unique_vals = torch.unique(self.labels, sorted=True)
@@ -174,12 +168,10 @@ class MolDataset(Dataset):
         self.mean = torch.tensor(0.0)
         self.std = torch.tensor(1.0)
 
-
     def standardize_labels(self):
         self.mean = torch.mean(self.labels)
         self.std = torch.std(self.labels)
         self.labels = (self.labels - self.mean)/self.std
-
 
     def match_graphs(self, G1, G2, i, loose=False):
         GM = iso.GraphMatcher(G1, G2, node_match=iso.categorical_node_match('q', None))
@@ -190,24 +182,20 @@ class MolDataset(Dataset):
             assert GM.is_isomorphic(), f"smiles and xyz graphs are not isomorphic in {i}: {self.smiles[i]}, {self.get_xyz_path(self.indices[i])}"
             return next(GM.match())
 
-
     def make_nx_graph_from_rdmol(self, mol):
         bonds = np.array(sorted(sorted((i.GetBeginAtomIdx(), i.GetEndAtomIdx())) for i in mol.GetBonds()))
         atoms = np.array([at.GetSymbol() for at in mol.GetAtoms()])
         return self.make_nx_graph(atoms, bonds)
 
-
     def make_nx_graph_from_asemol(self, mol):
         bonds = np.array([(i,j) for i, js in enumerate(Analysis(mol).unique_bonds[0]) for j in js])
         return self.make_nx_graph(mol.get_chemical_symbols(), bonds)
-
 
     def make_nx_graph(self, atoms, bonds):
         G = networkx.Graph()
         G.add_nodes_from([(i, {'q': q}) for i, q in enumerate(atoms)])
         G.add_edges_from(bonds)
         return G
-
 
     def read_xyz(self, xyz, bohr=False):
         mol = ase.io.read(xyz)
@@ -216,7 +204,6 @@ class MolDataset(Dataset):
         if self.noH:
             del mol[mol.numbers == 1]
         return mol
-
 
     def sanitize_mol_no_valence_check(self, mol):
         # rdkit doesn't like "hypervalent" atoms.
@@ -227,10 +214,8 @@ class MolDataset(Dataset):
         mol.UpdatePropertyCache(strict=False)
         Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
 
-
     def get_local_mask(self, asemol=None, rdmol=None):
         return None
-
 
     def get_parameters(self, vardict):
         return SimpleNamespace(**{key: self.default_parameters[key] if (key not in vardict or vardict[key] is None) else vardict[key]

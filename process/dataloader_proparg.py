@@ -22,4 +22,4 @@ class PropargReactants(MolDataset):
             raise RuntimeError(f'unknown geometry {geometry}')
         self.get_xyz_path = lambda idx: f'{files_dir}/{idx}.r.xyz'
 
-        super().__init__(bad_indices=bad_indices, verbose=verbose, check=check, **kwargs)
+        super().__init__(bad_indices=None, verbose=verbose, check=check, **kwargs)

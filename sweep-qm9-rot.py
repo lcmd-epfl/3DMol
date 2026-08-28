@@ -20,8 +20,6 @@ def train_wrapper():
                   splitter=args.splitter, subset=args.subset, training_fractions=[args.train_frac], CV=1)
         except Exception as e:
             print(e)
-            pass
-
 
 
 parser = argparse.ArgumentParser()
@@ -70,7 +68,6 @@ if not os.path.exists(run_dir):
 
 classification_targets = ('rot589_sign', 'rot633_sign', 'rot355_sign')
 classification = True if target_column in classification_targets else False
-
 
 
 logname = 'sweep.log'

@@ -17,7 +17,7 @@ class dsC7O2H10nsd(MolDataset):
         if self.parameters.geometry=='dft':
             self.get_xyz_path = lambda idx: f'data/qm9/{idx}'
 
-        super().__init__(bad_indices=bad_indices, verbose=verbose, check=check, **kwargs)
+        super().__init__(bad_indices=None, verbose=verbose, check=check, **kwargs)
 
 
 class QM9(MolDataset):
