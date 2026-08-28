@@ -56,6 +56,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--checkpoint'         , type=str           , default=None     ,  help='path of the checkpoint file to continue training')
     g_run.add_argument('--CV'                 , type=int           , default=1        ,  help='cross validate')
     g_run.add_argument('--num_epochs'         , type=int           , default=2500     ,  help='number of times to iterate through all samples')
+    g_run.add_argument('--patience'           , type=int           , default=150      ,  help='number of epochs with no improvement to stop early')
     g_run.add_argument('--seed'               , type=int           , default=123      ,  help='initial seed values')
     g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='Print dims throughout the training process')
     g_run.add_argument('--process'            , action='store_true', default=False    ,  help='reprocess data')
@@ -182,6 +183,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           eval_on_test=True,
           sweep=False,
           print_repr=False,
+          patience=150,
           # dataset
           dataset=None,
           dataloader_args=None,
@@ -201,7 +203,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           optimizer='AdamW',
           # other (hidden)
           num_workers=0, pin_memory=False,
-          val_per_batch=True, eval_per_epochs=0, patience=150,
+          val_per_batch=True, eval_per_epochs=0,
           minimum_epochs=0,
           models_to_save=None, clip_grad=100, log_iterations=100,
           lr_scheduler=ReduceLROnPlateau, factor=0.6, min_lr=8.0e-6, mode='max', lr_scheduler_patience=60,
@@ -469,6 +471,7 @@ if __name__ == '__main__':
           print_repr=args.print_repr,
           batch_size=args.batch_size,
           optimizer=args.optimizer,
+          patience=args.patience,
           # dataset
           dataset=args.dataset,
           dataloader_args=args.dataloader_args,
