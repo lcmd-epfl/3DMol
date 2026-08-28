@@ -10,7 +10,7 @@ def train_wrapper():
     with wandb.init(config=None):
         args = wandb.config
         try:
-            train(run_dir, logname, project, wandb_name, args,
+            train(run_dir, logname, script_args.project, wandb_name, args,
                   device='cuda', num_epochs=args.num_epochs, checkpoint=None,
                   verbose=False, print_predictions=False, eval_on_test=False,
                   sweep=True, print_repr=False,
@@ -23,6 +23,7 @@ def train_wrapper():
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--project', default='nequimol', help='project-name')
 parser.add_argument('-d', '--dataset', default='qm9-rotation', help='dataset')
 parser.add_argument('-t', '--target', default='rot589', help='target column')
 parser.add_argument('--id', default=None, help='sweep id if continue a sweep')
@@ -52,7 +53,6 @@ dataset_full = {
 train_frac = {
     'qm9-rotation': 0.8,
     }
-project = 'nequimol'
 
 dataset = script_args.dataset
 target_column = script_args.target
@@ -85,7 +85,8 @@ parameters_dict = {
     'dropout_p': { 'values': [0.0, 0.05, 0.1] },
     'n_s': { 'values': [16, 32, 48] },
     'radius': { 'values' : [2.5, 5.0, 10.0] },
-    'lr':  { 'values' : [0.00005, 0.0001, 0.0005, 0.001] },
+    'lr':  { 'values' : [1e-5, 5e-5, 1e-4, 5e-4, 1e-3] },
+    'weight_decay' : { 'values' : [1e-4, 1e-3, 1e-2, 1e-1, 0] },
     }
 
 scalar_targets = ('rot589_abs', 'rot633_abs', 'rot355_abs')
@@ -112,11 +113,12 @@ parameters_dict.update({ 'target_column': { 'value': target_column} })
 parameters_dict.update({ 'seed': { 'value': script_args.seed } })
 parameters_dict.update({ 'splitter': { 'value': splitter[dataset]} })
 parameters_dict.update({ 'internal_weights': { 'value': False} })
+parameters_dict.update({ 'optimizer': { 'value': 'AdamW'} })
 
 sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)
 
 wandb_name = 'test'
-sweep_id = wandb.sweep(sweep_config, project=project) if script_args.id is None else script_args.id
+sweep_id = wandb.sweep(sweep_config, project=script_args.project) if script_args.id is None else script_args.id
 print(sweep_id)
-wandb.agent(sweep_id, train_wrapper, count=script_args.num, project=project)
+wandb.agent(sweep_id, train_wrapper, count=script_args.num, project=script_args.project)

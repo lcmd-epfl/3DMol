@@ -11,6 +11,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Subset
 from torch.nn import MSELoss
+from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import wandb
 
@@ -86,6 +87,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--internal_weights'     , action='store_true', default=False          ,  help='if use internal weights in tensor products')
     g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
     g_hyper.add_argument('--batch_size'           , type=int           , default=8              ,  help='batch size')
+    g_hyper.add_argument('--optimizer'            , type=str           , default='AdamW'        ,  help='optimizer', choices=['Adam', 'AdamW'])
 
     args = p.parse_args(arglist)
 
@@ -183,8 +185,11 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
           training_fractions=(0.8,),
           CV=0,
           seed0=123,
+          # run
+          batch_size=8,
+          optimizer='AdamW',
           # other (hidden)
-          batch_size=8, num_workers=0, pin_memory=False,
+          num_workers=0, pin_memory=False,
           val_per_batch=True, eval_per_epochs=0, patience=150,
           minimum_epochs=0,
           models_to_save=None, clip_grad=100, log_iterations=100,
@@ -333,8 +338,10 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
                                     num_workers=num_workers)
 
+            optim = {'Adam': Adam, 'AdamW': AdamW}[optimizer]
+
             trainer = ReactTrainer(model=model, std=std, device=device,
-                                   metrics=metrics, loss_func=loss_func,
+                                   metrics=metrics, loss_func=loss_func, optim=optim,
                                    main_metric=main_metric, main_metric_goal=main_metric_goal,
                                    run_dir=run_dir, run_name=run_name_chk,
                                    sampler=sampler, val_per_batch=val_per_batch,
@@ -453,6 +460,7 @@ if __name__ == '__main__':
           sweep=False,
           print_repr=args.print_repr,
           batch_size=args.batch_size,
+          optimizer=args.optimizer,
           # dataset
           dataset=args.dataset,
           dataloader_args=args.dataloader_args,

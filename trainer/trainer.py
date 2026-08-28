@@ -6,7 +6,6 @@ from typing import Dict, Callable
 
 import numpy as np
 import torch
-from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 import wandb
@@ -50,8 +49,8 @@ def concat_if_list(tensor_or_tensors):
 
 class Trainer:
     def __init__(self, model, metrics: Dict[str, Callable], main_metric: str, device: torch.device,
-                 optim=Adam, main_metric_goal: str = 'min',
-                 loss_func=MSELoss, scheduler_step_per_batch: bool = True, sampler=None,
+                 optim=None, main_metric_goal: str = 'min',
+                 loss_func=None, scheduler_step_per_batch: bool = True, sampler=None,
                  run_dir='', run_name='',
                  checkpoint=None, fine_tuning=False,
                  num_epochs=0, eval_per_epochs=0, patience=0,
