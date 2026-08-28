@@ -247,7 +247,7 @@ class EquiReact(nn.Module):
         x = torch.cat((x_dict[scalar_key], x_dict[pseudoscalar_key]), dim=1) if pseudoscalar_key in x_dict else x_dict[scalar_key]
         return x, edge_index, edge_attr
 
-    def forward_mol(self, graph, extra):
+    def forward_mol(self, graph, extra, scale_factor=1e7):
         x, _, _ = self.forward_repr_mol(graph, extra)
         if self.graph_mode=='vector_masked':
             x *= graph.local_mask[:,None]
@@ -258,18 +258,18 @@ class EquiReact(nn.Module):
         if self.arch in {'normal', 'no_relu_in_fc', 'normal_weights100'}:
             score = self.score_predictor_nodes(x)
         elif self.arch=='normal_scaled':
-            x[:,self.n_s:]*=1e7
+            x[:,self.n_s:]*=scale_factor
             score = self.score_predictor_nodes(x)
-        elif self.arch=='both':
+        elif self.arch=='both_scaled':
             score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
-            score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+            score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*scale_factor)
             score = score1 * score2
         elif self.arch in {'both_nonscaled', 'both_weights100'}:
             score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
             score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
             score = score1 * score2
-        elif self.arch=='pseudo':
-            score = self.score_predictor_nodes_half(x[:,self.n_s:]*1e7)
+        elif self.arch=='pseudo_scaled':
+            score = self.score_predictor_nodes_half(x[:,self.n_s:]*scale_factor)
         elif self.arch in {'pseudo_nonscaled', 'pseudo_weights100'}:
             score = self.score_predictor_nodes_half(x[:,self.n_s:])
 
