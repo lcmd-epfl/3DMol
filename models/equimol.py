@@ -196,6 +196,28 @@ class EquiReact(nn.Module):
 
         self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius, distance_emb_dim=self.distance_emb_dim, device=self.device)
 
+        self.scalar_key = f'{self.n_s}x0e'
+        self.pseudoscalar_key = f'{self.n_s}x0o'
+        self.conv_layers_keys = [str(self.conv_layers[i].tp.irreps_out).split('+') for i in range(self.n_conv_layers)]
+
+        def split_key(key):
+            key = key.split('x')
+            n = int(key[0])
+            l = int(key[1][:-1])
+            p = key[1][-1]
+            return (n, l, p)
+
+        self.conv_layer_update_slices = []
+        for i in range(self.n_conv_layers):
+            self.conv_layer_update_slices.append({})
+            n0 = 0
+            for key in  self.conv_layers_keys[i]:
+                n, l, _ = split_key(key)
+                size = n * (2*l+1)
+                self.conv_layer_update_slices[-1][key] = slice(n0, n0+size)
+                n0 += size
+
+
     def forward_repr_mol(self, data, _extra):
 
         x, edge_index, edge_attr, edge_sh = self.build_graph(data)
@@ -215,43 +237,33 @@ class EquiReact(nn.Module):
 
         src, dst = edge_index
 
-        def update_dict(x_dict, x_update, irreps):
-            n0 = 0
-            keys = str(irreps).split('+')
-            # delete keys not in irreps (anything not going to updated)
-            for key in set(x_dict.keys())-set(keys):
-                del x_dict[key]
-            # update
+        def update_dict(x_old, x_update, keys, slices):
+            x_new = {}
             for key in keys:
-                n, sym = key.split('x')
-                l = int(sym[:-1])
-                n = int(n) * (2*l+1)
-                update = x_update[:,n0:n0+n]
-                if key in x_dict:
-                    x_dict[key] += update
+                update = x_update[:,slices[key]]
+                if key in x_old:
+                    x_new[key] = x_old[key] + update
                 else:
-                    x_dict[key] = update
-                n0 += n
+                    x_new[key] = update
+            return x_new
 
-        # TODO precompute all the strig operations ???
-        scalar_key = f'{self.n_s}x0e'
-        pseudoscalar_key = f'{self.n_s}x0o'
-        x_dict = {scalar_key: x}
+        x_dict = {self.scalar_key: x}
+
         for i in range(self.n_conv_layers):
-            edge_attr_ = torch.cat([edge_attr_emb, x_dict[scalar_key][dst], x_dict[scalar_key][src]], dim=-1)
+            edge_attr_ = torch.cat([edge_attr_emb, x_dict[self.scalar_key][dst], x_dict[self.scalar_key][src]], dim=-1)
             if i>0:
-                x = torch.hstack([x_dict[j] for j in str(self.conv_layers[i-1].tp.irreps_out).split('+')])
+                x = torch.hstack([x_dict[key] for key in self.conv_layers_keys[i-1]])
             x_update = self.conv_layers[i](x, edge_index, edge_attr_, edge_sh)
-            update_dict(x_dict, x_update, self.conv_layers[i].tp.irreps_out)
+            x_dict = update_dict(x_dict, x_update, self.conv_layers_keys[i], self.conv_layer_update_slices[i])
 
-        x = torch.cat((x_dict[scalar_key], x_dict[pseudoscalar_key]), dim=1) if pseudoscalar_key in x_dict else x_dict[scalar_key]
+        x = torch.cat((x_dict[self.scalar_key], x_dict[self.pseudoscalar_key]), dim=1) if self.pseudoscalar_key in x_dict else x_dict[self.scalar_key]
         return x, edge_index, edge_attr
 
     def forward_mol(self, graph, extra, scale_factor=1e7):
         x, _, _ = self.forward_repr_mol(graph, extra)
         if self.graph_mode=='vector_masked':
             x *= graph.local_mask[:,None]
-        x = scatter_add(x, index=graph.batch.to(self.device), dim=0)
+        x = scatter_add(x, index=graph.batch, dim=0)
         if self.verbose:
             print('reaction x dims', x.shape)
 
