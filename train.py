@@ -6,11 +6,12 @@ from getpass import getuser  # os.getlogin() won't work on a cluster
 import random
 from collections import defaultdict
 from timeit import default_timer as timer
+from collections import Counter
 
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Subset
-from torch.nn import MSELoss
+from torch.nn import MSELoss, BCEWithLogitsLoss
 from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import wandb
@@ -106,19 +107,32 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, classificatio
     targ_raw = np.ravel(torch.vstack(targ_raw).cpu().numpy())
     pred_raw = np.ravel(torch.vstack(pred_raw).cpu().numpy())
     if classification:
+
+        def sigmoid(x):
+            return 1.0/(np.exp(-x)+1.0)
+
+        def remap(x):
+            return x*2.0-1.0
+
+        def check_div(a, b):
+            return a/b if b else np.inf
+
+        targ_raw = remap(targ_raw)
+        pred_raw = remap(sigmoid(pred_raw))
         targ = np.copy(targ_raw).astype(int)
         pred = np.zeros_like(pred_raw, dtype=int)
         pred[np.where(pred_raw<0)]=-1
         pred[np.where(pred_raw>=0)]=1
         err = pred-targ
 
-        print('>>> # idx name target prediction_raw prediction error')
+        print('>>> # idx name target prediction_prob prediction error')
         for x in zip(test_indices, data.indices[test_indices], targ, pred_raw, pred, err, strict=True):
             print('>>>', *x, sep='\t')
 
-        d_target = defaultdict(int, zip(*np.unique(targ, return_counts=True), strict=True))
-        d_pred   = defaultdict(int, zip(*np.unique(pred, return_counts=True), strict=True))
-        d_err    = defaultdict(int, zip(*np.unique(err, return_counts=True), strict=True))
+        d_target = Counter(targ)
+        d_pred = Counter(pred)
+        d_err = Counter(err)
+
         N0 = d_target[-1]
         P0 = d_target[1]
         FN = d_err[-2]
@@ -126,17 +140,14 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, classificatio
         N = d_pred[-1]
         P = d_pred[1]
 
-        TN = N0-FP
-        TP = P0-FN
+        TN = (N0-FP)
+        TP = (P0-FN)
         assert FP + TP == P
         assert FN + TN == N
 
-        print(f'{TP=} {FN=} {FP=} {TP=}')
+        print(f'{TP=} {FN=} {FP=} {TN=}')
         accuracy = (TP+TN)/(TP+TN+FP+FN)
         print(f'{accuracy=:.4f}')
-
-        def check_div(a, b):
-            return a/b if b else np.inf
 
         recall = check_div(TP, TP+FN)
         FPR = check_div(FP, N0)
@@ -204,10 +215,8 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
         metrics = {'accuracy': Accuracy()}
         main_metric = 'accuracy'
         main_metric_goal = 'max'
-        # loss_func = SoftMarginLoss()
-        # loss_func_name = 'SoftMarginLoss'
-        loss_func = MSELoss()
-        loss_func_name = 'MSELoss'
+        loss_func = BCEWithLogitsLoss()
+        loss_func_name = 'BCEWithLogitsLoss'
     else:
         metrics = {'mae': MAE()}
         main_metric = 'mae'
@@ -316,7 +325,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                 print(f"{input_edge_feats_dim=}")
 
             model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
-                              classification=hyper_dict['classification'],
                               internal_weights=hyper_dict['internal_weights'],
                               arch=hyper_dict['arch'],
                               max_radius=hyper_dict['radius'],

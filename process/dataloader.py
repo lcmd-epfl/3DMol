@@ -78,6 +78,7 @@ class MolDataset(Dataset):
 
         if classification:
             self.check_classes()
+            self.labels = (self.labels + 1.0)*0.5
         else:
             self.standardize_labels()
 

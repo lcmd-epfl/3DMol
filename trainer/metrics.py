@@ -17,8 +17,8 @@ class Accuracy(nn.Module):
         super().__init__()
 
     def forward(self, preds, targets):
-        pred = torch.zeros_like(preds, dtype=int)
-        pred[torch.where(preds<0)]=-1
-        pred[torch.where(preds>=0)]=1
+        pred = torch.sigmoid(preds)
+        pred[torch.where(pred<0.5)]=0
+        pred[torch.where(pred>=0.5)]=1
         loss = ((pred==targets)*1.0).mean()
         return loss

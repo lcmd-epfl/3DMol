@@ -75,7 +75,7 @@ class EquiReact(nn.Module):
                  distance_emb_dim: int = 32, dropout_p: float = 0.1,
                  verbose=False, device='cpu', graph_mode='vector',
                  invariant=False,
-                 classification=False, arch='normal',
+                 arch='normal',
                  internal_weights=False,
                  **kwargs):
 
@@ -96,7 +96,6 @@ class EquiReact(nn.Module):
         self.graph_mode = graph_mode
         self.device = device
         self.arch = arch
-        self.classification = classification
 
         if invariant:
             irrep_seq = [
@@ -187,23 +186,13 @@ class EquiReact(nn.Module):
 
         self.score_predictor_nodes_half = nn.Sequential(
             nn.Linear(self.n_s, 2 * self.n_s, bias=False),
+            #nn.Tanh(),
             nn.Dropout(dropout_p),
             nn.Linear(2 * self.n_s, self.n_s, bias=False),
+            #nn.Tanh(),
             nn.Dropout(dropout_p),
             nn.Linear(self.n_s, 1, bias=False)
         )
-
-        self.score_predictor_nodes_with_edges = nn.Sequential(
-            nn.Linear(self.n_s_full + distance_emb_dim, 2 * self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(2 * self.n_s, self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1)
-        )
-
-        self.classif = nn.Sigmoid()
 
         self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius, distance_emb_dim=self.distance_emb_dim, device=self.device)
 
@@ -284,15 +273,10 @@ class EquiReact(nn.Module):
         elif self.arch in {'pseudo_nonscaled', 'pseudo_weights100'}:
             score = self.score_predictor_nodes_half(x[:,self.n_s:])
 
-        if self.classification is True:
-            score = self.classif(score) * 2 - 1
-
-        return score
+        return score, x
 
     def forward(self, graph, extra, return_repr=False):
-        predictions = self.forward_mol(graph, extra)
-        if return_repr:
-            representations = 0  # TODO
-        else:
-            representations = None  # TODO
+        predictions, representations = self.forward_mol(graph, extra)
+        if not return_repr:
+            representations = None
         return predictions, representations

@@ -281,7 +281,7 @@ class Trainer:
         for batch in tqdm(data_loader):
             *batch, _batch_indices = move_to_device(list(batch), self.device)
             _, _, _, rs = self.forward_pass(batch, return_repr=True)
-            representations.append(rs.detach().numpy())
+            representations.append(rs.detach().cpu().numpy())
         representations = np.vstack(representations)
         return representations
 
