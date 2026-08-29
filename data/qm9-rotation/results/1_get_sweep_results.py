@@ -8,15 +8,13 @@ import wandb
 raw_data_path = 'sweep_best_runs.csv'
 max_runs = 32
 datasets = ['QM9Rotation']
-project = "equireact/nequimol"
+project = "equireact/3dmol-rot"
 score_column = 'val_score_best'
-drop_keys = ['num_epochs', 'CV iter', 'epoch', 'subset', 'random_baseline',
+drop_keys = ['num_epochs', 'CV iter', 'epoch', 'subset',
              'train loss', 'val_loss', 'val_score', 'graph_method']
 meta_keys = ['run_id', 'sweep_id', 'name', 'val_score_best', 'splitter']
 sweep_ids_dict = {
-'QM9Rotation': ['2j04491n', '1ye8y6u7', '5h3mvga0', 'cbjzelvf', 'g92r08ig', 'iwikpcza',
-                'rlv9i41m', 'sn8p3eku', 'xp9bn2ho', '5uxvq7v3', '7t2x2nnm', 'uxhyjx14',
-                '7ipb3qgs'],
+'QM9Rotation': ['gwa4qt7v']
 }
 
 if not os.path.isfile(raw_data_path):
@@ -40,11 +38,7 @@ if not os.path.isfile(raw_data_path):
 
             runs = sorted(runs, key=lambda run: int(run.name.split('-')[-1]))[:max_runs]
 
-            if runs[0].config['classification'] is True:
-                best_idx = -1   # biggest score is best
-            else:
-                best_idx = 0    # smallest score is best
-
+            best_idx = -1 if runs[0].config['classification'] else 0
             best_run = sorted(runs, key = lambda run: float(run.summary[score_column]))[best_idx]
             d1 = {'run_id': best_run.id, 'sweep_id': sweep.id, 'name': best_run.name}
             d2 = {k: v for k, v in best_run.summary._json_dict.items() if not k.startswith('_')}

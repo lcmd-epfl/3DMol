@@ -1,23 +1,22 @@
-# run_id=q3r6sjjn, sweep_id=5uxvq7v3, name=rare-sweep-27, val_score_best=30.38444328308105, splitter=random
-arch	both
+# run_id=yeccoavy, sweep_id=gwa4qt7v, name=classic-sweep-20, val_score_best=34.93934840264917, splitter=random
+arch	normal
 classification	False
 dataset	data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation
-distance_emb_dim	32
-dropout_p	0.0
+distance_emb_dim	16
+dropout_p	0
 features	torchchem_v1
 geometry	dft
 graph_mode	vector
 internal_weights	False
 invariant	False
 lr	0.0005
-max_neighbors	25
 n_conv_layers	3
-n_s	48
+n_s	32
 n_v	48
 noH	False
-radius	10.0
+optimizer	AdamW
+radius	5
 seed	666
-sum_mode	node
 target_column	rot589
 train_frac	0.8
 weight_decay	0

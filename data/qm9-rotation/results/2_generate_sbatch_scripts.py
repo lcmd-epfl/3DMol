@@ -3,55 +3,64 @@
 from glob import glob
 import numpy as np
 
+seeds = ' '.join(str(i) for i in range(666, 676))
+
 for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
 
-    skip_keys = ['target_column', 'seed']
+    skip_keys = ['target_column', 'seed', 'arch']
     base_config = np.loadtxt(config_file, skiprows=1, dtype=str)
     base_config = {key: val.strip('"') for key, val in base_config}
     base_config = {key: val if val not in ['nan', 'None'] else '0' for key, val in base_config.items()}
     config = '\n'.join([f'--{key} {val if val.lower()!="true" else ""} \\' for key, val in base_config.items() if (key not in skip_keys and val.lower() != 'false')])
 
     target_column = base_config['target_column']
-    for la in ['589', '633', '355']:
-
-        target = target_column.replace('589', la)
+    for target in ['rot589', 'rot589_sign', 'rot589_abs']:
 
         short_dataset = base_config['dataset'].split(':')[-1]
-        short_name = f"{short_dataset}-{target}-{base_config['arch']}"
-        full_name = f"{short_name}-ns{base_config['n_s']}-{'nv'+base_config['n_v']}-d{base_config['distance_emb_dim']}-{base_config['sum_mode']}"
 
-        header=f"""#!/bin/bash -l
+        for arch in ['normal', 'normal_scaled', 'pseudo_scaled', 'pseudo_nonscaled', 'both_scaled', 'both_nonscaled']:
+
+            short_name = f"{short_dataset}-{target}-{arch}"
+            full_name = f"{short_name}-ns{base_config['n_s']}-{'nv'+base_config['n_v']}-d{base_config['distance_emb_dim']}"
+
+            header=f"""#!/bin/bash -l
 #SBATCH --partition=l40s
+#SBATCH --qos=debug
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
-#SBATCH --time=12:00:00
-#SBATCH --job-name={target}-{base_config['arch']}
-#SBATCH --array=0-19
+#SBATCH --time=00:59:59
+#SBATCH --job-name={target}-{arch}
 
-FOLD=$SLURM_ARRAY_TASK_ID
-if (( $FOLD > 9 )) ; then SEED=$((666 + $FOLD - 10)) ; else SEED=$((123 + $FOLD)) ; fi
+        conda activate 3dmol
 
-module purge
-conda activate equireact-kuma
-python -c 'import torch; print(torch.cuda.is_available())'
-wandb enabled
+        for SPLIT in `seq 0 9`; do
 
-python train.py \\"""
+        SEED=$((SPLIT+666))
 
-        run_config = f"""--device cuda \\
---experiment_name 3DMol-rotation-cv \\
---CV 1 \\
---seed $SEED \\
---target_column {target} \\
---num_epochs 128 \\
---splitter random \\
---logdir /scratch/briling/cv/ \\
---print_predictions \\
---wandb_name cv20-{full_name} \\"""
+        python train.py \\"""
 
-        with open(f'sbatch/{full_name}.sbatch', 'w') as f:
-            print("\n".join((header, run_config, config)), file=f)
-            print(file=f)
+            run_config = f"""--device cuda \\
+        --experiment_name 3DMol-rotation-cv \\
+        --project 3dmol-rot \\
+        --CV 1 \\
+        --seed $SEED \\
+        --target_column {target} {'--classification' if 'sign' in target else ''} \\
+        --arch {arch} \\
+        --num_epochs 128 \\
+        --patience 32 \\
+        --max_gap 0.05 \\
+        --splitter "test:data/qm9-rotation/splits/test.$SPLIT.dat;val:data/qm9-rotation/splits/val.$SPLIT.dat" \\
+        --logdir cv/ \\
+        --print_predictions \\
+        --wandb_name cv10-{full_name} \\"""
+
+            tail = """&
+            sleep 5
+            done"""
+
+            with open(f'sbatch/{full_name}.bash', 'w') as f:
+                print("\n".join((header, run_config, config, tail)), file=f)
+                print(file=f)
