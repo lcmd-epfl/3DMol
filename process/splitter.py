@@ -99,10 +99,7 @@ def split_dataset(data, splitter, tr_frac, subset=None):
     2) use the output indices with np.arrays, lists, df.iloc[]
     '''
     indices = np.arange(data.nmols)
-    len_before = len(indices)
     np.random.shuffle(indices)
-    len_after = len(indices)
-    assert len_before == len_after, "lost data in shuffle"
     if subset:
         indices = indices[:subset]
         assert len(indices) == subset, "lost data in subset"

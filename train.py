@@ -78,7 +78,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--radius'               , type=float         , default=5.0            ,  help='max radius of graph')
     g_hyper.add_argument('--dropout_p'            , type=float         , default=0.05           ,  help='dropout probability')
     g_hyper.add_argument('--graph_mode'           , type=str           , default='vector'       ,  help='graph mode', choices=['vector', 'vector_masked'])
-    g_hyper.add_argument('--dataset'              , type=str           , default='cyclo'        ,  help='cyclo / gdb / proparg')
+    g_hyper.add_argument('--dataset'              , type=str           ,                           help='dataset')
     g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
     g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if use an invariant model')

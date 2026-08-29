@@ -167,8 +167,7 @@ class Trainer:
                 wandb_msg = {"val_loss": val_loss, "val_score": val_score, "epoch": self.epoch, "train_score": self.train_score_for_wandb}
                 if torch.isfinite(self.best_val_score.cpu()):
                     wandb_msg["val_score_best"] = self.best_val_score
-                else:
-                    wandb.log(wandb_msg)
+                wandb.log(wandb_msg)
                 print(f'[Epoch {epoch}] training_{self.main_metric}: {self.train_score_for_wandb:6f} val_{self.main_metric}: {val_score:.6f} val_loss: {val_loss:.6f}')
 
                 # save the model with the best main_metric
@@ -254,7 +253,7 @@ class Trainer:
             else:
                 return total_metrics, None, None
         else:
-            self.train_score_for_wandb = total_metrics[self.main_metric] / len(data_loader)
+            self.train_score_for_wandb = total_metrics[self.main_metric] / len(data_loader) * self.std
 
     def after_batch(self, predictions, targets, batch_indices):
         pass
