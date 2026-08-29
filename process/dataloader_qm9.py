@@ -2,7 +2,7 @@ from process.dataloader import MolDataset
 
 
 class dsC7O2H10nsd(MolDataset):
-    def __init__(self, extra_args=None, target_column=None,
+    def __init__(self, *, extra_args=None, target_column=None,
                  geometry=None, graph_method=None,
                  verbose=4, check=False, **kwargs):
 
@@ -21,7 +21,7 @@ class dsC7O2H10nsd(MolDataset):
 
 
 class QM9(MolDataset):
-    def __init__(self, extra_args=None, target_column=None,
+    def __init__(self, *, extra_args=None, target_column=None,
                  geometry=None, graph_method=None,
                  verbose=4, check=False, **kwargs):
 

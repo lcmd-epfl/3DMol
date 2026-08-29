@@ -1,11 +1,6 @@
-import re
 import numpy as np
 
 indices_names = ('train', 'test', 'val')
-
-
-def remove_atom_map_number_manual(smi):
-    return re.sub(':[0-9]+', '', smi)
 
 
 def get_y_splits(data, splitter, indices, tr_size, te_size):
@@ -56,7 +51,7 @@ def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
     if subset:
         raise RuntimeError('subset option incompatible with test/train/val indices file')
 
-    fnames = {key: val for key, val in [entry.split(':') for entry in splitter.split(';')]}
+    fnames = dict([entry.split(':') for entry in splitter.split(';')])
     if len(fnames)!=len(set(fnames.keys())):
         raise RuntimeError(f'repeated indices name(s) {tuple(fnames.keys())}')
     if not set(fnames.keys()).issubset(set(indices_names)):
@@ -67,7 +62,7 @@ def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
     indices_dict = {key: np.load(fnames[key]) if fnames[key].endswith('.npy') else np.loadtxt(fnames[key], dtype=int, ndmin=1) for key in fnames}
 
     # only test
-    if len(fnames)==1 and tuple(fnames.keys())[0]=='test':
+    if len(fnames)==1 and next(iter(fnames.keys()))=='test':
         te_indices = indices_dict['test']
         if len(te_indices) != te_size:
             raise RuntimeError(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')

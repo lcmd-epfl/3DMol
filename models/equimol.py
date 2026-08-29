@@ -9,9 +9,9 @@ from .graph import BuildGraph
 
 class TensorProductConvLayer(nn.Module):
 
-    def __init__(self, in_irreps, sh_irreps, out_irreps, edge_fdim, dropout=0.0,
+    def __init__(self, *, in_irreps, sh_irreps, out_irreps, edge_fdim, dropout=0.0,
                  h_dim=None, relu_in_fc=True, internal_weights=False, arch='normal'):
-        super(TensorProductConvLayer, self).__init__()
+        super().__init__()
         self.in_irreps = in_irreps
         self.out_irreps = out_irreps
         self.sh_irreps = sh_irreps
@@ -24,21 +24,19 @@ class TensorProductConvLayer(nn.Module):
         else:
             self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, internal_weights=True, shared_weights=True)
 
-            if arch in {'normal_weights100', 'both_weights100', 'pseudo_weights100'}:
-                if '0o' in self.tp.irreps_out:
-                    out_irreps_list = str(self.tp.irreps_out).split('+')
-                    out_irreps_pseudoscalar = [*map(lambda x: x.endswith('0o'), out_irreps_list)]
-                    assert sum(out_irreps_pseudoscalar)==1
-                    idx_irrep_pseudoscalar = out_irreps_pseudoscalar.index(True)
+            if arch in {'normal_weights100', 'both_weights100', 'pseudo_weights100'} and '0o' in self.tp.irreps_out:
+                out_irreps_pseudoscalar = [x.endswith('0o') for x in str(self.tp.irreps_out).split('+')]
+                assert sum(out_irreps_pseudoscalar)==1
+                idx_irrep_pseudoscalar = out_irreps_pseudoscalar.index(True)
 
-                    weights_pointer = 0
-                    for i, instr in enumerate(tp.instructions):
-                        weights_pointer += math.prod(instr.path_shape)
-                        if i==idx_irrep_pseudoscalar:
-                            weights_pointer_end = weights_pointer + math.prod(instr.path_shape)
-                            break
-                    with torch.no_grad():
-                        self.tp.weight[weights_pointer:weights_pointer_end] *= 100.0
+                weights_pointer = 0
+                for i, instr in enumerate(tp.instructions):
+                    weights_pointer += math.prod(instr.path_shape)
+                    if i==idx_irrep_pseudoscalar:
+                        weights_pointer_end = weights_pointer + math.prod(instr.path_shape)
+                        break
+                with torch.no_grad():
+                    self.tp.weight[weights_pointer:weights_pointer_end] *= 100.0
 
         if relu_in_fc:
             self.fc_net = nn.Sequential(
@@ -69,7 +67,7 @@ class TensorProductConvLayer(nn.Module):
 
 class EquiReact(nn.Module):
 
-    def __init__(self, node_fdim: int, edge_fdim: int, sh_lmax: int = 2,
+    def __init__(self, *, node_fdim: int, sh_lmax: int = 2,
                  n_s: int = 16, n_v: int = 16, n_conv_layers: int = 2,
                  max_radius: float = 10.0,
                  distance_emb_dim: int = 32, dropout_p: float = 0.1,
@@ -85,7 +83,6 @@ class EquiReact(nn.Module):
             sh_lmax = 0
 
         self.node_fdim = node_fdim
-        self.edge_fdim = edge_fdim
         self.sh_irreps = o3.Irreps.spherical_harmonics(lmax=sh_lmax)
         self.n_s, self.n_v = n_s, n_v
         self.n_conv_layers = n_conv_layers
@@ -194,7 +191,8 @@ class EquiReact(nn.Module):
             nn.Linear(self.n_s, 1, bias=False)
         )
 
-        self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius, distance_emb_dim=self.distance_emb_dim, device=self.device)
+        self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius,
+                                      distance_emb_dim=self.distance_emb_dim, device=self.device)
 
         self.scalar_key = f'{self.n_s}x0e'
         self.pseudoscalar_key = f'{self.n_s}x0o'
@@ -216,7 +214,6 @@ class EquiReact(nn.Module):
                 size = n * (2*l+1)
                 self.conv_layer_update_slices[-1][key] = slice(n0, n0+size)
                 n0 += size
-
 
     def forward_repr_mol(self, data, _extra):
 
@@ -287,7 +284,7 @@ class EquiReact(nn.Module):
 
         return score, x
 
-    def forward(self, graph, extra, return_repr=False):
+    def forward(self, graph, extra, *, return_repr=False):
         predictions, representations = self.forward_mol(graph, extra)
         if not return_repr:
             representations = None

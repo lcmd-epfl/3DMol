@@ -20,7 +20,7 @@ class MolDataset(Dataset):
         if self.verbose>=priority:
             print(*args)
 
-    def __init__(self, process=True, bad_indices=None,
+    def __init__(self, *, process=True, bad_indices=None,
                  embedding_specs=None,
                  extra_args=None,
                  classification=False,
@@ -74,13 +74,15 @@ class MolDataset(Dataset):
         assert self.nmols==len(self.mol_graphs)
 
         if embedding_specs is not None:
-            self.extra = [{key: torch.tensor(self.df[key].values[i].item()) for key in embedding_specs.keys()} for i in range(len(self.df))]
+            self.extra = [{key: torch.tensor(self.df[key].values[i].item()) for key in embedding_specs} for i in range(len(self.df))]
 
         if classification:
             self.check_classes()
             self.labels = (self.labels + 1.0)*0.5
         else:
             self.standardize_labels()
+
+        self.input_node_feats_dim = self.mol_graphs[0].x.shape[1]
 
     def __len__(self):
         return len(self.labels)
@@ -174,7 +176,7 @@ class MolDataset(Dataset):
         self.std = torch.std(self.labels)
         self.labels = (self.labels - self.mean)/self.std
 
-    def match_graphs(self, G1, G2, i, loose=False):
+    def match_graphs(self, G1, G2, i, *, loose=False):
         GM = iso.GraphMatcher(G1, G2, node_match=iso.categorical_node_match('q', None))
         if loose:
             assert GM.subgraph_is_monomorphic(), f'G2 is not isomorphic to any subgraph of G1 in {i}: {self.smiles[i]}, {self.get_xyz_path(self.indices[i])}'
@@ -198,7 +200,7 @@ class MolDataset(Dataset):
         G.add_edges_from(bonds)
         return G
 
-    def read_xyz(self, xyz, bohr=False):
+    def read_xyz(self, xyz, *, bohr=False):
         mol = ase.io.read(xyz)
         if bohr:
             mol.set_positions(mol.positions*ase.units.Bohr)
@@ -220,4 +222,4 @@ class MolDataset(Dataset):
 
     def get_parameters(self, vardict):
         return SimpleNamespace(**{key: self.default_parameters[key] if (key not in vardict or vardict[key] is None) else vardict[key]
-                                                                    for key in self.default_parameters.keys()})
+                                                                    for key in self.default_parameters})

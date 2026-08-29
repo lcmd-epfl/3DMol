@@ -3,6 +3,7 @@ import torch
 from torch_geometric import data as tgdata
 from rdkit import Chem
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
+from process.feature import atom_geom
 
 try:
     torch.serialization.add_safe_globals([tgdata.data.DataEdgeAttr, tgdata.data.DataTensorAttr, tgdata.storage.GlobalStorage])
@@ -27,7 +28,6 @@ def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
         assert np.all(atoms1 == atoms), "atoms from xyz and smiles don't match"
         x = smiles_featurizer(mol)
     elif features=='torchchem_v1':
-        from process.feature import atom_geom
         x = atom_geom(atoms, torch.tensor(coords))
         x = x.type(torch.Tensor)
 
@@ -51,7 +51,7 @@ def get_empty_graph(features='smiles'):
 
 def smiles_featurizer(mol):
     allowable_features = {
-        'possible_atomic_num_list': list(range(1, 119)) + ['misc'],
+        'possible_atomic_num_list': [*list(range(1, 119)), 'misc'],
         'possible_chirality_list': [
             'CHI_UNSPECIFIED',
             'CHI_TETRAHEDRAL_CW',

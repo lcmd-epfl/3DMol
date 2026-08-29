@@ -2,7 +2,7 @@ import copy
 import inspect
 import os
 import shutil
-from typing import Dict, Callable
+from collections.abc import Callable
 
 import numpy as np
 import torch
@@ -48,7 +48,7 @@ def concat_if_list(tensor_or_tensors):
 
 
 class Trainer:
-    def __init__(self, model, metrics: Dict[str, Callable], main_metric: str, device: torch.device,
+    def __init__(self, model, *, metrics: dict[str, Callable], main_metric: str, device: torch.device,
                  optim=None, main_metric_goal: str = 'min',
                  loss_func=None, scheduler_step_per_batch: bool = True, sampler=None,
                  run_dir='', run_name='',
@@ -154,7 +154,7 @@ class Trainer:
                     self.run_per_epoch_evaluations(val_loader)
 
                 # check if improve
-                if val_score >= self.best_val_score and self.main_metric_goal == 'max' or val_score <= self.best_val_score and self.main_metric_goal == 'min':
+                if (val_score>=self.best_val_score and self.main_metric_goal=='max') or (val_score<=self.best_val_score and self.main_metric_goal=='min'):
                     epochs_no_improve = 0
                     self.best_val_score = val_score
                     self.save_checkpoint(epoch, checkpoint_name=f'{self.run_name}.best_checkpoint.pt')
@@ -202,7 +202,7 @@ class Trainer:
         self.model.load_state_dict(checkpoint['model_state_dict'])
         return self.evaluation(val_loader, data_split='val_best_checkpoint')
 
-    def forward_pass(self, batch, return_repr=False):
+    def forward_pass(self, batch, *, return_repr=False):
         pass
 
     def process_batch(self, batch, optim):
@@ -219,10 +219,8 @@ class Trainer:
             self.optim_steps += 1
         return loss, list_detach(predictions), list_detach(targets)
 
-    def predict(self, data_loader: DataLoader, optim: torch.optim.Optimizer = None, return_pred=False):
-        total_metrics = {k: 0 for k in
-                         list(self.metrics.keys()) + [type(self.loss_func).__name__, 'mean_pred', 'std_pred',
-                                                      'mean_targets', 'std_targets']}
+    def predict(self, data_loader: DataLoader, optim: torch.optim.Optimizer = None, *, return_pred=False):
+        total_metrics = dict.fromkeys([*self.metrics.keys(), type(self.loss_func).__name__, 'mean_pred', 'std_pred', 'mean_targets', 'std_targets'], 0)
         epoch_targets = []
         epoch_predictions = []
         epoch_loss = 0
@@ -239,7 +237,7 @@ class Trainer:
                     metrics[type(self.loss_func).__name__] = loss.item()
                     for key, value in metrics.items():
                         total_metrics[key] += value
-                if optim is None and not self.val_per_batch or return_pred:
+                if (optim is None and not self.val_per_batch) or return_pred:
                     epoch_loss += loss.item()
                     epoch_targets.extend(targets if isinstance(targets, list) else [targets])
                     epoch_predictions.extend(predictions if isinstance(predictions, list) else [predictions])
@@ -271,7 +269,7 @@ class Trainer:
         if self.lr_scheduler is not None and (we_want or warmup):
             self.step_schedulers()
 
-    def evaluate_metrics(self, predictions, targets, val=False) -> Dict[str, float]:
+    def evaluate_metrics(self, predictions, targets, *, val=False) -> dict[str, float]:
         metrics = {}
         metrics['mean_pred'] = torch.mean(concat_if_list(predictions)).item()
         metrics['std_pred'] = torch.std(concat_if_list(predictions)).item()
@@ -292,7 +290,7 @@ class Trainer:
         representations = np.vstack(representations)
         return representations
 
-    def evaluation(self, data_loader: DataLoader, data_split: str = '', return_pred=False):
+    def evaluation(self, data_loader: DataLoader, data_split: str = '', *, return_pred=False):
         self.model.eval()
         metrics, predictions, targets = self.predict(data_loader, return_pred=return_pred)
 

@@ -67,17 +67,14 @@ if not os.path.exists(run_dir):
 
 
 classification_targets = ('rot589_sign', 'rot633_sign', 'rot355_sign')
-classification = True if target_column in classification_targets else False
+classification = target_column in classification_targets
 
 
 logname = 'sweep.log'
 
 wandb.login()
 
-if classification:
-    metric = { 'name': 'val_score_best', 'goal': 'maximize' }
-else:
-    metric = { 'name': 'val_score_best', 'goal': 'minimize' }
+metric = {'name': 'val_score_best', 'goal': ('maximize' if classification else 'minimize')}
 sweep_config = { 'method': 'bayes', 'metric': metric, 'name': f'{target_column}_{script_args.arch}' }
 
 parameters_dict = {

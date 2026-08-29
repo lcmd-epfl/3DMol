@@ -37,7 +37,7 @@ class WarmUpWrapper:
                 # update all parameters if there is only one entry specified for the warmup steps otherwise only update the ones corresponding to the current warmup phase
                 if i <= warmup_phase or len(self.warmup_steps) == 1:
                     # interpolate between 0 and the final starting learning rate
-                    interpolation_value = self._step - ([0] + list(self.warmup_steps.cumsum()))[warmup_phase] +1
+                    interpolation_value = self._step - [0, *list(self.warmup_steps.cumsum())][warmup_phase] +1
                     if self.warmup_steps[warmup_phase] == 0:
                         p['lr'] = self.start_lrs[i]
                     else:

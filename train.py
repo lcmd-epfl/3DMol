@@ -1,12 +1,14 @@
 import os
 import sys
+import importlib.util
 import argparse
 from datetime import datetime
 from getpass import getuser  # os.getlogin() won't work on a cluster
 import random
-from collections import defaultdict
 from timeit import default_timer as timer
 from collections import Counter
+import faulthandler
+import warnings
 
 import numpy as np
 import torch
@@ -22,9 +24,9 @@ from models.equimol import EquiReact
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
-# turn on for debugging for C code like Segmentation Faults
-import faulthandler
-faulthandler.enable()
+
+faulthandler.enable()  # turn on for debugging for C code like Segmentation Faults
+warnings.filterwarnings("ignore", message="The TorchScript type system doesn't support")
 
 
 class Logger:
@@ -105,7 +107,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     return args, arg_groups
 
 
-def print_test_predictions(data, test_indices, targ_raw, pred_raw, classification=False):
+def print_test_predictions(data, test_indices, targ_raw, pred_raw, *, classification=False):
     targ_raw = np.ravel(torch.vstack(targ_raw).cpu().numpy())
     pred_raw = np.ravel(torch.vstack(pred_raw).cpu().numpy())
     if classification:
@@ -173,7 +175,7 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, classificatio
             print('>>>', *x, sep='\t')
 
 
-def train(run_dir, run_name, project, wandb_name, hyper_dict,
+def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
           # run
           device='cuda',
           num_epochs=65536,
@@ -230,26 +232,15 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
-    if dataset=='proparg':
-        from process.dataloader_proparg import PropargReactants as MolDataloader
-    elif dataset=='test':
-        from process.dataloader_test import TestSet as MolDataloader
-    elif dataset=='dsC7O2H10nsd':
-        from process.dataloader_qm9 import dsC7O2H10nsd as MolDataloader
-    elif dataset=='qm9':
-        from process.dataloader_qm9 import QM9 as MolDataloader
-    else:
-        try:
-            dataloader_path, dataloader_class = dataset.split(':')
-            import importlib.util
-            import sys
-            spec = importlib.util.spec_from_file_location('GenMolDataset', dataloader_path)
-            foo = importlib.util.module_from_spec(spec)
-            sys.modules['GenMolDataset'] = foo
-            spec.loader.exec_module(foo)
-            MolDataloader = vars(foo)[dataloader_class]
-        except:
-            raise NotImplementedError(f'Cannot load the {dataset} dataset.') from None
+    try:
+        dataloader_path, dataloader_class = dataset.split(':')
+        spec = importlib.util.spec_from_file_location('GenMolDataset', dataloader_path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules['GenMolDataset'] = mod
+        spec.loader.exec_module(mod)
+        MolDataloader = vars(mod)[dataloader_class]
+    except:
+        raise NotImplementedError(f'Cannot load the {dataset} dataset.') from None
 
     time_start = timer()
     data = MolDataloader(process=process, classification=classification,
@@ -309,7 +300,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
                                                                          tr_frac=max(training_fractions),
                                                                          subset=subset)
 
-            print('MAE if use mean train for test:', abs(labels.numpy()[te_indices]-(labels.numpy()[tr_indices].mean())).mean()*std)
+            print('MAE if use mean train for test:', (abs(labels.numpy()[te_indices]-(labels.numpy()[tr_indices].mean())).mean()*std).item())
 
             if len(training_fractions)>1:
                 tr_indices = tr_indices[:int(tr_frac*len(indices))]
@@ -319,16 +310,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict,
             val_data = Subset(data, val_indices)
             test_data = Subset(data, te_indices)
 
-            # train sample
-            _label, _idx, r0graph = train_data[0][:3]
-            input_node_feats_dim = r0graph.x.shape[1]
-            input_edge_feats_dim = 1
-            if verbose:
-                print(f"{r0graph=}")
-                print(f"{input_node_feats_dim=}")
-                print(f"{input_edge_feats_dim=}")
-
-            model = EquiReact(node_fdim=input_node_feats_dim, edge_fdim=1, verbose=verbose, device=device,
+            model = EquiReact(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
                               internal_weights=hyper_dict['internal_weights'],
                               arch=hyper_dict['arch'],
                               max_radius=hyper_dict['radius'],
@@ -435,7 +417,7 @@ if __name__ == '__main__':
         except:
             pass
 
-    SLURM_JOB_ID=os.environ["SLURM_JOB_ID"] if "SLURM_JOB_ID" in os.environ else ""
+    SLURM_JOB_ID = os.environ.get("SLURM_JOB_ID", "")
     logname = f'{args.wandb_name}-{SLURM_JOB_ID}-{datetime.now().strftime("%y%m%d-%H%M%S")}-{getuser()}'
     logpath = os.path.join(run_dir, f'{logname}.log')
     print(f"STDOUT> {logpath}")
