@@ -53,7 +53,7 @@ class Trainer:
                  loss_func=None, scheduler_step_per_batch: bool = True, sampler=None,
                  run_dir='', run_name='',
                  checkpoint=None, fine_tuning=False,
-                 num_epochs=0, eval_per_epochs=0, patience=0, max_gap=None,
+                 num_epochs=0, eval_per_epochs=0, patience=0, max_gap=None, gap_patience=0,
                  minimum_epochs=0, models_to_save=None, clip_grad=None, log_iterations=0, lr=0.0001,
                  weight_decay=0.0001, lr_scheduler=None, factor=0, min_lr=0, mode='max', lr_scheduler_patience=0,
                  val_per_batch=True, std=1):
@@ -73,6 +73,7 @@ class Trainer:
         self.num_epochs = num_epochs
         self.eval_per_epochs = eval_per_epochs
         self.patience = patience
+        self.gap_patience = gap_patience
         self.max_gap = max_gap
         self.minimum_epochs = minimum_epochs
         self.models_to_save = [] if models_to_save is None else models_to_save
@@ -134,6 +135,7 @@ class Trainer:
 
     def train(self, train_loader: DataLoader, val_loader: DataLoader):
         epochs_no_improve = 0  # counts every epoch that the validation accuracy did not improve for early stopping
+        epochs_overfitting = 0
         for epoch in range(self.start_epoch, self.num_epochs + 1):  # loop over the dataset multiple times
 
             self.epoch = epoch
@@ -161,6 +163,16 @@ class Trainer:
                 else:
                     epochs_no_improve += 1
 
+                if self.max_gap is not None:
+                    current_gap = val_score - self.train_score_for_wandb
+                    if self.main_metric_goal == 'max':
+                        current_gap *= -1
+                    max_gap = self.max_gap * self.std
+                    if current_gap > max_gap:
+                        epochs_overfitting += 1
+                    else:
+                        epochs_overfitting = 0
+
                 # val loss is MSE, shouldn't be affected by data normalisation
                 val_loss = metrics[type(self.loss_func).__name__]
 
@@ -179,13 +191,10 @@ class Trainer:
                     break
 
                 if self.max_gap is not None:
-                    current_gap = val_score - self.train_score_for_wandb
-                    if self.main_metric_goal == 'max':
-                        current_gap *= -1
-                    max_gap = self.max_gap * self.std
-                    print(f'Current score gap: {current_gap}')
-                    if current_gap > max_gap and epoch >= self.minimum_epochs:  # stopping criterion
-                        print(f'Early stopping criterion based on training score {max_gap} better than validation reached. Best model checkpoint was in epoch {epoch - epochs_no_improve}.')
+                    print(f'Current gap: {current_gap}')
+                    print(f'Epochs with gap > {max_gap}: [ {epochs_overfitting} ]')
+                    if epochs_overfitting >= self.gap_patience and epoch >= self.minimum_epochs:  # stopping criterion
+                        print(f'Early stopping criterion based on training score better than validation reached. Best model checkpoint was in epoch {epoch - epochs_no_improve}.')
                         break
 
                 if epoch in self.models_to_save:
