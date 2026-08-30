@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 import numpy as np
 
-N = 132315
+N = 132306
 seed = 666
 tr_frac = 0.8
 nsplits = 10
