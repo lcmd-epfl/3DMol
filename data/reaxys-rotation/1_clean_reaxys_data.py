@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import pandas as pd
 import rdkit
@@ -78,6 +80,12 @@ df = df[df.apply(lambda x: check_central_chirality(x['canon_SMILES']), axis=1)]
 df = df[df.apply(lambda x: check_elements(x['canon_SMILES']), axis=1)]
 df['canon_SMILES_mirror'] = [*map(get_mirror, df.canon_SMILES)]
 df['both_SMILES'] = [*map(lambda x: '.'.join(sorted(x)), zip(df['canon_SMILES'], df['canon_SMILES_mirror']))]
+
+df['nmol'] = df['SMILES'].map(lambda x: x.count('.')+1)
+bad_mask = df['nmol']>1
+#print('more than 1 mol: ', sum(bad_mask))
+df = df[~bad_mask].reset_index(drop=True)
+df.drop(['nmol'], axis=1, inplace=True)
 
 merge_smiles(df)
 clean_duplicates(df)

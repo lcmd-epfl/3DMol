@@ -6,8 +6,8 @@ import pandas as pd
 for path, col in [
         ('data_converged.csv', 'point_group'),
         ('data_converged.csv', 'point_group_noH'),
-        #('data.csv', 'point_group'),
-        #('data.csv', 'point_group_noH'),
+        ('data.csv', 'point_group'),
+        ('data.csv', 'point_group_noH'),
          ]:
     print(f'{path=} {col=}')
     df = pd.read_csv(path, dtype={'idx': str})

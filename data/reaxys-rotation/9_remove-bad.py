@@ -21,15 +21,6 @@ df = df[~bad_mask].reset_index(drop=True)
 df.drop(['is_point_group_chiral', 'is_point_group_noH_chiral'], axis=1, inplace=True)
 print()
 
-# remove remaining bad geomeries
-df['nmol'] = df['SMILES'].map(lambda x: x.count('.')+1)
-bad_mask = df['nmol']>1
-print('more than 1 mol: ', sum(bad_mask))
-df = df[~bad_mask].reset_index(drop=True)
-df.drop(['nmol'], axis=1, inplace=True)
-print()
-
-
 # remove rare elements
 for i in trange(len(df), disable=False):
     mol = Chem.MolFromSmiles(df.loc[i, 'SMILES'])
