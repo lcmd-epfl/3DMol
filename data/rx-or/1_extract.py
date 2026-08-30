@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm, trange
 from rdkit import Chem, RDLogger
+import scipy
 
 url = 'https://ndownloader.figshare.com/files/66386654' # doi.org/10.6084/m9.figshare.32923205
 max_idx_len = 6  # indices are 6-number strings
@@ -56,11 +57,20 @@ def main():
     df['idx'] = df['Unnamed: 0'].map(lambda x: f'{x:0{max_idx_len}}')
     df['rot_sign'] = df['Rotation'].map(lambda x: 1 if x=='+' else -1)
     df['R=0'] = False
+    df['close'] = False
+    df['nmol'] = df['SMILES'].map(lambda x: x.count('.')+1)
     for i, row in tqdm(df.iterrows(), total=len(df), disable=False):
-        df.iloc[i, df.columns.get_loc('R=0')] = np.all(row['xyz']==0)
-        extract_xyz(row)
 
-    df = df[['idx', 'rot_sign', 'SMILES', 'R=0']]
+        all0 = np.all(row['xyz']==0)
+        df.iloc[i, df.columns.get_loc('R=0')] = all0
+
+        if not all0 and row['nmol']==1:
+            d = scipy.spatial.distance.pdist(row['xyz'])
+            if np.any(d<0.5):
+                df.iloc[i, df.columns.get_loc('close')] = True
+            extract_xyz(row)
+
+    df = df[['idx', 'rot_sign', 'SMILES', 'R=0', 'close', 'nmol']]
     df.to_csv(csv_path, index=False)
 
 

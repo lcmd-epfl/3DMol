@@ -5813,8 +5813,6 @@ idx,rot_sign,SMILES,point_group,point_group_noH
 006370,1,COC(=O)[C@@]1(C)N[C@H]1CCCCc1ccccc1,C1,C1
 006371,1,C=C[C@]1(C(=O)OC)N[C@H]1CCCCc1ccccc1,C1,C1
 006372,1,COC(=O)C(Cl)(Cl)[C@H](CCCCc1ccccc1)N[SH](O)c1ccc(C)cc1,C1,C1
-006373,1,COC(=O)C(Cl)(Cl)[C@@H](N[SH](O)c1ccc(C)cc1)C(C)C,C1,C1
-006374,1,COC(=O)C(Cl)(Cl)[C@@H](N[SH](O)c1ccc(C)cc1)c1ccccc1,C1,C1
 006375,1,O=C1OCCN1C(=O)[C@H]1[C@H](O)c2ccccc2S[C@@H]1c1cccc2ccccc12,C1,C1
 006376,1,O=C1OCCN1C(=O)[C@H]1[C@H](O)c2ccccc2S[C@@H]1c1ccsc1,C1,C1
 006377,1,C=C(c1ccc(C)cc1)C(C)(C)C[C@@H](O)CCl,C1,C1
@@ -9905,7 +9903,6 @@ idx,rot_sign,SMILES,point_group,point_group_noH
 010986,1,CC(=O)O[C@@H]1C[C@H]2[C@@H](C)[C@@]3(C=COC3=O)C(=O)[C@@H]2[C@@]2(C)CCCC(C)(C)[C@H]12,C1,C1
 010987,1,COc1ccc2cc([C@H](C)C(=O)N[C@H]3CNC[C@@H]3c3ccc(C(F)(F)F)cc3)ccc2c1,C1,C1
 010988,1,C[C@H](C(=O)N[C@H]1CNC[C@@H]1c1ccc(C(F)(F)F)cc1)c1ccccc1,C1,C1
-010989,1,C[C@H](C(=O)N[C@H]1CNC[C@@H]1c1ccc(S(F)(F)(F)(F)F)cc1)c1ccccc1,C1,C1
 010990,1,CC(C)[C@@H]1C(=O)OC[C@H](NC(=O)c2cnc3ccccc3n2)C(=O)N[C@H](C)C(=O)N(C)[C@@H]2CSSC[C@H](C(=O)N1C)N(C)C(=O)[C@@H](C)NC(=O)[C@@H](NC(=O)c1cnc3ccccc3n1)COC(=O)[C@@H](C(C)C)N(C)C2=O,C1,C1
 010991,1,CON1C(=O)[C@](O)(Cc2c[nH]c3ccccc23)c2ccccc21,C1,C1
 010992,1,COc1ccc2ccc(=O)oc2c1[C@H]1C[C@@]1(C)C=O,C1,C1
@@ -45680,7 +45677,6 @@ idx,rot_sign,SMILES,point_group,point_group_noH
 053488,1,COc1cc(N)c(Cl)cc1C(=O)OCC1CCN(C[C@@H](COCc2ccccc2)NC(=O)Nc2ccccc2)CC1,C1,C1
 053489,1,COc1[nH]c2ccc(F)cc2c1C(=O)OCC1CCN(C[C@@H](Cc2ccccc2)NC(=O)OCc2ccccc2)CC1,C1,C1
 053491,1,Br[C@H]1C=CCC=CN1Cc1cc2ccc3ccccc3c2c2c1ccc1ccccc12,C1,C1
-053495,1,C[C@@H](CO)Oc1ccc2c(c1)Oc1ccccc1S2(NC(=O)C(N)=O)NC(=O)C(N)=O,C1,C1
 053496,1,O=C(N[C@H]1O[C@@H](CO)[C@H](O)[C@@H]1O)c1cscn1,C1,C1
 053497,1,CCOC(=O)c1csc(C2O[C@H](CO)[C@@H](O)[C@H]2O)n1,C1,C1
 053498,1,COc1ccc(C(CN2CCC[C@@H]2CO)OC2CCCCO2)cc1,C1,C1
@@ -61929,7 +61925,6 @@ idx,rot_sign,SMILES,point_group,point_group_noH
 072075,1,C[C@H](NC(=O)c1cc(Cl)cc(S(=O)(=O)C2CC2)c1)c1nccnc1-c1ncc(C(=O)N(C)C)s1,C1,C1
 072076,1,CCN(C)C(=O)c1cnc(-c2nccnc2[C@H](C)NC(=O)OC(C)(C)C)s1,C1,C1
 072077,1,C[C@H](NC(=O)OC(C)(C)C)c1nccnc1-c1ncc(C(=O)N(C)C)s1,C1,C1
-072078,1,Cc1ccc(C(F)(F)F)cc1N1CCN(C(=O)[C@@H]2C[C@@H]2c2cccc(S(F)(F)(F)(F)F)c2)CC1,C1,C1
 072079,1,CN1CCC=C2c3cccc4[nH]cc(c34)C[C@H]21,C1,C1
 072080,1,CC(C)(C)[S@](=O)NOCc1nccc(-c2cc(CO)cc3ccoc23)c1F,C1,C1
 072089,1,CCOC(=O)[C@@H]1CC[C@@H](Oc2ccc(-c3cnn(C)c3C(=O)OC(C)(C)C)cc2)C1,C1,C1
@@ -99643,7 +99638,6 @@ idx,rot_sign,SMILES,point_group,point_group_noH
 115272,-1,C=CC(C)(C)c1[nH]c2ccccc2c1C=C1NC(=O)[C@@]2(OC)CCCN2C1=O,C1,C1
 115273,-1,C=CC(C)(C)c1[nH]c2ccccc2c1C=C1NC(=O)[C@@]2(O)CCCN2C1=O,C1,C1
 115274,-1,CO[P@@](c1ccccc1)c1cc2ccccc2c2ccccc12,C1,C1
-115275,-1,CN(C)c1ccc(CC(=O)N[C@@H]2CNC[C@H]2c2cccc(S(F)(F)(F)(F)F)c2)cc1,C1,C1
 115276,-1,O=C(COc1ccc(Cl)c(F)c1)NC1CCN(C[C@H](O)COc2ccc(Cl)c(F)c2)CC1,C1,C1
 115277,-1,O=C(NC1CCN(C[C@@H](O)COc2ccc(Cl)c(F)c2)CC1)c1cc2cc(Cl)ccc2o1,C1,C1
 115278,-1,O=C(NC1CCN(C[C@@H](O)COc2ccc(Cl)c(F)c2)CC1)c1ccc2cc(Cl)ccc2n1,C1,C1
@@ -120566,7 +120560,6 @@ idx,rot_sign,SMILES,point_group,point_group_noH
 140907,-1,CN(C)c1ccc(CC(=O)N[C@@H]2CNC[C@H]2c2ccc(-c3ccc(C(F)(F)F)cc3)cc2)cc1,C1,C1
 140908,-1,COc1ccc2cc([C@H](C)C(=O)N[C@@H]3CNC[C@H]3c3ccc(C(F)(F)F)cc3)ccc2c1,C1,C1
 140909,-1,C[C@H](C(=O)N[C@@H]1CNC[C@H]1c1ccc(C(F)(F)F)cc1)c1ccccc1,C1,C1
-140910,-1,C[C@H](C(=O)N[C@@H]1CNC[C@H]1c1ccc(S(F)(F)(F)(F)F)cc1)c1ccccc1,C1,C1
 140911,-1,COc1ccc2ccc(=O)oc2c1[C@@H]1C[C@]1(C)C=O,C1,C1
 140914,-1,CO[C@H]1CC(=O)OC[C@H]1OC,C1,C1
 140915,-1,CCCCC[C@@H]1CC[C@H](C)[C@@H]2CCCN12,C1,C1
@@ -122592,7 +122585,6 @@ idx,rot_sign,SMILES,point_group,point_group_noH
 143219,-1,CCN1CN(c2ncc(C#Cc3ccccc3)cn2)[C@@H]2CC=C[C@@H]21,C1,C1
 143220,-1,COC(=O)c1ccc(NC(=O)[C@@H]2c3cccc(N4CCN(C5COC5)CC4)c3CCN2C(=O)C2CC(c3cccc(Cl)c3F)=NO2)cc1,C1,C1
 143221,-1,CC(C)(C)C(O)C(=O)N1C[C@@H](C(F)(F)F)C[C@H]1C(=O)NCc1cc(Cl)ccc1CN,C1,C1
-143222,-1,Cc1nnc2n1-c1ccccc1C(c1ccc(Cl)cc1)=C[C@H]2CC(=O)N1CC2(CCS2([O-])[O-])C1,C1,C1
 143223,-1,Cc1nnc2n1-c1ccccc1C(c1ccc(Cl)cc1)=C[C@H]2CC(=O)C1CC2CCC(C1)N2,C1,C1
 143224,-1,CC(C)c1ccc(C([C@@H]2CCCNC2)n2ncnn2)cc1,C1,C1
 143225,-1,Cc1c2c(cn1C)-n1c(C)nnc1[C@@H](CC(=O)N1CCS(=O)(=O)CC1)N=C2c1ccc(Cl)cc1,C1,C1
