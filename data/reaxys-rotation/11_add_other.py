@@ -15,7 +15,6 @@ df2.drop(['SMILES', 'canon_SMILES'], axis=1, inplace=True)
 
 df3 = pd.concat([df, df2])
 df3.to_csv('data_both.csv', index=False)
-exit(0)
 
 for i in glob('xyz-xtb/[0-9]*.xyz'):
     mol = ase.io.read(i)
