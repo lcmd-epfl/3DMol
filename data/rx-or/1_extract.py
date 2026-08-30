@@ -38,6 +38,7 @@ def write_xyz(fpath, comment, atoms, coords):
 
 
 def extract_xyz(row):
+    # xyz are already centered
     idx = row['idx']
     fname = f'{xyz_dir}/{idx}.xyz'
     if overwrite_xyz or not os.path.isfile(fname):
