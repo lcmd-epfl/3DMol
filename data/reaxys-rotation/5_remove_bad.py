@@ -9,4 +9,4 @@ xyzs_xtb = [*map(lambda x: int(x.split('/')[1].split('.')[0]), glob('xyz-xtb/*.x
 bad = np.setdiff1d(xyzs, xyzs_xtb)
 
 df = df[~df['id'].isin(bad)].reset_index(drop=True)
-df.to_csv('data.csv', index=False)
+df.to_csv('data_converged.csv', index=False)
