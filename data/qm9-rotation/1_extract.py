@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 import os
+from collections import Counter
 from urllib.request import urlretrieve
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import ase.data
+
 
 url = 'https://zenodo.org/records/13380412/files/qm9-or.npy'
 elements = np.array(['H', 'C', 'N', 'O', 'F'])
@@ -41,13 +44,20 @@ def write_xyz(fpath, comment, atoms, coords):
 
 def extract_xyz(idx, xyz):
     fname = f'{xyz_dir}/{idx}.xyz'
+    atoms = xyz[:,3:]
+    atoms = elements[np.where(atoms==1.0)[1]]
     if overwrite_xyz or not os.path.isfile(fname):
         coords = xyz[:,:3]
-        atoms = xyz[:,3:]
-        atoms = elements[np.where(atoms==1.0)[1]]
         coords = coords[:len(atoms)]
         coords -= coords.mean(axis=0)
         write_xyz(fname, idx, atoms, coords)
+    return atoms
+
+
+def get_mass(atoms):
+    # looks like g16 uses non common masses but these or similar
+    c = Counter(atoms)
+    return sum(ase.data.atomic_masses[ase.data.atomic_numbers[sym]] * num for sym, num in c.items())
 
 
 def main():
@@ -57,13 +67,15 @@ def main():
     data = np.load(orig_path, allow_pickle=True)
     idx = np.zeros(len(data), dtype=f'<U{max_idx_len}')
     rot = np.zeros((len(data), len(lambdas)))
+    mass = np.zeros(len(data))
 
     for i, entry in enumerate(tqdm(data)):
         idx[i] = entry['index']
         rot[i,:] = entry['rotation']
-        extract_xyz(idx[i], entry['xyz'])
+        atoms = extract_xyz(idx[i], entry['xyz'])
+        mass[i] = get_mass(atoms)
 
-    df = pd.DataFrame({'idx': idx} | {f'rot{la}': rot[:,i] for i, la in enumerate(lambdas)})
+    df = pd.DataFrame({'idx': idx, 'mass': mass} | {f'rot{la}': rot[:,i] for i, la in enumerate(lambdas)})
     df.to_csv(csv_path, index=False)
 
 
