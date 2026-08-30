@@ -48,7 +48,7 @@ def dict2array(d):
     return a[1,a[0].argsort()]
 
 
-def atom_geom(z, coords):
+def atom_geom(z, coords, label):
     """
     Compute the geometric features of the atoms in the molecule.
     params:
@@ -73,7 +73,7 @@ def atom_geom(z, coords):
     G = nx.from_numpy_array(cov_am, create_using=nx.Graph)
     degree = [val for (i, val) in G.degree()]
     if not (cov_dm > TOL).all():
-        warnings.warn("Some atoms are incredibly close to each other!", stacklevel=2)
+        warnings.warn(f"Some atoms are incredibly close to each other! {label}", stacklevel=2)
 
     # a_volume, a_surface = atomic_vs(coords, vdw_radii)
     sasa = SASA(z, coords.numpy(), vdw_radii, probe_radius=0.0, density=0.01)

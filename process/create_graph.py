@@ -28,7 +28,7 @@ def get_graph(mol, atoms, coords, y, features, device='cpu', local_mask=None):
         assert np.all(atoms1 == atoms), "atoms from xyz and smiles don't match"
         x = smiles_featurizer(mol)
     elif features=='torchchem_v1':
-        x = atom_geom(atoms, torch.tensor(coords))
+        x = atom_geom(atoms, torch.tensor(coords), y)
         x = x.type(torch.Tensor)
 
     else:

@@ -10,6 +10,7 @@ class Rotation(MolDataset):
 
         self.version = 4  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         dirname = os.path.dirname(__file__)
+        geometry = 'xtb'
         self.processed_dir=f'{dirname}/processed/'
         self.smiles_column = None
         self.id_column = 'id'
