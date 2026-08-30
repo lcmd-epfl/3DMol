@@ -14,8 +14,9 @@ df = pd.read_csv(csv_path, dtype={'idx': str})
 df_mirror = df.copy(deep=True)
 df_mirror.idx = ['x'+str(i) for i in df_mirror.idx]
 for la in lambdas:
-    df_mirror[f'rot{la}_sign'] *= -1
-    df_mirror[f'rot{la}']      *= -1
+    df_mirror[f'rot{la}_sign']  *= -1
+    df_mirror[f'rot{la}']       *= -1
+    df_mirror[f'rot{la}_power'] *= -1
 
 df_both = pd.concat([df, df_mirror])
 df_both.to_csv(csv_both_path, index=False)
