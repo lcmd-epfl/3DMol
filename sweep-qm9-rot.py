@@ -42,10 +42,10 @@ epochs = {
         'qm9-rotation': 16,
         }
 target_columns_good = {
-        'qm9-rotation': ('rot589', 'rot633', 'rot355', 'rot589_sign', 'rot633_sign', 'rot355_sign', 'rot589_abs', 'rot633_abs', 'rot355_abs')
+        'qm9-rotation': ('rot589', 'rot633', 'rot355', 'rot589_sign', 'rot633_sign', 'rot355_sign', 'rot589_abs', 'rot633_abs', 'rot355_abs'),
         }
 splitter = {
-        'qm9-rotation': 'random',
+        'qm9-rotation': "test:data/qm9-rotation/splits/test.0.dat;val:data/qm9-rotation/splits/val.0.dat",
         }
 dataset_full = {
         'qm9-rotation': 'data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation',
@@ -94,7 +94,6 @@ else:
     parameters_dict.update({ 'n_v': { 'values': [16, 32, 48] }})
     parameters_dict.update({ 'invariant': { 'value': False }})
 
-parameters_dict.update({ 'weight_decay': { 'value': 0 }})
 parameters_dict.update({ 'classification': { 'value': classification }})
 parameters_dict.update({ 'arch': { 'value': script_args.arch }})
 parameters_dict.update({ 'n_conv_layers': { 'value': 3 }})
