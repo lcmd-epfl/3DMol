@@ -24,7 +24,7 @@ class TensorProductConvLayer(nn.Module):
         else:
             self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, internal_weights=True, shared_weights=True)
 
-            if arch in {'normal_weights100', 'both_weights100', 'pseudo_weights100'} and '0o' in self.tp.irreps_out:
+            if arch.endswith('_weights100') and '0o' in self.tp.irreps_out:
                 out_irreps_pseudoscalar = [x.endswith('0o') for x in str(self.tp.irreps_out).split('+')]
                 assert sum(out_irreps_pseudoscalar)==1
                 idx_irrep_pseudoscalar = out_irreps_pseudoscalar.index(True)
@@ -142,7 +142,7 @@ class EquiReact(nn.Module):
                 "edge_fdim": 3 * n_s,
                 "h_dim": 3 * n_s,
                 "dropout": dropout_p,
-                "relu_in_fc": (self.arch!='no_relu_in_fc'),
+                "relu_in_fc": (self.arch!='normal_no_relu_in_fc'),
                 "internal_weights": internal_weights,
                 "arch": self.arch,
             }
@@ -151,45 +151,39 @@ class EquiReact(nn.Module):
             conv_layers.append(layer)
         self.conv_layers = nn.ModuleList(conv_layers)
 
-        self.score_predictor_edges = nn.Sequential(
-            nn.Linear(2 * self.n_s_full + distance_emb_dim, self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1)
-        )
 
-        self.score_predictor_nodes = nn.Sequential(
-            nn.Linear(self.n_s_full, 2 * self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(2 * self.n_s, self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1)
-        )
+        if self.arch.startswith('normal'):
+            self.score_predictor_nodes_full = nn.Sequential(
+                nn.Linear(self.n_s_full, 2 * self.n_s),
+                nn.ReLU(),
+                nn.Dropout(dropout_p),
+                nn.Linear(2 * self.n_s, self.n_s),
+                nn.ReLU(),
+                nn.Dropout(dropout_p),
+                nn.Linear(self.n_s, 1)
+            )
 
-        self.score_predictor_nodes_half_with_relu = nn.Sequential(
-            nn.Linear(self.n_s, 2 * self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(2 * self.n_s, self.n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1)
-        )
+        if self.arch.startswith('both'):
+            self.score_predictor_nodes_half = nn.Sequential(
+                nn.Linear(self.n_s, 2 * self.n_s),
+                nn.ReLU(),
+                nn.Dropout(dropout_p),
+                nn.Linear(2 * self.n_s, self.n_s),
+                nn.ReLU(),
+                nn.Dropout(dropout_p),
+                nn.Linear(self.n_s, 1)
+            )
 
-        self.score_predictor_nodes_half = nn.Sequential(
-            nn.Linear(self.n_s, 2 * self.n_s, bias=False),
-            #nn.Tanh(),
-            nn.Dropout(dropout_p),
-            nn.Linear(2 * self.n_s, self.n_s, bias=False),
-            #nn.Tanh(),
-            nn.Dropout(dropout_p),
-            nn.Linear(self.n_s, 1, bias=False)
-        )
+        if self.arch.startswith('both') or self.arch.startswith('pseudo'):
+            self.score_predictor_nodes_half_odd = nn.Sequential(
+                nn.Linear(self.n_s, 2 * self.n_s, bias=False),
+                #nn.Tanh(),
+                nn.Dropout(dropout_p),
+                nn.Linear(2 * self.n_s, self.n_s, bias=False),
+                #nn.Tanh(),
+                nn.Dropout(dropout_p),
+                nn.Linear(self.n_s, 1, bias=False)
+            )
 
         self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius,
                                       distance_emb_dim=self.distance_emb_dim, device=self.device)
@@ -219,18 +213,9 @@ class EquiReact(nn.Module):
 
         x, edge_index, edge_attr, edge_sh = self.build_graph(data)
 
-        if self.verbose:
-            print('dim of x', x.shape)
-            print('dim of radius_graph (edges)', edge_index.shape)
-            print('dim of edge length emb (gaussians)', edge_attr.shape)
-            print('dim of edge sph harmonics', edge_sh.shape)
-
         x = self.node_embedding(x)
 
         edge_attr_emb = self.edge_embedding(edge_attr)
-        if self.verbose:
-            print('dim of x after node embedding', x.shape)
-            print('dim of radius_graph (edges) after embedding', edge_attr_emb.shape)
 
         src, dst = edge_index
 
@@ -261,26 +246,18 @@ class EquiReact(nn.Module):
         if self.graph_mode=='vector_masked':
             x *= graph.local_mask[:,None]
         x = scatter_add(x, index=graph.batch, dim=0)
-        if self.verbose:
-            print('reaction x dims', x.shape)
 
-        if self.arch in {'normal', 'no_relu_in_fc', 'normal_weights100'}:
-            score = self.score_predictor_nodes(x)
-        elif self.arch=='normal_scaled':
+        if self.arch.endswith('_scaled'):
             x[:,self.n_s:]*=scale_factor
-            score = self.score_predictor_nodes(x)
-        elif self.arch=='both_scaled':
-            score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
-            score2 = self.score_predictor_nodes_half(x[:,self.n_s:]*scale_factor)
+
+        if self.arch.startswith('normal'):
+            score = self.score_predictor_nodes_full(x)
+        elif self.arch.startswith('both'):
+            score1 = self.score_predictor_nodes_half(x[:,:self.n_s])
+            score2 = self.score_predictor_nodes_half_odd(x[:,self.n_s:])
             score = score1 * score2
-        elif self.arch in {'both_nonscaled', 'both_weights100'}:
-            score1 = self.score_predictor_nodes_half_with_relu(x[:,:self.n_s])
-            score2 = self.score_predictor_nodes_half(x[:,self.n_s:])
-            score = score1 * score2
-        elif self.arch=='pseudo_scaled':
-            score = self.score_predictor_nodes_half(x[:,self.n_s:]*scale_factor)
-        elif self.arch in {'pseudo_nonscaled', 'pseudo_weights100'}:
-            score = self.score_predictor_nodes_half(x[:,self.n_s:])
+        elif self.arch.startswith('pseudo'):
+            score = self.score_predictor_nodes_half_odd(x[:,self.n_s:])
 
         return score, x
 
