@@ -65,7 +65,7 @@ class TensorProductConvLayer(nn.Module):
         return out
 
 
-class EquiReact(nn.Module):
+class EquiMol(nn.Module):
 
     def __init__(self, *, node_fdim: int, sh_lmax: int = 2,
                  n_s: int = 16, n_v: int = 16, n_conv_layers: int = 2,

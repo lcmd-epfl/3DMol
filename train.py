@@ -19,8 +19,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import wandb
 
 from trainer.metrics import MAE, Accuracy
-from trainer.react_trainer import ReactTrainer
-from models.equimol import EquiReact
+from trainer.mol_trainer import MolTrainer
+from models.equimol import EquiMol
 from process.collate import CustomCollator
 from process.splitter import split_dataset
 
@@ -312,17 +312,17 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
             val_data = Subset(data, val_indices)
             test_data = Subset(data, te_indices)
 
-            model = EquiReact(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
-                              internal_weights=hyper_dict['internal_weights'],
-                              arch=hyper_dict['arch'],
-                              max_radius=hyper_dict['radius'],
-                              n_s=hyper_dict['n_s'],
-                              n_v=hyper_dict['n_v'],
-                              n_conv_layers=hyper_dict['n_conv_layers'],
-                              distance_emb_dim=hyper_dict['distance_emb_dim'],
-                              graph_mode=hyper_dict['graph_mode'],
-                              dropout_p=hyper_dict['dropout_p'],
-                              invariant=hyper_dict['invariant'])
+            model = EquiMol(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
+                            internal_weights=hyper_dict['internal_weights'],
+                            arch=hyper_dict['arch'],
+                            max_radius=hyper_dict['radius'],
+                            n_s=hyper_dict['n_s'],
+                            n_v=hyper_dict['n_v'],
+                            n_conv_layers=hyper_dict['n_conv_layers'],
+                            distance_emb_dim=hyper_dict['distance_emb_dim'],
+                            graph_mode=hyper_dict['graph_mode'],
+                            dropout_p=hyper_dict['dropout_p'],
+                            invariant=hyper_dict['invariant'])
 
             print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
@@ -336,20 +336,20 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
 
             optim = {'Adam': Adam, 'AdamW': AdamW}[optimizer]
 
-            trainer = ReactTrainer(model=model, std=std, device=device,
-                                   metrics=metrics, loss_func=loss_func, optim=optim,
-                                   main_metric=main_metric, main_metric_goal=main_metric_goal,
-                                   run_dir=run_dir, run_name=run_name_chk,
-                                   sampler=sampler, val_per_batch=val_per_batch,
-                                   checkpoint=checkpoint, fine_tuning=fine_tuning,
-                                   num_epochs=num_epochs,
-                                   eval_per_epochs=eval_per_epochs, patience=patience, gap_patience=gap_patience, max_gap=max_gap,
-                                   minimum_epochs=minimum_epochs, models_to_save=models_to_save,
-                                   clip_grad=clip_grad, log_iterations=log_iterations,
-                                   scheduler_step_per_batch=False,  # CHANGED THIS
-                                   lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
-                                   lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
-                                   lr_scheduler_patience=lr_scheduler_patience)
+            trainer = MolTrainer(model=model, std=std, device=device,
+                                 metrics=metrics, loss_func=loss_func, optim=optim,
+                                 main_metric=main_metric, main_metric_goal=main_metric_goal,
+                                 run_dir=run_dir, run_name=run_name_chk,
+                                 sampler=sampler, val_per_batch=val_per_batch,
+                                 checkpoint=checkpoint, fine_tuning=fine_tuning,
+                                 num_epochs=num_epochs,
+                                 eval_per_epochs=eval_per_epochs, patience=patience, gap_patience=gap_patience, max_gap=max_gap,
+                                 minimum_epochs=minimum_epochs, models_to_save=models_to_save,
+                                 clip_grad=clip_grad, log_iterations=log_iterations,
+                                 scheduler_step_per_batch=False,  # CHANGED THIS
+                                 lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
+                                 lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
+                                 lr_scheduler_patience=lr_scheduler_patience)
 
             time_start = timer()
             _val_metrics, _, _ = trainer.train(train_loader, val_loader)

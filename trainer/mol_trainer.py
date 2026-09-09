@@ -1,7 +1,7 @@
 from trainer.trainer import Trainer
 
 
-class ReactTrainer(Trainer):
+class MolTrainer(Trainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         print(f"In trainer, metrics is {kwargs['metrics']} and std is {kwargs['std']}")
