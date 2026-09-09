@@ -1,5 +1,6 @@
 import os
 import sys
+from types import SimpleNamespace
 from datetime import datetime
 import argparse
 import pprint
@@ -9,9 +10,11 @@ from train import train, Logger
 
 def train_wrapper():
     with wandb.init(config=None):
-        args = wandb.config
+        args_dict = args_table[wandb.config['from_sweep']]
+        args = SimpleNamespace(**args_dict)
+        pprint.pprint(args)
         try:
-            train(run_dir, logname, script_args.project, wandb_name, args,
+            train(run_dir, logname, script_args.project, wandb_name, args_dict,
                   device='cuda', num_epochs=args.num_epochs, checkpoint=None,
                   verbose=False, print_predictions=False, eval_on_test=False,
                   sweep=True, print_repr=False,
@@ -78,43 +81,49 @@ sys.stderr = Logger(logpath=logpath, syspart=sys.stderr)
 wandb.login()
 
 metric = {'name': 'val_score_best', 'goal': ('maximize' if classification else 'minimize')}
-sweep_config = { 'method': 'bayes', 'metric': metric, 'name': f'{target_column}_{script_args.arch}' }
+sweep_config = { 'method': 'grid', 'metric': metric, 'name': f'{target_column}_{script_args.arch}_old-best' }
 
-parameters_dict = {
-    'distance_emb_dim': { 'values': [16, 32, 48, 64] },
-    'dropout_p': { 'values': [0.0, 0.05, 0.1] },
-    'n_s': { 'values': [16, 32, 48] },
-    'radius': { 'values' : [2.5, 5.0, 10.0] },
-    'lr':  { 'values' : [1e-5, 5e-5, 1e-4, 5e-4, 1e-3] },
-    'weight_decay' : { 'values' : [1e-4, 1e-3, 1e-2, 1e-1, 0] },
-    }
+old_values = {
+'k2ln8dnk':    [48,  0.05  ,  0.0005 , 48 , 48 , 5  , 0],
+'fz0dajg7':    [64,  0.1   ,  0.0005 , 48 , 48 , 10 , 0],
+'q3r6sjjn':    [32,  0     ,  0.0005 , 48 , 48 , 10 , 0],
+'2i1u7frz':    [48,  0.05  ,  0.0001 , 48 , 48 , 10 , 0],
+'umtzjghf':    [48,  0     ,  0.0005 , 48 , 48 , 5  , 0],
+'grb0q42j':    [64,  0     ,  0.0005 , 48 , 32 , 2.5, 0],
+'ins8adml':    [64,  0     ,  0.0005 , 48 , 32 , 5  , 0],
+'kjuvm99h':    [64,  0.05  ,  0.0005 , 48 , 32 , 5  , 0],
+'p3mh45nv':    [32,  0     ,  0.001  , 48 , 32 , 10 , 0],
+'5ybavebt':    [64,  0.05  ,  0.0005 , 48 , 32 , 5  , 0],
+'x1bxjt12':    [64,  0     ,  0.001  , 32 , 48 , 5  , 0],
+'8za5pkjr':    [48,  0     ,  0.0005 , 32 , 32 , 5  , 0],
+'5k9ptrkn':    [16,  0     ,  0.0005 , 16 , 32 , 5  , 0],
+}
+old_keys = ['distance_emb_dim', 'dropout_p',    'lr',   'n_s',  'n_v',  'radius',   'weight_decay']
 
-scalar_targets = ('rot589_abs', 'rot633_abs', 'rot355_abs')
-if target_column in scalar_targets:
-    parameters_dict.update({ 'n_v': { 'value': None }})
-    parameters_dict.update({ 'invariant': { 'value': True }})
-else:
-    parameters_dict.update({ 'n_v': { 'values': [16, 32, 48] }})
-    parameters_dict.update({ 'invariant': { 'value': False }})
+constants = {
+        'invariant': False,
+        'classification': classification,
+        'arch':            script_args.arch,
+        'n_conv_layers': 3,
+        'graph_mode': 'vector',
+        'subset': None,
+        'dataset': dataset_full[dataset],
+        'num_epochs': epochs[dataset],
+        'train_frac': train_frac[dataset],
+        'noH': False,
+        'geometry': geometry[dataset],
+        'features': features[dataset],
+        'target_column': target_column,
+        'seed': script_args.seed,
+        'splitter': splitter[dataset],
+        'internal_weights': False,
+        'optimizer': 'AdamW',
+        }
 
-parameters_dict.update({ 'classification': { 'value': classification }})
-parameters_dict.update({ 'arch': { 'value': script_args.arch }})
-parameters_dict.update({ 'n_conv_layers': { 'value': 3 }})
-parameters_dict.update({ 'graph_mode': { 'value': 'vector' }})
-parameters_dict.update({ 'subset': { 'value': None} })
-parameters_dict.update({ 'dataset': { 'value': dataset_full[dataset]} })
-parameters_dict.update({ 'num_epochs': { 'value': epochs[dataset]} })
-parameters_dict.update({ 'train_frac': { 'value': train_frac[dataset]} })
-parameters_dict.update({ 'noH': { 'value': False} })
-parameters_dict.update({ 'geometry': { 'value': geometry[dataset]} })
-parameters_dict.update({ 'features': { 'value': features[dataset]} })
-parameters_dict.update({ 'target_column': { 'value': target_column} })
-parameters_dict.update({ 'seed': { 'value': script_args.seed } })
-parameters_dict.update({ 'splitter': { 'value': splitter[dataset]} })
-parameters_dict.update({ 'internal_weights': { 'value': False} })
-parameters_dict.update({ 'optimizer': { 'value': 'AdamW'} })
+args_table = {key: dict(zip(old_keys, val)) | constants for key, val in old_values.items()}
 
-sweep_config['parameters'] = parameters_dict
+sweep_config_dict = {'from_sweep': {'values': sorted(list(args_table.keys()))  }  }
+sweep_config['parameters'] = sweep_config_dict
 pprint.pprint(sweep_config)
 
 wandb_name = 'test'
