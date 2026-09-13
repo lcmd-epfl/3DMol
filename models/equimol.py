@@ -177,10 +177,10 @@ class EquiMol(nn.Module):
         if self.arch.startswith('both') or self.arch.startswith('pseudo'):
             self.score_predictor_nodes_half_odd = nn.Sequential(
                 nn.Linear(self.n_s, 2 * self.n_s, bias=False),
-                #nn.Tanh(),
+                nn.Tanh(),
                 nn.Dropout(dropout_p),
                 nn.Linear(2 * self.n_s, self.n_s, bias=False),
-                #nn.Tanh(),
+                nn.Tanh(),
                 nn.Dropout(dropout_p),
                 nn.Linear(self.n_s, 1, bias=False)
             )

@@ -30,7 +30,7 @@
         --splitter "test:data/qm9-rotation/splits/test.$SPLIT.dat;val:data/qm9-rotation/splits/val.$SPLIT.dat" \
         --logdir cv/ \
         --print_predictions \
-        --wandb_name cv10-QM9Rotation-rot589-both_nonscaled-ns48-nv32-d64 \
+        --wandb_name cv10-QM9Rotation-rot589-both_nonscaled_tanh-ns48-nv32-d64 \
 --dataset data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation \
 --distance_emb_dim 64 \
 --dropout_p 0 \
