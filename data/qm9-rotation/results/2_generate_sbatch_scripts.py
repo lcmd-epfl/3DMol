@@ -49,16 +49,16 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
         --seed $SEED \\
         --target_column {target} {'--classification' if 'sign' in target else ''} \\
         --arch {arch} \\
-        --num_epochs 128 \\
-        --patience 32 \\
+        --num_epochs 32 \\
+        --patience 16 \\
+        --gap_patience 16 \\
         --max_gap 0.05 \\
         --splitter "test:data/qm9-rotation/splits/test.$SPLIT.dat;val:data/qm9-rotation/splits/val.$SPLIT.dat" \\
         --logdir cv/ \\
         --print_predictions \\
         --wandb_name cv10-{full_name} \\"""
 
-            tail = """&
-            sleep 5
+            tail = """
             done"""
 
             with open(f'sbatch/{full_name}.bash', 'w') as f:

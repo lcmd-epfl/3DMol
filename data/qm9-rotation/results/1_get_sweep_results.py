@@ -11,10 +11,10 @@ datasets = ['QM9Rotation']
 project = "equireact/3dmol-rot"
 score_column = 'val_score_best'
 drop_keys = ['num_epochs', 'CV iter', 'epoch', 'subset',
-             'train loss', 'val_loss', 'val_score', 'graph_method']
+             'train_score', 'val_loss', 'val_score', 'graph_method']
 meta_keys = ['run_id', 'sweep_id', 'name', 'val_score_best', 'splitter']
 sweep_ids_dict = {
-'QM9Rotation': ['gwa4qt7v']
+'QM9Rotation': ['x2kosnyu']
 }
 
 if not os.path.isfile(raw_data_path):
@@ -34,7 +34,7 @@ if not os.path.isfile(raw_data_path):
         for sweep_id in sweep_ids:
             sweep = api.sweep(f'{project}/{sweep_id}')
             runs = [run for run in sweep.runs]
-            assert len(runs) >= max_runs
+            #assert len(runs) >= max_runs
 
             runs = sorted(runs, key=lambda run: int(run.name.split('-')[-1]))[:max_runs]
 

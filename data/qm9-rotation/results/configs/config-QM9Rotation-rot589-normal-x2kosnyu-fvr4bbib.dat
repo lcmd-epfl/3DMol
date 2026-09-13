@@ -1,8 +1,8 @@
-# run_id=yeccoavy, sweep_id=gwa4qt7v, name=classic-sweep-20, val_score_best=34.93934840264917, splitter=random
+# run_id=fvr4bbib, sweep_id=x2kosnyu, name=cool-sweep-1, val_score_best=32.15766852352134, splitter=test:data/qm9-rotation/splits/test.0.dat;val:data/qm9-rotation/splits/val.0.dat
 arch	normal
 classification	False
 dataset	data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation
-distance_emb_dim	16
+distance_emb_dim	64
 dropout_p	0
 features	torchchem_v1
 geometry	dft
@@ -11,12 +11,12 @@ internal_weights	False
 invariant	False
 lr	0.0005
 n_conv_layers	3
-n_s	32
-n_v	48
+n_s	48
+n_v	32
 noH	False
 optimizer	AdamW
 radius	5
 seed	666
 target_column	rot589
 train_frac	0.8
-weight_decay	0
+weight_decay	0.0001

@@ -23,28 +23,28 @@
         --seed $SEED \
         --target_column rot589  \
         --arch normal_scaled \
-        --num_epochs 128 \
-        --patience 32 \
+        --num_epochs 32 \
+        --patience 16 \
+        --gap_patience 16 \
         --max_gap 0.05 \
         --splitter "test:data/qm9-rotation/splits/test.$SPLIT.dat;val:data/qm9-rotation/splits/val.$SPLIT.dat" \
         --logdir cv/ \
         --print_predictions \
-        --wandb_name cv10-QM9Rotation-rot589-normal_scaled-ns32-nv48-d16 \
+        --wandb_name cv10-QM9Rotation-rot589-normal_scaled-ns48-nv32-d64 \
 --dataset data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation \
---distance_emb_dim 16 \
+--distance_emb_dim 64 \
 --dropout_p 0 \
 --features torchchem_v1 \
 --geometry dft \
 --graph_mode vector \
 --lr 0.0005 \
 --n_conv_layers 3 \
---n_s 32 \
---n_v 48 \
+--n_s 48 \
+--n_v 32 \
 --optimizer AdamW \
 --radius 5 \
 --train_frac 0.8 \
---weight_decay 0 \
-&
-            sleep 5
+--weight_decay 0.0001 \
+
             done
 
