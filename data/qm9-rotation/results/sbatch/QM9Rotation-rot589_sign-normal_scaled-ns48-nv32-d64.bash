@@ -9,7 +9,7 @@
 #SBATCH --time=00:59:59
 #SBATCH --job-name=rot589_sign-normal_scaled
 
-        conda activate 3dmol
+        if [[ "$HOSTNAME" == "newstarrebornberlin" ]]; then conda activate 3dmol; else conda activate equireact-kuma; fi
 
         for SPLIT in `seq 0 9`; do
 

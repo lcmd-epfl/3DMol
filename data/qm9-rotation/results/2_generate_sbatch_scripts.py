@@ -18,9 +18,12 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
 
         short_dataset = base_config['dataset'].split(':')[-1]
 
-        for arch in ['normal', 'normal_scaled', 'pseudo_scaled', 'pseudo_nonscaled', 'both_scaled', 'both_nonscaled']:
+        for arch in ['normal', 'normal_scaled', 'pseudo_nonscaled', 'both_nonscaled']:
 
-            short_name = f"{short_dataset}-{target}-{arch}"
+            if target.endswith('_abs') and (arch.startswith('pseudo') or arch.startswith('both') or arch.endswith('scaled')):
+                continue
+
+            short_name = f"{short_dataset}-{target}-{arch}{'_tanh' if arch.endswith('_nonscaled') else ''}"
             full_name = f"{short_name}-ns{base_config['n_s']}-{'nv'+base_config['n_v']}-d{base_config['distance_emb_dim']}"
 
             header=f"""#!/bin/bash -l
@@ -34,7 +37,7 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
 #SBATCH --time=00:59:59
 #SBATCH --job-name={target}-{arch}
 
-        conda activate 3dmol
+        if [[ "$HOSTNAME" == "newstarrebornberlin" ]]; then conda activate 3dmol; else conda activate equireact-kuma; fi
 
         for SPLIT in `seq 0 9`; do
 

@@ -7,9 +7,9 @@
 #SBATCH --ntasks=1
 #SBATCH --mem=4GB
 #SBATCH --time=00:59:59
-#SBATCH --job-name=rot589-pseudo_nonscaled
+#SBATCH --job-name=rot589-both_nonscaled
 
-        conda activate 3dmol
+        if [[ "$HOSTNAME" == "newstarrebornberlin" ]]; then conda activate 3dmol; else conda activate equireact-kuma; fi
 
         for SPLIT in `seq 0 9`; do
 
@@ -22,7 +22,7 @@
         --CV 1 \
         --seed $SEED \
         --target_column rot589  \
-        --arch pseudo_nonscaled \
+        --arch both_nonscaled \
         --num_epochs 32 \
         --patience 16 \
         --gap_patience 16 \
@@ -30,7 +30,7 @@
         --splitter "test:data/qm9-rotation/splits/test.$SPLIT.dat;val:data/qm9-rotation/splits/val.$SPLIT.dat" \
         --logdir cv/ \
         --print_predictions \
-        --wandb_name cv10-QM9Rotation-rot589-pseudo_nonscaled-ns48-nv32-d64 \
+        --wandb_name cv10-QM9Rotation-rot589-both_nonscaled_tanh-ns48-nv32-d64 \
 --dataset data/qm9-rotation/dataloader_qm9-rotation.py:QM9Rotation \
 --distance_emb_dim 64 \
 --dropout_p 0 \
