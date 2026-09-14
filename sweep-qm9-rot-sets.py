@@ -120,9 +120,9 @@ constants = {
         'optimizer': 'AdamW',
         }
 
-args_table = {key: dict(zip(old_keys, val)) | constants for key, val in old_values.items()}
+args_table = {key: dict(zip(old_keys, val, strict=True)) | constants for key, val in old_values.items()}
 
-sweep_config_dict = {'from_sweep': {'values': sorted(list(args_table.keys()))  }  }
+sweep_config_dict = {'from_sweep': {'values': sorted(args_table.keys())  }  }
 sweep_config['parameters'] = sweep_config_dict
 pprint.pprint(sweep_config)
 

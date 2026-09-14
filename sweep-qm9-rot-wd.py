@@ -91,7 +91,7 @@ old_values = {
 }
 old_keys = ['distance_emb_dim', 'dropout_p',    'lr',   'n_s',  'n_v',  'radius',   'weight_decay']
 
-parameters_dict = {key: {'value': val} for key, val in zip(old_keys, old_values[script_args.old])}
+parameters_dict = {key: {'value': val} for key, val in zip(old_keys, old_values[script_args.old], strict=True)}
 
 parameters_dict.update({ 'weight_decay' : { 'values' : [1e-4, 1e-3, 1e-2, 1e-1] }})
 

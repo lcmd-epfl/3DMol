@@ -151,7 +151,6 @@ class EquiMol(nn.Module):
             conv_layers.append(layer)
         self.conv_layers = nn.ModuleList(conv_layers)
 
-
         if self.arch.startswith('normal'):
             self.score_predictor_nodes_full = nn.Sequential(
                 nn.Linear(self.n_s_full, 2 * self.n_s),
@@ -250,7 +249,7 @@ class EquiMol(nn.Module):
         x = torch.cat((x_dict[self.scalar_key], x_dict[self.pseudoscalar_key]), dim=1) if self.pseudoscalar_key in x_dict else x_dict[self.scalar_key]
         return x, edge_index, edge_attr
 
-    def forward_mol(self, graph, extra, scale_factor=1e7, return_atom_contrib=False):
+    def forward_mol(self, graph, extra, *, scale_factor=1e7, return_atom_contrib=False):
 
         if return_atom_contrib:
             graph.pos.requires_grad_()

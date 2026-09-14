@@ -288,7 +288,7 @@ class Trainer:
                 metrics[key] = metric(predictions, targets).item()
         return metrics
 
-    def get_repr(self, data_loader, return_atom_contrib=False):
+    def get_repr(self, data_loader, *, return_atom_contrib=False):
         self.model.eval()
         representations = []
         atom_contrib = []
