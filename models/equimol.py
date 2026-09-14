@@ -250,7 +250,11 @@ class EquiMol(nn.Module):
         x = torch.cat((x_dict[self.scalar_key], x_dict[self.pseudoscalar_key]), dim=1) if self.pseudoscalar_key in x_dict else x_dict[self.scalar_key]
         return x, edge_index, edge_attr
 
-    def forward_mol(self, graph, extra, scale_factor=1e7):
+    def forward_mol(self, graph, extra, scale_factor=1e7, return_atom_contrib=False):
+
+        if return_atom_contrib:
+            graph.pos.requires_grad_()
+
         x, _, _ = self.forward_repr_mol(graph, extra)
         if self.graph_mode=='vector_masked':
             x *= graph.local_mask[:,None]
@@ -268,10 +272,20 @@ class EquiMol(nn.Module):
         elif self.arch.startswith('pseudo'):
             score = self.score_predictor_nodes_half_odd(x[:,self.n_s:])
 
-        return score, x
+        if return_atom_contrib:
+            atom_contrib = []
+            for i, score_i in enumerate(score):
+                grad = torch.autograd.grad(score_i, graph.pos, retain_graph=True)[0]
+                atom_contrib_i = grad[graph.batch==i].norm(dim=1)
+                atom_contrib_i = atom_contrib_i / atom_contrib_i.sum()
+                atom_contrib.append(atom_contrib_i.detach().cpu().numpy())
+        else:
+            atom_contrib = None
 
-    def forward(self, graph, extra, *, return_repr=False):
-        predictions, representations = self.forward_mol(graph, extra)
+        return score, x, atom_contrib
+
+    def forward(self, graph, extra, *, return_repr=False, return_atom_contrib=False):
+        predictions, representations, atom_contrib = self.forward_mol(graph, extra, return_atom_contrib=return_atom_contrib)
         if not return_repr:
             representations = None
-        return predictions, representations
+        return predictions, (representations, atom_contrib)

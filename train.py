@@ -66,6 +66,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--process'            , action='store_true', default=False    ,  help='reprocess data')
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
+    g_run.add_argument('--print_atom_contrib' , action='store_true', default=False    ,  help='print atom contributions')
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
     g_run.add_argument('--fine_tuning'        , action='store_true', default=False    ,  help='if checkpoint is for fine-tuning')
     g_run.add_argument('--dataloader_args'    , type=str           , default=None     ,  help='additional dataloader arguments (key1:val1;key2:val2)')
@@ -187,6 +188,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
           eval_on_test=True,
           sweep=False,
           print_repr=False,
+          print_atom_contrib=False,
           patience=150,
           gap_patience=150,
           max_gap=None,
@@ -386,13 +388,19 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
                         wandb.run.summary["test_score"] = mae_split
                         wandb.run.summary["test_rmse"] = rmse_split
 
-                if print_repr:
+                if print_repr or print_atom_contrib:
                     for x_indices, x_loader, x_title in zip((train_data.indices, val_data.indices, test_data.indices),
                                                             (train_loader, val_loader, test_loader),
                                                             ('train', 'val', 'test'), strict=True):
-                        representations = trainer.get_repr(x_loader)
-                        for x in zip(x_indices, representations, strict=True):
-                            print(f'>>>{x_title}', x[0], *x[1])
+                        representations, atom_contrib = trainer.get_repr(x_loader, return_atom_contrib=print_atom_contrib)
+
+                        if print_repr:
+                            for x in zip(x_indices, representations, strict=True):
+                                print(f'REPR>>> {x_title}', x[0], *x[1])
+
+                        if print_atom_contrib:
+                            for x in zip(x_indices, atom_contrib, strict=True):
+                                print(f'ATOM_CONTRIB>>> {x_title}', x[0], *x[1])
 
             time_end = timer()
             print(f'\nte_time: {time_end-time_start} s\n')
@@ -455,6 +463,7 @@ if __name__ == '__main__':
           eval_on_test=True,
           sweep=False,
           print_repr=args.print_repr,
+          print_atom_contrib=args.print_atom_contrib,
           batch_size=args.batch_size,
           optimizer=args.optimizer,
           patience=args.patience,

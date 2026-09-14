@@ -288,15 +288,18 @@ class Trainer:
                 metrics[key] = metric(predictions, targets).item()
         return metrics
 
-    def get_repr(self, data_loader):
+    def get_repr(self, data_loader, return_atom_contrib=False):
         self.model.eval()
         representations = []
+        atom_contrib = []
         for batch in tqdm(data_loader):
             *batch, _batch_indices = move_to_device(list(batch), self.device)
-            _, _, _, rs = self.forward_pass(batch, return_repr=True)
+            _, _, _, (rs, ai) = self.forward_pass(batch, return_repr=True, return_atom_contrib=return_atom_contrib)
             representations.append(rs.detach().cpu().numpy())
+            if return_atom_contrib:
+                atom_contrib.extend(ai)
         representations = np.vstack(representations)
-        return representations
+        return representations, atom_contrib
 
     def evaluation(self, data_loader: DataLoader, data_split: str = '', *, return_pred=False):
         self.model.eval()
