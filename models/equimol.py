@@ -7,8 +7,35 @@ from torch_scatter import scatter, scatter_add
 from .graph import BuildGraph
 
 
-class TensorProductConvLayer(nn.Module):
+def myEmbedding(*, d, dropout_p=0.0):
+    # can't refactor more since the old checkpoint should remain valid
+    modules = [
+            nn.Linear(d[0], d[1]),
+            nn.ReLU(),
+            nn.Dropout(dropout_p) if dropout_p else nn.Identity(),
+            nn.Linear(d[1], d[2]),
+            ]
+    return nn.Sequential(*[m for m in modules if m is not None])
 
+
+def myReadout(*, d, dropout_p=0.0, odd=False, activation=True):
+    # can't refactor more since the old checkpoint should remain valid
+    Dropout = nn.Dropout if dropout_p else nn.Identity
+    Activation = (nn.Tanh if odd else nn.ReLU) if activation else (lambda: None)
+    bias = not odd
+    modules = [
+            nn.Linear(d[0], d[1], bias=bias),
+            Activation(),
+            Dropout(dropout_p),
+            nn.Linear(d[1], d[2], bias=bias),
+            Activation(),
+            Dropout(dropout_p),
+            nn.Linear(d[2], 1, bias=bias),
+            ]
+    return nn.Sequential(*[m for m in modules if m is not None])
+
+
+class TensorProductConvLayer(nn.Module):
     def __init__(self, *, in_irreps, sh_irreps, out_irreps, edge_fdim, dropout=0.0,
                  h_dim=None, relu_in_fc=True, internal_weights=False, arch='normal'):
         super().__init__()
@@ -114,18 +141,8 @@ class EquiMol(nn.Module):
             else:
                 irrep_last = f"{n_s}x0e"
 
-        self.node_embedding = nn.Sequential(
-            nn.Linear(node_fdim, n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p) if dropout_p else nn.Identity(),
-            nn.Linear(n_s, n_s)
-        )
-        self.edge_embedding = nn.Sequential(
-            nn.Linear(distance_emb_dim, n_s),
-            nn.ReLU(),
-            nn.Dropout(dropout_p) if dropout_p else nn.Identity(),
-            nn.Linear(n_s, n_s)
-        )
+        self.node_embedding = myEmbedding(d=[node_fdim, n_s, n_s], dropout_p=dropout_p)
+        self.edge_embedding = myEmbedding(d=[distance_emb_dim, n_s, n_s], dropout_p=dropout_p)
 
         conv_layers = []
         for i in range(n_conv_layers):
@@ -152,46 +169,23 @@ class EquiMol(nn.Module):
         self.conv_layers = nn.ModuleList(conv_layers)
 
         if self.arch.startswith('normal'):
-            self.score_predictor_nodes_full = nn.Sequential(
-                nn.Linear(self.n_s_full, 2 * self.n_s),
-                nn.ReLU(),
-                nn.Dropout(dropout_p),
-                nn.Linear(2 * self.n_s, self.n_s),
-                nn.ReLU(),
-                nn.Dropout(dropout_p),
-                nn.Linear(self.n_s, 1)
-            )
+            self.score_predictor_nodes_full = myReadout(
+                    d=[self.n_s_full, 2*self.n_s, self.n_s],
+                    dropout_p=dropout_p, odd=False, activation=True,
+                    )
 
         if self.arch.startswith('both'):
-            self.score_predictor_nodes_half = nn.Sequential(
-                nn.Linear(self.n_s, 2 * self.n_s),
-                nn.ReLU(),
-                nn.Dropout(dropout_p),
-                nn.Linear(2 * self.n_s, self.n_s),
-                nn.ReLU(),
-                nn.Dropout(dropout_p),
-                nn.Linear(self.n_s, 1)
-            )
+            self.score_predictor_nodes_half = myReadout(
+                    d=[self.n_s, 2*self.n_s, self.n_s],
+                    dropout_p=dropout_p, odd=False, activation=True,
+                    )
 
         if self.arch.startswith('both') or self.arch.startswith('pseudo'):
-            if self.arch.endswith('_scaled'):
-                self.score_predictor_nodes_half_odd = nn.Sequential(
-                    nn.Linear(self.n_s, 2 * self.n_s, bias=False),
-                    nn.Dropout(dropout_p),
-                    nn.Linear(2 * self.n_s, self.n_s, bias=False),
-                    nn.Dropout(dropout_p),
-                    nn.Linear(self.n_s, 1, bias=False)
-                )
-            else:
-                self.score_predictor_nodes_half_odd = nn.Sequential(
-                    nn.Linear(self.n_s, 2 * self.n_s, bias=False),
-                    nn.Tanh(),
-                    nn.Dropout(dropout_p),
-                    nn.Linear(2 * self.n_s, self.n_s, bias=False),
-                    nn.Tanh(),
-                    nn.Dropout(dropout_p),
-                    nn.Linear(self.n_s, 1, bias=False)
-                )
+            self.score_predictor_nodes_half_odd = myReadout(
+                    d=[self.n_s, 2*self.n_s, self.n_s],
+                    dropout_p=dropout_p, odd=True,
+                    activation=not self.arch.endswith('_scaled'),
+                    )
 
         self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius,
                                       distance_emb_dim=self.distance_emb_dim, device=self.device)
