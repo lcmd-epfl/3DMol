@@ -8,7 +8,7 @@ class ScanRotation(MolDataset):
                  geometry=None, graph_method=None,
                  verbose=4, check=False, **kwargs):
 
-        self.version = 1  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
+        self.version = 2  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         dirname = os.path.dirname(__file__) + '/scan/'
         self.processed_dir=f'{dirname}/processed/'
         self.smiles_column = None
