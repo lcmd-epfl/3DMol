@@ -34,3 +34,9 @@ print(np.linalg.norm(np.sort(np.hstack(idx.test))-np.sort(indices)))
 for i in range(nsplits):
     np.savetxt(f'splits/test.{i}.dat', idx.test[i], fmt='%d')
     np.savetxt(f'splits/val.{i}.dat', idx.val[i], fmt='%d')
+
+    def augment(idx):
+        return np.hstack((idx, idx+N))
+
+    np.savetxt(f'splits/test.aug.{i}.dat', augment(idx.test[i]), fmt='%d')
+    np.savetxt(f'splits/val.aug.{i}.dat', augment(idx.val[i]), fmt='%d')
