@@ -24,6 +24,7 @@ class MolDataset(Dataset):
                  embedding_specs=None,
                  extra_args=None,
                  classification=False,
+                 std=None, mean=None,
                  noH=True, verbose=1, check=False):
 
         global_version = 3  # INCREASE WHEN BREAKING CHANGES
@@ -31,6 +32,8 @@ class MolDataset(Dataset):
         self.graph_method = self.parameters.graph_method
         self.verbose = verbose
         self.check = check
+        self.std = None if std is None else torch.tensor(std)
+        self.mean = None if mean is None else torch.tensor(mean)
         dataset_prefix = os.path.splitext(os.path.basename(self.csv_path))[0]
         dataset_prefix = f'{dataset_prefix}.{self.parameters.geometry}.{self.parameters.graph_method}'
         if bad_indices:
@@ -77,11 +80,11 @@ class MolDataset(Dataset):
             self.extra = [{key: torch.tensor(self.df[key].values[i].item()) for key in embedding_specs} for i in range(len(self.df))]
 
         if classification:
-            self.check_classes()
-            self.labels = (self.labels + 1.0)*0.5
+            self.standardize_labels_class()
         else:
-            self.standardize_labels()
-
+            self.standardize_labels_regr()
+        self.parameters.mean = self.mean
+        self.parameters.std = self.std
         self.input_node_feats_dim = self.mol_graphs[0].x.shape[1]
 
     def __len__(self):
@@ -164,16 +167,19 @@ class MolDataset(Dataset):
         local_mask = self.get_local_mask(asemol=asemol, rdmol=rdmol)
         return get_graph(rdmol, atoms[atom_map], coords[atom_map], i, features='smiles', local_mask=local_mask)
 
-    def check_classes(self):
+    def standardize_labels_class(self):
         unique_vals = torch.unique(self.labels, sorted=True)
         if len(unique_vals)!=2 or unique_vals[0]!=-1.0 or unique_vals[1]!=1.0:
             raise NotImplementedError(f'Can work only with -1/1 classes ({unique_vals} given)')
         self.mean = torch.tensor(0.0)
         self.std = torch.tensor(1.0)
+        self.labels = (self.labels + 1.0)*0.5
 
-    def standardize_labels(self):
-        self.mean = torch.mean(self.labels)
-        self.std = torch.std(self.labels)
+    def standardize_labels_regr(self):
+        if self.mean is None:
+            self.mean = torch.mean(self.labels)
+        if self.std is None:
+            self.std = torch.std(self.labels)
         self.labels = (self.labels - self.mean)/self.std
 
     def match_graphs(self, G1, G2, i, *, loose=False):
