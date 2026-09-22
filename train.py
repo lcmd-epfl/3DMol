@@ -387,11 +387,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
 if __name__ == '__main__':
 
     args, arg_groups = parse_arguments()
-
-    if args.checkpoint:
-        run_dir = os.path.dirname(args.checkpoint)
-    else:
-        run_dir = os.path.join(args.logdir, args.experiment_name)
+    run_dir = os.path.join(args.logdir, args.experiment_name)
     if not os.path.exists(run_dir):
         print(f"creating run dir {run_dir}")
         try:
