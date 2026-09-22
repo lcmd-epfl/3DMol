@@ -11,7 +11,7 @@
 
         if [[ "$HOSTNAME" == "newstarrebornberlin" ]]; then conda activate 3dmol; else conda activate equireact-kuma; fi
 
-        for SPLIT in `seq 0 9`; do
+        for SPLIT in `seq 5 9`; do
 
         SEED=$((SPLIT+666))
 
