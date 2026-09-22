@@ -1,6 +1,5 @@
 import os
 import sys
-from types import SimpleNamespace
 from datetime import datetime
 import argparse
 import pprint
@@ -10,18 +9,13 @@ from train import train, Logger
 
 def train_wrapper():
     with wandb.init(config=None):
-        args_dict = args_table[wandb.config['from_sweep']]
-        args = SimpleNamespace(**args_dict)
+        args = args_table[wandb.config['from_sweep']]
         pprint.pprint(args)
         try:
-            train(run_dir, logname, script_args.project, wandb_name, args_dict,
+            train(run_dir, logname, script_args.project, wandb_name, args,
                   device='cuda', num_epochs=args.num_epochs, checkpoint=None,
                   verbose=False, print_predictions=False, eval_on_test=False,
-                  sweep=True, print_repr=False,
-                  dataset=args.dataset, process=False, noH=args.noH,
-                  geometry=args.geometry,
-                  target_column=args.target_column, features=args.features,
-                  splitter=args.splitter, subset=args.subset, training_fractions=[args.train_frac], CV=1)
+                  sweep=True, print_repr=False, process=False)
         except Exception as e:
             print(e)
 

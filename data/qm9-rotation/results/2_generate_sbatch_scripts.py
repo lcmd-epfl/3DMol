@@ -48,7 +48,6 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
             run_config = f"""--device cuda \\
         --experiment_name 3DMol-rotation-cv \\
         --project 3dmol-rot \\
-        --CV 1 \\
         --seed $SEED \\
         --target_column {target} {'--classification' if 'sign' in target else ''} \\
         --arch {arch} \\

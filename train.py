@@ -57,18 +57,15 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--device'             , type=str           , default='cuda'   ,  help='device', choices=['cuda', 'cpu'])
     g_run.add_argument('--logdir'             , type=str           , default='logs'   ,  help='log dir')
     g_run.add_argument('--checkpoint'         , type=str           , default=None     ,  help='path of the checkpoint file to continue training')
-    g_run.add_argument('--CV'                 , type=int           , default=1        ,  help='cross validate')
     g_run.add_argument('--num_epochs'         , type=int           , default=2500     ,  help='number of times to iterate through all samples')
     g_run.add_argument('--patience'           , type=int           , default=150      ,  help='number of epochs with no improvement to stop early')
     g_run.add_argument('--gap_patience'       , type=int           , default=150      ,  help='number of epochs with gap > max. gap to stop early')
     g_run.add_argument('--max_gap'            , type=float         , default=None     ,  help='max. gap in std units between train and validation scores to stop early')
-    g_run.add_argument('--seed'               , type=int           , default=123      ,  help='initial seed values')
     g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='Print dims throughout the training process')
     g_run.add_argument('--process'            , action='store_true', default=False    ,  help='reprocess data')
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
     g_run.add_argument('--print_atom_contrib' , action='store_true', default=False    ,  help='print atom contributions')
-    g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
     g_run.add_argument('--fine_tuning'        , action='store_true', default=False    ,  help='if checkpoint is for fine-tuning')
     g_run.add_argument('--dataloader_args'    , type=str           , default=None     ,  help='additional dataloader arguments (key1:val1;key2:val2)')
     g_run.add_argument('--evaluation'         , action='store_true', default=False    ,  help='if evaluate on the full dataset')
@@ -81,6 +78,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--distance_emb_dim'     , type=int           , default=16             ,  help='how many gaussian funcs to use')
     g_hyper.add_argument('--radius'               , type=float         , default=5.0            ,  help='max radius of graph')
     g_hyper.add_argument('--dropout_p'            , type=float         , default=0.05           ,  help='dropout probability')
+    g_hyper.add_argument('--seed'                 , type=int           , default=123            ,  help='seed')
     g_hyper.add_argument('--graph_mode'           , type=str           , default='vector'       ,  help='graph mode', choices=['vector', 'vector_masked'])
     g_hyper.add_argument('--dataset'              , type=str           ,                           help='dataset')
     g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path')
@@ -88,7 +86,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if use an invariant model')
     g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate for adam')
     g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001         ,  help='weight decay for adam')
-    g_hyper.add_argument('--train_frac'           , type=float         , default=0.9            ,  help='training fraction to use (val/te will be equally split over rest)')
+    g_hyper.add_argument('--train_frac'           , type=float         , default=0.8            ,  help='training fraction to use (val/te will be equally split over rest)')
     g_hyper.add_argument('--target_column'        , type=str           , default=None           ,  help='csv column with the target property')
     g_hyper.add_argument('--features'             , type=str           , default=None           ,  help='featurizer')
     g_hyper.add_argument('--geometry'             , type=str           , default=None           ,  help='geometry (dft/xtb/etc)')
@@ -104,9 +102,6 @@ def parse_arguments(arglist=sys.argv[1:]):
     for group in p._action_groups:
         group_dict={a.dest: getattr(args, a.dest, None) for a in group._group_actions}
         arg_groups[group.title] = argparse.Namespace(**group_dict)
-
-    if args.CV > 1 and args.learning_curve:
-        raise RuntimeError
 
     return args, arg_groups
 
@@ -179,6 +174,37 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, *, classifica
             print('>>>', *x, sep='\t')
 
 
+def evaluate_on_test(*, train_loader, val_loader, test_loader,
+                     metrics, trainer, classification=False,
+                     print_predictions=False, print_repr=False, print_atom_contrib=False):
+
+    full_data = train_loader.dataset.dataset
+
+    test_metrics, pred, targ = trainer.evaluation(test_loader, data_split='test', return_pred=True)
+
+    if wandb.run is not None:
+        std = full_data.std
+        wandb.run.summary["test_score"] = test_metrics[metrics.main] * std
+        if classification:
+            wandb.run.summary["test_loss"] = test_metrics[metrics.loss_func_name]*std
+        else:
+            wandb.run.summary["test_rmse"] = np.sqrt(test_metrics[metrics.loss_func_name])*std
+
+    if print_predictions:
+        print_test_predictions(full_data, test_loader.dataset.indices, targ, pred, classification=classification)
+
+    if print_repr or print_atom_contrib:
+        for x_loader, x_title in [(train_loader, 'train'), (val_loader, 'val'), (test_loader, 'test')]:
+            x_indices = x_loader.dataset.indices
+            representations, atom_contrib = trainer.get_repr(x_loader, return_atom_contrib=print_atom_contrib)
+            if print_repr:
+                for x in zip(x_indices, representations, strict=True):
+                    print(f'REPR>>> {x_title}', x[0], *x[1])
+            if print_atom_contrib:
+                for x in zip(x_indices, atom_contrib, strict=True):
+                    print(f'ATOM_CONTRIB>>> {x_title}', x[0], *x[1])
+
+
 def init_metrics(*, classification=False):
     if classification:
         return SimpleNamespace(
@@ -212,9 +238,8 @@ def init_dataloader(dataset):
 
 
 def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
-          # run
           device='cuda',
-          num_epochs=65536,
+          num_epochs=512,
           checkpoint=False,
           fine_tuning=False,
           verbose=False,
@@ -227,46 +252,32 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
           gap_patience=150,
           max_gap=None,
           evaluation=False,
-          # dataset
-          dataset=None,
           dataloader_args=None,
           process=False,
-          noH=False,
-          geometry=None,
-          target_column=None,
-          features=None,
-          # splitting
-          splitter='random',
-          subset=None,
-          training_fractions=(0.8,),
-          CV=0,
-          seed0=123,
-          # run
-          batch_size=8,
-          optimizer='AdamW',
           # other (hidden)
-          num_workers=0, pin_memory=False,
-          val_per_batch=True, eval_per_epochs=0,
-          minimum_epochs=0,
-          models_to_save=None, clip_grad=100, log_iterations=100,
+          num_workers=0, pin_memory=False, val_per_batch=True, eval_per_epochs=0,
+          minimum_epochs=0, models_to_save=None, clip_grad=100, log_iterations=100,
           lr_scheduler=ReduceLROnPlateau, factor=0.6, min_lr=8.0e-6, mode='max', lr_scheduler_patience=60,
           ):
     device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
     print(f"Running on device {device}")
 
+    seed = hyper_dict['seed']
     classification = hyper_dict['classification']
+    batch_size = hyper_dict['batch_size']
 
     metrics = init_metrics(classification=classification)
+    optim = {'Adam': Adam, 'AdamW': AdamW}[hyper_dict['optimizer']]
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
-    MolDataloader = init_dataloader(dataset)
+    MolDataloader = init_dataloader(hyper_dict['dataset'])
 
     time_start = timer()
     data = MolDataloader(process=process, classification=classification,
                          extra_args=dataloader_args_dict,
-                         noH=noH, geometry=geometry,
-                         target_column=target_column, graph_method=features)
+                         noH=hyper_dict['noH'], geometry=hyper_dict['geometry'],
+                         target_column=hyper_dict['target_column'], graph_method=hyper_dict['features'])
     time_end = timer()
     print(f'\ndl_time: {time_end-time_start} s\n')
 
@@ -282,149 +293,82 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
         print()
 
     labels = data.labels.numpy()
-    std = data.std
-    print(f"Data stdev {std:.4f}")
+    print(f"Data stdev {data.std:.4f}")
     print()
 
-    for tr_frac in training_fractions:
-        maes = []
-        rmses = []
-        seed = seed0
+    if not sweep:
+        wandb.init(project=project, config=hyper_dict, name=wandb_name, group=None)
 
-        for i in range(CV):
-            print(f"CV iter {i+1}/{CV}")
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
-            hyper_dict['CV iter'] = i
-            hyper_dict['seed'] = seed
-            if not sweep:
-                if CV>1:
-                    wandb.init(project=project, config=hyper_dict, name=f'{wandb_name}.cv{i}', group=wandb_name)
-                    run_name_chk = f'{run_name}.cv{i}'
-                elif len(training_fractions)>1:
-                    hyper_dict['train_frac'] = f'{tr_frac}/{max(training_fractions)}'
-                    print(f'{wandb_name}.tr{tr_frac}')
-                    wandb.init(project=project, config=hyper_dict, name=f'{wandb_name}.tr{tr_frac}', group=None)
-                    run_name_chk = f'{run_name}.tr{tr_frac}'
-                else:
-                    wandb.init(project=project, config=hyper_dict, name=wandb_name, group=None)
-                    run_name_chk = run_name
-            else:
-                run_name_chk = run_name
+    split = split_dataset(data, splitter=hyper_dict['splitter'], tr_frac=hyper_dict['train_frac'], subset=hyper_dict['subset'])
 
-            torch.manual_seed(seed)
-            torch.cuda.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+    print('MAE if use mean train for test:', (abs(labels[split.test]-(labels[split.train].mean())).mean()*data.std).item())
 
-            split = split_dataset(data, splitter=splitter, tr_frac=max(training_fractions), subset=subset)
+    print(f'total / train / test / val: {split.n} {len(split.train)} {len(split.test)} {len(split.val)}')
+    train_data = Subset(data, split.train)
+    val_data = Subset(data, split.val)
+    test_data = Subset(data, split.test)
 
-            print('MAE if use mean train for test:', (abs(labels[split.test]-(labels[split.train].mean())).mean()*std).item())
+    model = EquiMol(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
+                    internal_weights=hyper_dict['internal_weights'],
+                    arch=hyper_dict['arch'],
+                    max_radius=hyper_dict['radius'],
+                    n_s=hyper_dict['n_s'],
+                    n_v=hyper_dict['n_v'],
+                    n_conv_layers=hyper_dict['n_conv_layers'],
+                    distance_emb_dim=hyper_dict['distance_emb_dim'],
+                    graph_mode=hyper_dict['graph_mode'],
+                    dropout_p=hyper_dict['dropout_p'],
+                    invariant=hyper_dict['invariant'])
 
-            tr_indices = split.train
-            if len(training_fractions)>1:
-                tr_indices = tr_indices[:round(tr_frac*split.n)]
+    print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
-            print(f'total / train / test / val: {split.n} {len(tr_indices)} {len(split.test)} {len(split.val)}')
-            train_data = Subset(data, tr_indices)
-            val_data = Subset(data, split.val)
-            test_data = Subset(data, split.test)
+    custom_collate = CustomCollator(device=device)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=custom_collate,
+                              pin_memory=pin_memory, num_workers=num_workers)
 
-            model = EquiMol(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
-                            internal_weights=hyper_dict['internal_weights'],
-                            arch=hyper_dict['arch'],
-                            max_radius=hyper_dict['radius'],
-                            n_s=hyper_dict['n_s'],
-                            n_v=hyper_dict['n_v'],
-                            n_conv_layers=hyper_dict['n_conv_layers'],
-                            distance_emb_dim=hyper_dict['distance_emb_dim'],
-                            graph_mode=hyper_dict['graph_mode'],
-                            dropout_p=hyper_dict['dropout_p'],
-                            invariant=hyper_dict['invariant'])
+    val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
+                            num_workers=num_workers)
 
-            print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+    trainer = MolTrainer(model=model, optim=optim, std=data.std, device=device,
+                         loss_func=metrics.loss_func, metrics=metrics.all,
+                         main_metric=metrics.main, main_metric_goal=metrics.main_goal,
+                         run_dir=run_dir, run_name=run_name,
+                         sampler=None, val_per_batch=val_per_batch,
+                         checkpoint=checkpoint, fine_tuning=fine_tuning,
+                         num_epochs=num_epochs,
+                         eval_per_epochs=eval_per_epochs, patience=patience, gap_patience=gap_patience, max_gap=max_gap,
+                         minimum_epochs=minimum_epochs, models_to_save=models_to_save,
+                         clip_grad=clip_grad, log_iterations=log_iterations,
+                         scheduler_step_per_batch=False,  # CHANGED THIS
+                         lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
+                         lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
+                         lr_scheduler_patience=lr_scheduler_patience)
 
-            sampler = None
-            custom_collate = CustomCollator(device=device)
-            train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=custom_collate,
-                                      pin_memory=pin_memory, num_workers=num_workers)
+    time_start = timer()
+    _val_metrics, _, _ = trainer.train(train_loader, val_loader)
+    time_end = timer()
+    print(f'\ntr_time: {time_end-time_start} s\n')
 
-            val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
-                                    num_workers=num_workers)
+    if eval_on_test:
+        time_start = timer()
+        test_loader = DataLoader(test_data, batch_size=batch_size, collate_fn=custom_collate,
+                                 pin_memory=pin_memory, num_workers=num_workers)
+        print('Evaluating on test, with test size: ', len(test_data))
 
-            optim = {'Adam': Adam, 'AdamW': AdamW}[optimizer]
+        evaluate_on_test(train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
+                         metrics=metrics, trainer=trainer, classification=classification,
+                         print_predictions=print_predictions, print_repr=print_repr, print_atom_contrib=print_atom_contrib)
 
-            trainer = MolTrainer(model=model, optim=optim, std=std, device=device,
-                                 loss_func=metrics.loss_func, metrics=metrics.all,
-                                 main_metric=metrics.main, main_metric_goal=metrics.main_goal,
-                                 run_dir=run_dir, run_name=run_name_chk,
-                                 sampler=sampler, val_per_batch=val_per_batch,
-                                 checkpoint=checkpoint, fine_tuning=fine_tuning,
-                                 num_epochs=num_epochs,
-                                 eval_per_epochs=eval_per_epochs, patience=patience, gap_patience=gap_patience, max_gap=max_gap,
-                                 minimum_epochs=minimum_epochs, models_to_save=models_to_save,
-                                 clip_grad=clip_grad, log_iterations=log_iterations,
-                                 scheduler_step_per_batch=False,  # CHANGED THIS
-                                 lr=hyper_dict['lr'], weight_decay=hyper_dict['weight_decay'],
-                                 lr_scheduler=lr_scheduler, factor=factor, min_lr=min_lr, mode=mode,
-                                 lr_scheduler_patience=lr_scheduler_patience)
+        time_end = timer()
+        print(f'\nte_time: {time_end-time_start} s\n')
 
-            time_start = timer()
-            _val_metrics, _, _ = trainer.train(train_loader, val_loader)
-            time_end = timer()
-            print(f'\ntr_time: {time_end-time_start} s\n')
-
-            time_start = timer()
-            if eval_on_test:
-                test_loader = DataLoader(test_data, batch_size=batch_size, collate_fn=custom_collate,
-                                         pin_memory=pin_memory, num_workers=num_workers)
-                print('Evaluating on test, with test size: ', len(test_data))
-
-                # file dump for each split
-                data_split_string = 'test_split_' + str(CV)
-                test_metrics, pred, targ = trainer.evaluation(test_loader, data_split=data_split_string, return_pred=True)
-
-                if print_predictions:
-                    print_test_predictions(data, test_data.indices, targ, pred, classification=classification)
-
-                if classification:
-                    acc_split = test_metrics[metrics.main] * std
-                    loss_split = test_metrics[metrics.loss_func_name]*std
-                    maes.append(acc_split)
-                    rmses.append(loss_split)
-                    if wandb.run is not None:
-                        wandb.run.summary["test_score"] = acc_split
-                        wandb.run.summary["test_loss"] = loss_split
-                else:
-                    mae_split = test_metrics[metrics.main] * std
-                    rmse_split = np.sqrt(test_metrics[metrics.loss_func_name])*std
-                    maes.append(mae_split)
-                    rmses.append(rmse_split)
-                    if wandb.run is not None:
-                        wandb.run.summary["test_score"] = mae_split
-                        wandb.run.summary["test_rmse"] = rmse_split
-
-                if print_repr or print_atom_contrib:
-                    for x_indices, x_loader, x_title in zip((train_data.indices, val_data.indices, test_data.indices),
-                                                            (train_loader, val_loader, test_loader),
-                                                            ('train', 'val', 'test'), strict=True):
-                        representations, atom_contrib = trainer.get_repr(x_loader, return_atom_contrib=print_atom_contrib)
-
-                        if print_repr:
-                            for x in zip(x_indices, representations, strict=True):
-                                print(f'REPR>>> {x_title}', x[0], *x[1])
-
-                        if print_atom_contrib:
-                            for x in zip(x_indices, atom_contrib, strict=True):
-                                print(f'ATOM_CONTRIB>>> {x_title}', x[0], *x[1])
-
-            time_end = timer()
-            print(f'\nte_time: {time_end-time_start} s\n')
-
-            seed += 1
-            if not sweep:
-                wandb.finish()
-
-    return maes, rmses
+    if not sweep:
+        wandb.finish()
 
 
 if __name__ == '__main__':
@@ -460,15 +404,7 @@ if __name__ == '__main__':
         print(f'PARAMS> {key} : {val}')
     print()
 
-    if args.learning_curve:
-        train_frac = args.train_frac * np.logspace(-4, 0, 5, endpoint=True, base=2)
-    else:
-        train_frac = [args.train_frac]
-    print(f'TRAINING> {train_frac}')
-    print()
-
     train(run_dir, logname, project, args.wandb_name, vars(arg_groups['hyperparameters']),
-          # run
           device=args.device,
           num_epochs=args.num_epochs,
           checkpoint=args.checkpoint,
@@ -479,24 +415,10 @@ if __name__ == '__main__':
           sweep=False,
           print_repr=args.print_repr,
           print_atom_contrib=args.print_atom_contrib,
-          batch_size=args.batch_size,
-          optimizer=args.optimizer,
           patience=args.patience,
           gap_patience=args.gap_patience,
           max_gap=args.max_gap,
           evaluation=args.evaluation,
-          # dataset
-          dataset=args.dataset,
           dataloader_args=args.dataloader_args,
           process=args.process,
-          noH=args.noH,
-          geometry=args.geometry,
-          target_column=args.target_column,
-          features=args.features,
-          # splitting
-          splitter=args.splitter,
-          subset=args.subset,
-          training_fractions=train_frac,
-          CV=args.CV,
-          seed0=args.seed,
           )

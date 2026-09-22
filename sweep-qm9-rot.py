@@ -14,11 +14,7 @@ def train_wrapper():
             train(run_dir, logname, script_args.project, wandb_name, args,
                   device='cuda', num_epochs=args.num_epochs, checkpoint=None,
                   verbose=False, print_predictions=False, eval_on_test=False,
-                  sweep=True, print_repr=False,
-                  dataset=args.dataset, process=False, noH=args.noH,
-                  geometry=args.geometry,
-                  target_column=args.target_column, features=args.features,
-                  splitter=args.splitter, subset=args.subset, training_fractions=[args.train_frac], CV=1)
+                  sweep=True, print_repr=False, process=False)
         except Exception as e:
             print(e)
 
@@ -113,6 +109,7 @@ parameters_dict.update({ 'seed': { 'value': script_args.seed } })
 parameters_dict.update({ 'splitter': { 'value': splitter[dataset]} })
 parameters_dict.update({ 'internal_weights': { 'value': False} })
 parameters_dict.update({ 'optimizer': { 'value': 'AdamW'} })
+parameters_dict.update({ 'batch_size': { 'value': 8} })
 
 sweep_config['parameters'] = parameters_dict
 pprint.pprint(sweep_config)
