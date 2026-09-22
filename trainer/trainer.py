@@ -302,6 +302,8 @@ class Trainer:
         return representations, atom_contrib
 
     def evaluation(self, data_loader: DataLoader, data_split: str = '', *, return_pred=False):
+        if data_loader is None:
+            return None, None, None
         self.model.eval()
         metrics, predictions, targets = self.predict(data_loader, return_pred=return_pred)
 

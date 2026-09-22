@@ -98,6 +98,13 @@ def parse_arguments(arglist=sys.argv[1:]):
 
     args = p.parse_args(arglist)
 
+
+    if args.evaluation:
+        if args.checkpoint is None:
+            raise RuntimeError('--evaluation needs --checkpoint')
+        args.num_epochs = 0
+        args.splitter = 'alltest'
+
     arg_groups={}
     for group in p._action_groups:
         group_dict={a.dest: getattr(args, a.dest, None) for a in group._group_actions}
@@ -178,7 +185,7 @@ def evaluate_on_test(*, train_loader, val_loader, test_loader,
                      metrics, trainer, classification=False,
                      print_predictions=False, print_repr=False, print_atom_contrib=False):
 
-    full_data = train_loader.dataset.dataset
+    full_data = test_loader.dataset.dataset
 
     test_metrics, pred, targ = trainer.evaluation(test_loader, data_split='test', return_pred=True)
 
@@ -195,6 +202,8 @@ def evaluate_on_test(*, train_loader, val_loader, test_loader,
 
     if print_repr or print_atom_contrib:
         for x_loader, x_title in [(train_loader, 'train'), (val_loader, 'val'), (test_loader, 'test')]:
+            if x_loader is None:
+                continue
             x_indices = x_loader.dataset.indices
             representations, atom_contrib = trainer.get_repr(x_loader, return_atom_contrib=print_atom_contrib)
             if print_repr:
@@ -268,6 +277,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
 
     metrics = init_metrics(classification=classification)
     optim = {'Adam': Adam, 'AdamW': AdamW}[hyper_dict['optimizer']]
+    custom_collate = CustomCollator(device=device)
 
     dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
@@ -306,12 +316,13 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
 
     split = split_dataset(data, splitter=hyper_dict['splitter'], tr_frac=hyper_dict['train_frac'], subset=hyper_dict['subset'])
 
-    print('MAE if use mean train for test:', (abs(labels[split.test]-(labels[split.train].mean())).mean()*data.std).item())
-
-    print(f'total / train / test / val: {split.n} {len(split.train)} {len(split.test)} {len(split.val)}')
+    if not evaluation:
+        print('MAE if use mean train for test:', (abs(labels[split.test]-(labels[split.train].mean())).mean()*data.std).item())
+        print(f'total / train / test / val: {split.n} {len(split.train)} {len(split.test)} {len(split.val)}')
     train_data = Subset(data, split.train)
     val_data = Subset(data, split.val)
     test_data = Subset(data, split.test)
+
 
     model = EquiMol(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
                     internal_weights=hyper_dict['internal_weights'],
@@ -327,12 +338,13 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
 
     print('trainable params in model: ', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
-    custom_collate = CustomCollator(device=device)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=custom_collate,
-                              pin_memory=pin_memory, num_workers=num_workers)
-
-    val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
-                            num_workers=num_workers)
+    if evaluation:
+        train_loader = val_loader = None
+    else:
+        train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn=custom_collate,
+                                  pin_memory=pin_memory, num_workers=num_workers)
+        val_loader = DataLoader(val_data, batch_size=batch_size, collate_fn=custom_collate, pin_memory=pin_memory,
+                                num_workers=num_workers)
 
     trainer = MolTrainer(model=model, optim=optim, std=data.std, device=device,
                          loss_func=metrics.loss_func, metrics=metrics.all,

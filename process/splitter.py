@@ -123,6 +123,10 @@ def split_dataset(data, splitter, tr_frac, subset=None):
             raise RuntimeError('subset option incompatible with test/train/val indices file')
         split = get_file_splits(splitter, indices, tr_size, te_size)
 
+    elif splitter == 'alltest':
+        print("Test on whole dataset")
+        split = SimpleNamespace(train=None, test=sorted(indices), val=None)
+
     else:
         msg = f'Unknow splitter: {splitter}'
         raise NotImplementedError(msg)
