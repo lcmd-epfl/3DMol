@@ -9,6 +9,7 @@ from timeit import default_timer as timer
 from collections import Counter
 import faulthandler
 import warnings
+from types import SimpleNamespace
 
 import numpy as np
 import torch
@@ -70,6 +71,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--learning_curve'     , action='store_true', default=False    ,  help='run learning curve (5 tr set sizes)')
     g_run.add_argument('--fine_tuning'        , action='store_true', default=False    ,  help='if checkpoint is for fine-tuning')
     g_run.add_argument('--dataloader_args'    , type=str           , default=None     ,  help='additional dataloader arguments (key1:val1;key2:val2)')
+    g_run.add_argument('--evaluation'         , action='store_true', default=False    ,  help='if evaluate on the full dataset')
 
     g_hyper = p.add_argument_group('hyperparameters')
     g_hyper.add_argument('--subset'               , type=int           , default=None           ,  help='size of a subset to use instead of the full set (tr+te+va)')
@@ -177,6 +179,38 @@ def print_test_predictions(data, test_indices, targ_raw, pred_raw, *, classifica
             print('>>>', *x, sep='\t')
 
 
+def init_metrics(*, classification=False):
+    if classification:
+        return SimpleNamespace(
+                all={'accuracy': Accuracy()},
+                main='accuracy',
+                main_goal='max',
+                loss_func=BCEWithLogitsLoss(),
+                loss_func_name='BCEWithLogitsLoss',
+                )
+    else:
+        return SimpleNamespace(
+                all={'mae': MAE()},
+                main='mae',
+                main_goal='min',
+                loss_func=MSELoss(),
+                loss_func_name='MSELoss',
+                )
+
+
+def init_dataloader(dataset):
+    try:
+        dataloader_path, dataloader_class = dataset.split(':')
+        spec = importlib.util.spec_from_file_location('GenMolDataset', dataloader_path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules['GenMolDataset'] = mod
+        spec.loader.exec_module(mod)
+        MolDataloader = vars(mod)[dataloader_class]
+        return MolDataloader
+    except:
+        raise NotImplementedError(f'Cannot load the {dataset} dataset.') from None
+
+
 def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
           # run
           device='cuda',
@@ -192,6 +226,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
           patience=150,
           gap_patience=150,
           max_gap=None,
+          evaluation=False,
           # dataset
           dataset=None,
           dataloader_args=None,
@@ -221,30 +256,11 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
 
     classification = hyper_dict['classification']
 
-    if classification:
-        metrics = {'accuracy': Accuracy()}
-        main_metric = 'accuracy'
-        main_metric_goal = 'max'
-        loss_func = BCEWithLogitsLoss()
-        loss_func_name = 'BCEWithLogitsLoss'
-    else:
-        metrics = {'mae': MAE()}
-        main_metric = 'mae'
-        main_metric_goal = 'min'
-        loss_func = MSELoss()
-        loss_func_name = 'MSELoss'
+    metrics = init_metrics(classification=classification)
 
-    dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for  key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
+    dataloader_args_dict = None if dataloader_args is None else {f'_dl_extra_{key}': val for key, val in [entry.split(':') for entry in dataloader_args.split(';')]}
 
-    try:
-        dataloader_path, dataloader_class = dataset.split(':')
-        spec = importlib.util.spec_from_file_location('GenMolDataset', dataloader_path)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules['GenMolDataset'] = mod
-        spec.loader.exec_module(mod)
-        MolDataloader = vars(mod)[dataloader_class]
-    except:
-        raise NotImplementedError(f'Cannot load the {dataset} dataset.') from None
+    MolDataloader = init_dataloader(dataset)
 
     time_start = timer()
     data = MolDataloader(process=process, classification=classification,
@@ -265,7 +281,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
             print(f'PARAMS_DATALOADER> {key} : {val}')
         print()
 
-    labels = data.labels
+    labels = data.labels.numpy()
     std = data.std
     print(f"Data stdev {std:.4f}")
     print()
@@ -300,19 +316,18 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
             np.random.seed(seed)
             random.seed(seed)
 
-            tr_indices, te_indices, val_indices, indices = split_dataset(data, splitter=splitter,
-                                                                         tr_frac=max(training_fractions),
-                                                                         subset=subset)
+            split = split_dataset(data, splitter=splitter, tr_frac=max(training_fractions), subset=subset)
 
-            print('MAE if use mean train for test:', (abs(labels.numpy()[te_indices]-(labels.numpy()[tr_indices].mean())).mean()*std).item())
+            print('MAE if use mean train for test:', (abs(labels[split.test]-(labels[split.train].mean())).mean()*std).item())
 
+            tr_indices = split.train
             if len(training_fractions)>1:
-                tr_indices = tr_indices[:int(tr_frac*len(indices))]
+                tr_indices = tr_indices[:round(tr_frac*split.n)]
 
-            print(f'total / train / test / val: {len(indices)} {len(tr_indices)} {len(te_indices)} {len(val_indices)}')
+            print(f'total / train / test / val: {split.n} {len(tr_indices)} {len(split.test)} {len(split.val)}')
             train_data = Subset(data, tr_indices)
-            val_data = Subset(data, val_indices)
-            test_data = Subset(data, te_indices)
+            val_data = Subset(data, split.val)
+            test_data = Subset(data, split.test)
 
             model = EquiMol(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
                             internal_weights=hyper_dict['internal_weights'],
@@ -338,9 +353,9 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
 
             optim = {'Adam': Adam, 'AdamW': AdamW}[optimizer]
 
-            trainer = MolTrainer(model=model, std=std, device=device,
-                                 metrics=metrics, loss_func=loss_func, optim=optim,
-                                 main_metric=main_metric, main_metric_goal=main_metric_goal,
+            trainer = MolTrainer(model=model, optim=optim, std=std, device=device,
+                                 loss_func=metrics.loss_func, metrics=metrics.all,
+                                 main_metric=metrics.main, main_metric_goal=metrics.main_goal,
                                  run_dir=run_dir, run_name=run_name_chk,
                                  sampler=sampler, val_per_batch=val_per_batch,
                                  checkpoint=checkpoint, fine_tuning=fine_tuning,
@@ -372,16 +387,16 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
                     print_test_predictions(data, test_data.indices, targ, pred, classification=classification)
 
                 if classification:
-                    acc_split = test_metrics[main_metric] * std
-                    loss_split = test_metrics[loss_func_name]*std
+                    acc_split = test_metrics[metrics.main] * std
+                    loss_split = test_metrics[metrics.loss_func_name]*std
                     maes.append(acc_split)
                     rmses.append(loss_split)
                     if wandb.run is not None:
                         wandb.run.summary["test_score"] = acc_split
                         wandb.run.summary["test_loss"] = loss_split
                 else:
-                    mae_split = test_metrics[main_metric] * std
-                    rmse_split = np.sqrt(test_metrics[loss_func_name])*std
+                    mae_split = test_metrics[metrics.main] * std
+                    rmse_split = np.sqrt(test_metrics[metrics.loss_func_name])*std
                     maes.append(mae_split)
                     rmses.append(rmse_split)
                     if wandb.run is not None:
@@ -469,6 +484,7 @@ if __name__ == '__main__':
           patience=args.patience,
           gap_patience=args.gap_patience,
           max_gap=args.max_gap,
+          evaluation=args.evaluation,
           # dataset
           dataset=args.dataset,
           dataloader_args=args.dataloader_args,

@@ -4,6 +4,7 @@ exclude = [
     "data",
     "logs",
     "wandb",
+    "cv",
 ]
 
 line-length = 128

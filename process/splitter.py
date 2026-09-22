@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+import itertools
+import warnings
 import numpy as np
 
 indices_names = ('train', 'test', 'val')
@@ -13,7 +16,7 @@ def get_y_splits(data, splitter, indices, tr_size, te_size):
     np.random.shuffle(tr_indices)
     np.random.shuffle(te_indices)
     np.random.shuffle(val_indices)
-    return tr_indices, te_indices, val_indices
+    return SimpleNamespace(train=tr_indices, test=te_indices, val=val_indices)
 
 
 def get_size_splits(data, splitter, indices, tr_size, te_size):
@@ -44,12 +47,10 @@ def get_size_splits(data, splitter, indices, tr_size, te_size):
     np.random.shuffle(tr_indices)
     np.random.shuffle(te_indices)
     np.random.shuffle(val_indices)
-    return tr_indices, te_indices, val_indices
+    return SimpleNamespace(train=tr_indices, test=te_indices, val=val_indices)
 
 
-def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
-    if subset:
-        raise RuntimeError('subset option incompatible with test/train/val indices file')
+def get_file_splits(splitter, indices, tr_size, te_size):
 
     fnames = dict([entry.split(':') for entry in splitter.split(';')])
     if len(fnames)!=len(set(fnames.keys())):
@@ -59,38 +60,33 @@ def get_test_file_splits(splitter, indices, tr_size, te_size, subset):
 
     print(fnames)
 
-    indices_dict = {key: np.load(fnames[key]) if fnames[key].endswith('.npy') else np.loadtxt(fnames[key], dtype=int, ndmin=1) for key in fnames}
+    split = {key: np.load(fnames[key]) if fnames[key].endswith('.npy') else np.loadtxt(fnames[key], dtype=int, ndmin=1) for key in fnames}
 
-    # only test
     if len(fnames)==1 and next(iter(fnames.keys()))=='test':
-        te_indices = indices_dict['test']
-        if len(te_indices) != te_size:
-            raise RuntimeError(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
-        if len(np.intersect1d(te_indices, indices))<len(te_indices):
-            raise RuntimeError('bad test indices')
-        indices_notest = np.array([i for i in indices if i not in te_indices])
-        tr_indices, val_indices = np.split(indices_notest, [tr_size])
-
-    # only test and val
+        indices_notest = np.array([i for i in indices if i not in split['test']])
+        split['train'], split['val'] = np.split(indices_notest, [tr_size])
     elif len(fnames)==2 and set(fnames.keys())=={'test', 'val'}:
-        te_indices = indices_dict['test']
-        val_indices = indices_dict['val']
-        if len(np.intersect1d(te_indices, val_indices)):
-            raise RuntimeError('validation and test sets overlap')
-        if len(np.intersect1d(te_indices, indices))<len(te_indices):
-            raise RuntimeError('bad test indices')
-        if len(np.intersect1d(val_indices, indices))<len(val_indices):
-            raise RuntimeError('bad val indices')
-        if len(te_indices) != te_size:
-            print(f'Fix the training set size so the requested test set size ({te_size}) corresponds to the test indices file size ({len(te_indices)})')
-        tr_indices = np.array([i for i in indices if i not in np.concatenate((te_indices, val_indices))])
-        if len(tr_indices) != tr_size:
-            print('bad training set size')  # TODO
-
+        split['train'] = np.array([i for i in indices if i not in split['test'] and i not in split['val']])
+    elif len(fnames)==3 and set(fnames.keys())==set(indices_names):
+        pass
     else:
         raise NotImplementedError
 
-    return tr_indices, te_indices, val_indices
+    for (name1, idx1), (name2, idx2) in itertools.combinations(split.items(), 2):
+        if len(dup:=np.intersect1d(idx1, idx2)):
+            raise RuntimeError(f'{name1} and {name2} sets overlap: {dup}')
+
+    for name, idx in split.items():
+        if len(diff:=np.setdiff1d(idx, indices)):
+            msg = f'bad {name} indices: {diff}'
+            raise RuntimeError(msg)
+
+    for name, size in [('test', te_size), ('train', tr_size)]:
+        if len(split[name]) != size:
+            msg = f'The requested {name} set size ({size}) does not correspond to the {name} indices file size ({len(split[name])})'
+            warnings.warn(msg, stacklevel=2)
+
+    return SimpleNamespace(**split)
 
 
 def split_dataset(data, splitter, tr_frac, subset=None):
@@ -111,20 +107,25 @@ def split_dataset(data, splitter, tr_frac, subset=None):
     if splitter == 'random':
         print("Using random splits")
         tr_indices, te_indices, val_indices = np.split(indices, [tr_size, tr_size+te_size])
+        split = SimpleNamespace(train=tr_indices, test=te_indices, val=val_indices)
 
     elif splitter in {'yasc', 'ydesc'}:  # splits based on the target value
         print(f"Using target-based splits ({'ascending' if splitter=='yasc' else 'descending'} order)")
-        tr_indices, te_indices, val_indices = get_y_splits(data, splitter, indices, tr_size, te_size)
+        split = get_y_splits(data, splitter, indices, tr_size, te_size)
 
     elif splitter in {'sizeasc', 'sizedesc'}:
         print(f"Splitting based on molecular size ({'ascending' if splitter=='sizeasc' else 'descending'} order)")
-        tr_indices, te_indices, val_indices = get_size_splits(data, splitter, indices, tr_size, te_size)
+        split = get_size_splits(data, splitter, indices, tr_size, te_size)
 
     elif sum(splitter.startswith(f'{i}:') for i in indices_names):
         print("Using indices from file")
-        tr_indices, te_indices, val_indices = get_test_file_splits(splitter, indices, tr_size, te_size, subset)
+        if subset:
+            raise RuntimeError('subset option incompatible with test/train/val indices file')
+        split = get_file_splits(splitter, indices, tr_size, te_size)
 
     else:
-        raise RuntimeError
+        msg = f'Unknow splitter: {splitter}'
+        raise NotImplementedError(msg)
 
-    return tr_indices, te_indices, val_indices, indices
+    split.n = len(indices)
+    return split
