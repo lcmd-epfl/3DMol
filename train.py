@@ -95,8 +95,8 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
     g_hyper.add_argument('--batch_size'           , type=int           , default=8              ,  help='batch size')
     g_hyper.add_argument('--optimizer'            , type=str           , default='AdamW'        ,  help='optimizer', choices=['Adam', 'AdamW'])
-    g_hyper.add_argument('--data_std'             , type=float         , default=None           ,  help='override standard deviation for normalization')
-    g_hyper.add_argument('--data_mean'            , type=float         , default=None           ,  help='override mean for normalization')
+    g_hyper.add_argument('--std'                  , type=float         , default=None           ,  help='override standard deviation for normalization')
+    g_hyper.add_argument('--mean'                 , type=float         , default=None           ,  help='override mean for normalization')
 
     args = p.parse_args(arglist)
 
@@ -287,7 +287,7 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
     time_start = timer()
     data = MolDataloader(process=process, classification=classification,
                          extra_args=dataloader_args_dict,
-                         std=hyper_dict['data_std'], mean=hyper_dict['data_mean'],
+                         std=hyper_dict['std'], mean=hyper_dict['mean'],
                          noH=hyper_dict['noH'], geometry=hyper_dict['geometry'],
                          target_column=hyper_dict['target_column'], graph_method=hyper_dict['features'])
     time_end = timer()

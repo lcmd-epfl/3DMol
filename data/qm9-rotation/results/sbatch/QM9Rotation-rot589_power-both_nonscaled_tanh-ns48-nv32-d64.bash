@@ -44,6 +44,7 @@
 --radius 5 \
 --train_frac 0.8 \
 --weight_decay 0.0001 \
+--mean 0.0 \
 
             done
 
