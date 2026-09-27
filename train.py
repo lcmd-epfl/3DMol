@@ -61,7 +61,7 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_run.add_argument('--patience'           , type=int           , default=150      ,  help='number of epochs with no improvement to stop early')
     g_run.add_argument('--gap_patience'       , type=int           , default=150      ,  help='number of epochs with gap > max. gap to stop early')
     g_run.add_argument('--max_gap'            , type=float         , default=None     ,  help='max. gap in std units between train and validation scores to stop early')
-    g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='Print dims throughout the training process')
+    g_run.add_argument('--verbose'            , action='store_true', default=False    ,  help='print dims throughout the training process')
     g_run.add_argument('--process'            , action='store_true', default=False    ,  help='reprocess data')
     g_run.add_argument('--print_predictions'  , action='store_true', default=False    ,  help='print predictions for test molecules')
     g_run.add_argument('--print_repr'         , action='store_true', default=False    ,  help='print learned representations')
@@ -72,8 +72,8 @@ def parse_arguments(arglist=sys.argv[1:]):
 
     g_hyper = p.add_argument_group('hyperparameters')
     g_hyper.add_argument('--subset'               , type=int           , default=None           ,  help='size of a subset to use instead of the full set (tr+te+va)')
-    g_hyper.add_argument('--n_s'                  , type=int           , default=48             ,  help='dimension of node features')
-    g_hyper.add_argument('--n_v'                  , type=int           , default=48             ,  help='dimension of extra (p/d) features')
+    g_hyper.add_argument('--n_s'                  , type=int           , default=48             ,  help='dimension of l=0 features')
+    g_hyper.add_argument('--n_v'                  , type=int           , default=48             ,  help='dimension of l>0 features')
     g_hyper.add_argument('--n_conv_layers'        , type=int           , default=2              ,  help='number of conv layers')
     g_hyper.add_argument('--distance_emb_dim'     , type=int           , default=16             ,  help='how many gaussian funcs to use')
     g_hyper.add_argument('--radius'               , type=float         , default=5.0            ,  help='max radius of graph')
@@ -81,17 +81,16 @@ def parse_arguments(arglist=sys.argv[1:]):
     g_hyper.add_argument('--seed'                 , type=int           , default=123            ,  help='seed')
     g_hyper.add_argument('--graph_mode'           , type=str           , default='vector'       ,  help='graph mode', choices=['vector', 'vector_masked'])
     g_hyper.add_argument('--dataset'              , type=str           ,                           help='dataset')
-    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path')
+    g_hyper.add_argument('--splitter'             , type=str           , default='random'       ,  help='what splits to use: random / yasc / ydesc / test:path / test:path1;val:path2 / test:path1;val:path2;train:path3 ')
     g_hyper.add_argument('--noH'                  , action='store_true', default=False          ,  help='if remove H')
     g_hyper.add_argument('--invariant'            , action='store_true', default=False          ,  help='if use an invariant model')
-    g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate for adam')
-    g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001         ,  help='weight decay for adam')
+    g_hyper.add_argument('--lr'                   , type=float         , default=0.001          ,  help='learning rate')
+    g_hyper.add_argument('--weight_decay'         , type=float         , default=0.0001         ,  help='weight decay')
     g_hyper.add_argument('--train_frac'           , type=float         , default=0.8            ,  help='training fraction to use (val/te will be equally split over rest)')
     g_hyper.add_argument('--target_column'        , type=str           , default=None           ,  help='csv column with the target property')
     g_hyper.add_argument('--features'             , type=str           , default=None           ,  help='featurizer')
     g_hyper.add_argument('--geometry'             , type=str           , default=None           ,  help='geometry (dft/xtb/etc)')
-    g_hyper.add_argument('--arch'                 , type=str           , default='normal'       ,  help='normal/both/pseudo')
-    g_hyper.add_argument('--internal_weights'     , action='store_true', default=False          ,  help='if use internal weights in tensor products')
+    g_hyper.add_argument('--arch'                 , type=str           , default='normal'       ,  help='readout variant', choices=['normal', 'both_nonscaled', 'pseudo_nonscaled'])
     g_hyper.add_argument('--classification'       , action='store_true', default=False          ,  help='if classification')
     g_hyper.add_argument('--batch_size'           , type=int           , default=8              ,  help='batch size')
     g_hyper.add_argument('--optimizer'            , type=str           , default='AdamW'        ,  help='optimizer', choices=['Adam', 'AdamW'])
@@ -326,7 +325,6 @@ def train(run_dir, run_name, project, wandb_name, hyper_dict, *,
     test_data = Subset(data, split.test)
 
     model = EquiMol(node_fdim=data.input_node_feats_dim, verbose=verbose, device=device,
-                    internal_weights=hyper_dict['internal_weights'],
                     arch=hyper_dict['arch'],
                     max_radius=hyper_dict['radius'],
                     n_s=hyper_dict['n_s'],

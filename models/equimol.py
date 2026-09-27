@@ -1,4 +1,3 @@
-import math
 import torch
 from torch import nn
 from e3nn import o3
@@ -36,57 +35,24 @@ def myReadout(*, d, dropout_p=0.0, odd=False, activation=True):
 
 
 class TensorProductConvLayer(nn.Module):
-    def __init__(self, *, in_irreps, sh_irreps, out_irreps, edge_fdim, dropout=0.0,
-                 h_dim=None, relu_in_fc=True, internal_weights=False, arch='normal'):
+    def __init__(self, *, in_irreps, sh_irreps, out_irreps, edge_fdim, dropout=0.0, h_dim=None):
         super().__init__()
         self.in_irreps = in_irreps
         self.out_irreps = out_irreps
         self.sh_irreps = sh_irreps
-        self.internal_weights = internal_weights
         if h_dim is None:
             h_dim = edge_fdim
-
-        if self.internal_weights is False:  # normal option
-            self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
-        else:
-            self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, internal_weights=True, shared_weights=True)
-
-            if arch.endswith('_weights100') and '0o' in self.tp.irreps_out:
-                out_irreps_pseudoscalar = [x.endswith('0o') for x in str(self.tp.irreps_out).split('+')]
-                assert sum(out_irreps_pseudoscalar)==1
-                idx_irrep_pseudoscalar = out_irreps_pseudoscalar.index(True)
-
-                weights_pointer = 0
-                for i, instr in enumerate(tp.instructions):
-                    weights_pointer += math.prod(instr.path_shape)
-                    if i==idx_irrep_pseudoscalar:
-                        weights_pointer_end = weights_pointer + math.prod(instr.path_shape)
-                        break
-                with torch.no_grad():
-                    self.tp.weight[weights_pointer:weights_pointer_end] *= 100.0
-
-        if relu_in_fc:
-            self.fc_net = nn.Sequential(
-                nn.Linear(edge_fdim, h_dim),
-                nn.ReLU(),
-                nn.Dropout(dropout),
-                nn.Linear(h_dim, tp.weight_numel)
-            )
-        else:
-            self.fc_net = nn.Sequential(
-                nn.Linear(edge_fdim, h_dim),
-                nn.Dropout(dropout),
-                nn.Linear(h_dim, tp.weight_numel)
-            )
+        self.tp = tp = o3.FullyConnectedTensorProduct(in_irreps, sh_irreps, out_irreps, shared_weights=False)
+        self.fc_net = nn.Sequential(
+            nn.Linear(edge_fdim, h_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(h_dim, tp.weight_numel)
+        )
 
     def forward(self, x, edge_index, edge_attr, edge_sh, out_nodes=None, aggr='mean'):
         edge_src, edge_dst = edge_index
-
-        if self.internal_weights is False:
-            tp_out = self.tp(x[edge_src], edge_sh, self.fc_net(edge_attr))
-        else:
-            tp_out = self.tp(x[edge_src], edge_sh)
-
+        tp_out = self.tp(x[edge_src], edge_sh, self.fc_net(edge_attr))
         out_nodes = out_nodes or x.shape[0]
         out = scatter(src=tp_out, index=edge_dst, dim=0, dim_size=out_nodes, reduce=aggr)
         return out
@@ -101,7 +67,6 @@ class EquiMol(nn.Module):
                  verbose=False, device='cpu', graph_mode='vector',
                  invariant=False,
                  arch='normal',
-                 internal_weights=False,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -159,9 +124,6 @@ class EquiMol(nn.Module):
                 "edge_fdim": 3 * n_s,
                 "h_dim": 3 * n_s,
                 "dropout": dropout_p,
-                "relu_in_fc": (self.arch!='normal_no_relu_in_fc'),
-                "internal_weights": internal_weights,
-                "arch": self.arch,
             }
 
             layer = TensorProductConvLayer(**parameters)
@@ -183,8 +145,7 @@ class EquiMol(nn.Module):
         if self.arch.startswith('both') or self.arch.startswith('pseudo'):
             self.score_predictor_nodes_half_odd = myReadout(
                     d=[self.n_s, 2*self.n_s, self.n_s],
-                    dropout_p=dropout_p, odd=True,
-                    activation=not self.arch.endswith('_scaled'),
+                    dropout_p=dropout_p, odd=True, activation=True,
                     )
 
         self.build_graph = BuildGraph(sh_irreps=self.sh_irreps, max_radius=self.max_radius,
@@ -243,7 +204,7 @@ class EquiMol(nn.Module):
         x = torch.cat((x_dict[self.scalar_key], x_dict[self.pseudoscalar_key]), dim=1) if self.pseudoscalar_key in x_dict else x_dict[self.scalar_key]
         return x, edge_index, edge_attr
 
-    def forward_mol(self, graph, extra, *, scale_factor=1e7, return_atom_contrib=False):
+    def forward_mol(self, graph, extra, *, return_atom_contrib=False):
 
         if return_atom_contrib:
             graph.pos.requires_grad_()
@@ -252,9 +213,6 @@ class EquiMol(nn.Module):
         if self.graph_mode=='vector_masked':
             x *= graph.local_mask[:,None]
         x = scatter_add(x, index=graph.batch, dim=0)
-
-        if self.arch.endswith('_scaled'):
-            x[:,self.n_s:]*=scale_factor
 
         if self.arch.startswith('normal'):
             score = self.score_predictor_nodes_full(x)

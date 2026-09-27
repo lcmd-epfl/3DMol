@@ -107,7 +107,6 @@ parameters_dict.update({ 'features': { 'value': features[dataset]} })
 parameters_dict.update({ 'target_column': { 'value': target_column} })
 parameters_dict.update({ 'seed': { 'value': script_args.seed } })
 parameters_dict.update({ 'splitter': { 'value': splitter[dataset]} })
-parameters_dict.update({ 'internal_weights': { 'value': False} })
 parameters_dict.update({ 'optimizer': { 'value': 'AdamW'} })
 parameters_dict.update({ 'batch_size': { 'value': 8} })
 

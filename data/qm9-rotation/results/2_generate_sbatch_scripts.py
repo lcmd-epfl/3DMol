@@ -18,9 +18,9 @@ for config_file in glob('configs/config-*-*-*-????????-????????.dat'):
 
         short_dataset = base_config['dataset'].split(':')[-1]
 
-        for arch in ['normal', 'normal_scaled', 'pseudo_nonscaled', 'both_nonscaled']:
+        for arch in ['normal', 'pseudo_nonscaled', 'both_nonscaled']:
 
-            if target.endswith('_abs') and (arch.startswith('pseudo') or arch.startswith('both') or arch.endswith('scaled')):
+            if target.endswith('_abs') and arch!='normal':
                 continue
 
             short_name = f"{short_dataset}-{target}-{arch}{'_tanh' if arch.endswith('_nonscaled') else ''}"

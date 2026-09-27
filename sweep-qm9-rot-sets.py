@@ -110,7 +110,6 @@ constants = {
         'target_column': target_column,
         'seed': script_args.seed,
         'splitter': splitter[dataset],
-        'internal_weights': False,
         'optimizer': 'AdamW',
         }
 
