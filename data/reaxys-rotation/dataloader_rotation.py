@@ -8,7 +8,7 @@ class Rotation(MolDataset):
                  geometry=None, graph_method=None,
                  verbose=4, check=False, **kwargs):
 
-        self.version = 4  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
+        self.version = 5  # INCREASE IF CHANGE THE DATA / DATALOADER / GRAPHS / ETC
         dirname = os.path.dirname(__file__)
         geometry = 'xtb'
         self.processed_dir=f'{dirname}/processed/'

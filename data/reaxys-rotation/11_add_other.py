@@ -7,11 +7,10 @@ df = pd.read_csv('data.csv')
 df2 = df.copy(deep=True)
 
 df2.id = ['x'+str(i) for i in df2.id]
-df2.specific_rotation *= -1
-df2.specific_rotation_power *= -1
-df2.specific_rotation_computed *= -1
-df2.specific_rotation_computed_power *= -1
 df2.drop(['SMILES', 'canon_SMILES'], axis=1, inplace=True)
+for key in df2.columns:
+    if key.startswith('specific_rotation') and '_abs' not in key:
+        df2[key] *= -1
 
 df3 = pd.concat([df, df2])
 df3.to_csv('data_both.csv', index=False)
